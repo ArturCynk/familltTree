@@ -1,8 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-// Definiowanie interfejsu
-interface IPerson extends Document {
-  gender: string;
+// Interface for the Person document
+export interface IPerson extends Document {
+  gender: 'male' | 'female' | 'non-binary';
   firstName: string;
   middleName?: string;
   lastName: string;
@@ -15,22 +15,23 @@ interface IPerson extends Document {
   deathDateEnd?: Date;
 }
 
-// Definiowanie schematu
+// Definition of the Person schema
 const PersonSchema: Schema = new Schema({
   gender: {
     type: String,
-    required: true,
+    enum: ['male', 'female', 'non-binary'], // Enum definition for gender
+    required: [true, 'Gender is required'],
   },
   firstName: {
     type: String,
-    required: true,
+    required: [true, 'First name is required'],
   },
   middleName: {
     type: String,
   },
   lastName: {
     type: String,
-    required: true,
+    required: [true, 'Last name is required'],
   },
   maidenName: {
     type: String,
@@ -55,12 +56,6 @@ const PersonSchema: Schema = new Schema({
   deathDateEnd: {
     type: Date,
   },
-}, {
-  timestamps: true, // Dodaje pola createdAt i updatedAt
-  collection: 'persons',
 });
 
-// Tworzenie modelu
-const Person = mongoose.model<IPerson>('Person', PersonSchema);
-
-export default Person;
+export default mongoose.model<IPerson>('Person', PersonSchema);

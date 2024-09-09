@@ -2,6 +2,7 @@ import express, { Application } from 'express';
 import cors from "cors";
 import bodyParser from "body-parser";
 import dotenv from 'dotenv';
+import personRoutes from './src/routes/personRoutes'; // Importowanie trasy
 
 import connectDB from './src/config/database';
 
@@ -16,6 +17,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 connectDB(MONGOURL);
+
+app.use('/api/person', personRoutes)
 
 app.listen(port, () => {
   console.log(`Serwer uruchomiony na porcie ${port}`);
