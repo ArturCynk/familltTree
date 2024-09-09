@@ -8,6 +8,7 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400).json({ errors: errors.array() });
+    return; // Dodaj return, aby uniknąć dalszego przetwarzania w przypadku błędów walidacji
   }
 
   try {
@@ -45,6 +46,7 @@ export const updatePerson = async (req: Request, res: Response): Promise<void> =
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400).json({ errors: errors.array() });
+    return; // Dodaj return, aby uniknąć dalszego przetwarzania w przypadku błędów walidacji
   }
 
   try {
@@ -56,6 +58,7 @@ export const updatePerson = async (req: Request, res: Response): Promise<void> =
 
     if (!updatedPerson) {
       res.status(404).json({ message: 'Osoba nie znaleziona' });
+      return; // Dodaj return, aby uniknąć dalszego przetwarzania w przypadku braku osoby
     }
 
     // Zwróć odpowiedź sukcesu
@@ -63,5 +66,33 @@ export const updatePerson = async (req: Request, res: Response): Promise<void> =
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Wystąpił błąd podczas aktualizacji osoby', error });
+  }
+};
+
+// Funkcja do usuwania osoby
+export const deletePerson = async (req: Request, res: Response): Promise<void> => {
+  // Sprawdź wyniki walidacji
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return; // Dodaj return, aby uniknąć dalszego przetwarzania w przypadku błędów walidacji
+  }
+
+  try {
+    const personId = req.params.id;
+
+    // Usuń osobę na podstawie ID
+    const deletedPerson = await Person.findByIdAndDelete(personId);
+
+    if (!deletedPerson) {
+      res.status(404).json({ message: 'Osoba nie znaleziona' });
+      return; // Dodaj return, aby uniknąć dalszego przetwarzania w przypadku braku osoby
+    }
+
+    // Zwróć odpowiedź sukcesu
+    res.json({ message: 'Osoba została usunięta', person: deletedPerson });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Wystąpił błąd podczas usuwania osoby', error });
   }
 };
