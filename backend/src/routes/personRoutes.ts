@@ -1,6 +1,6 @@
 import express from 'express';
 import { addPersonValidation, updatePersonValidation } from '../validation/personValidator'; // Import reguł walidacji
-import { addPerson, deletePerson, updatePerson } from '../controllers/personController'; // Import funkcji kontrolera
+import { addPerson, deletePerson, getPersonCount, updatePerson } from '../controllers/personController'; // Import funkcji kontrolera
 
 const router = express.Router();
 
@@ -11,5 +11,7 @@ router.post('/add', addPersonValidation, addPerson);
 router.put('/update/:id', updatePersonValidation, updatePerson);
 
 router.delete('/delete/:id', deletePerson)
+
+router.get('/count', getPersonCount);
 
 export default router;

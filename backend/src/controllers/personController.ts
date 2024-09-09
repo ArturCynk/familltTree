@@ -96,3 +96,18 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ message: 'Wystąpił błąd podczas usuwania osoby', error });
   }
 };
+
+// Funkcja do pobierania liczby osób w drzewie
+export const getPersonCount = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Zlicz wszystkie dokumenty w kolekcji
+      const personCount = await Person.countDocuments();
+  
+      // Zwróć liczbę osób
+      res.status(200).json({ count: personCount });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Wystąpił błąd podczas pobierania liczby osób', error });
+    }
+  };
+  
