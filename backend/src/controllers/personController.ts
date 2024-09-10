@@ -125,3 +125,12 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
     }
   };
   
+
+ export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const users = await Person.find({}, 'firstName lastName gender'); // Pobierz tylko pola firstName, lastName i gender
+      res.status(200).json(users);
+    } catch (error) {
+      res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });
+    }
+  };
