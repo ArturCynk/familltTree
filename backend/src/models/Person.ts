@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-// Interface for the Person document
 export interface IPerson extends Document {
   gender: 'male' | 'female' | 'non-binary';
   firstName: string;
@@ -13,13 +12,13 @@ export interface IPerson extends Document {
   deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo';
   deathDate?: Date;
   deathDateEnd?: Date;
+  status: 'alive' | 'deceased'; // Dodano status
 }
 
-// Definition of the Person schema
 const PersonSchema: Schema = new Schema({
   gender: {
     type: String,
-    enum: ['male', 'female', 'non-binary'], // Enum definition for gender
+    enum: ['male', 'female', 'non-binary'],
     required: [true, 'Gender is required'],
   },
   firstName: {
@@ -55,6 +54,11 @@ const PersonSchema: Schema = new Schema({
   },
   deathDateEnd: {
     type: Date,
+  },
+  status: {
+    type: String,
+    enum: ['alive', 'deceased'], // Dodano status
+    required: [true, 'Status is required'],
   },
 });
 

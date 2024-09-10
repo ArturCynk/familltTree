@@ -1,18 +1,30 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import Person from '../models/Person'; // Import modelu Person
+import Person from '../models/Person'; // Zakładam, że masz model w tym katalogu
 
-// Funkcja do dodawania nowej osoby
 export const addPerson = async (req: Request, res: Response): Promise<void> => {
   // Sprawdź wyniki walidacji
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400).json({ errors: errors.array() });
-    return; // Dodaj return, aby uniknąć dalszego przetwarzania w przypadku błędów walidacji
+    return;
   }
 
   try {
-    const { gender, firstName, middleName, lastName, maidenName, birthDateType, birthDate, birthDateEnd, deathDateType, deathDate, deathDateEnd } = req.body;
+    const { 
+      gender, 
+      firstName, 
+      middleName, 
+      lastName, 
+      maidenName, 
+      birthDateType, 
+      birthDate, 
+      birthDateEnd, 
+      deathDateType, 
+      deathDate, 
+      deathDateEnd,
+      status
+    } = req.body;
 
     // Utwórz nową osobę na podstawie danych z żądania
     const newPerson = new Person({
@@ -27,6 +39,7 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       deathDateType,
       deathDate,
       deathDateEnd,
+      status
     });
 
     // Zapisz osobę do bazy danych
@@ -39,6 +52,7 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: 'Wystąpił błąd podczas dodawania osoby', error });
   }
 };
+
 
 // Funkcja do aktualizacji danych osoby
 export const updatePerson = async (req: Request, res: Response): Promise<void> => {

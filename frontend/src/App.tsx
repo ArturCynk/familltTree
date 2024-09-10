@@ -1,26 +1,36 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import AddPersonModal from './components/Modal/Modal';
+import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-function App() {
+const App: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const checkPersonCount = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/api/person/count');
+        if (response.data.count === 0) {
+          setIsModalOpen(true);
+        }
+      } catch (error) {
+        toast.error('Błąd podczas sprawdzania liczby osób.');
+        console.error('Error checking person count:', error);
+      }
+    };
+
+    checkPersonCount();
+  }, []);
+
+  const handleModalClose = () => setIsModalOpen(false);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <AddPersonModal isOpen={isModalOpen} onClose={handleModalClose} />
+      <ToastContainer />
     </div>
   );
-}
+};
 
 export default App;
