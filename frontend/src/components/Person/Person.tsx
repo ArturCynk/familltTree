@@ -30,7 +30,7 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
     <div>
       <div 
         className={`relative flex items-center p-2 border-2 rounded-lg ${boxClass} shadow-md`}
-        style={{ width: '5cm', height: '1.5cm' }} // Set dimensions here
+        style={{ width: '5cm', height: '1.5cm', marginBottom: '20px' }} // Set dimensions here
       >
         <div className="flex-shrink-0 mr-2">
           <div 

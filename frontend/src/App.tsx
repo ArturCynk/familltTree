@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PersonBox from './components/Person/Person';
+import Header from './components/Header/Header';
 
 interface Person {
   _id: string;
@@ -45,6 +46,7 @@ const App: React.FC = () => {
 
   return (
     <div>
+      <Header />
       <div className="p-6">
         {persons.map((person) => (
           <PersonBox
