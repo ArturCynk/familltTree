@@ -3,6 +3,7 @@ import AddPersonModal from './components/Modal/Modal';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import PersonBox from './components/Person/Person';
 
 const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +28,11 @@ const App: React.FC = () => {
 
   return (
     <div>
+       <div className="p-6">
+      <PersonBox gender="male" firstName="John" lastName="Doe" />
+      <br />
+      <PersonBox gender="female" firstName="Jane" lastName="Doe" />
+    </div>
       <AddPersonModal isOpen={isModalOpen} onClose={handleModalClose} />
       <ToastContainer />
     </div>
