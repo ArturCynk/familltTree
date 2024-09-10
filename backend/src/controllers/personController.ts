@@ -128,9 +128,22 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
 
  export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      const users = await Person.find({}, 'firstName lastName gender'); // Pobierz tylko pola firstName, lastName i gender
+      const users = await Person.find({}, 'firstName lastName gender _id'); // Pobierz tylko pola firstName, lastName i gender
       res.status(200).json(users);
     } catch (error) {
       res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });
     }
   };
+
+  export const getUser = async(req: Request, res: Response): Promise<void> => {
+    try {
+      const person = await Person.findById(req.params.id);
+      if (person) {
+        res.json(person);
+      } else {
+        res.status(404).json({ message: 'Osoba nie znaleziona' });
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
