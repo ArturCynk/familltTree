@@ -152,7 +152,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   }
 
   interface IRelationship {
-    personId: string;
+    person: string; // Zakładamy, że person to ObjectId lub string reprezentujący ID osoby
     type: string;
   }
   
@@ -175,7 +175,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         deathDateFrom,
         deathDateTo,
         relationType,
-        id
+        id // ID istniejącej osoby, z którą dodajemy relację
       } = req.body;
   
       // Utwórz nową osobę z danymi z żądania
@@ -198,37 +198,72 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         relationships: []
       });
   
-      // Zapisz osobę w bazie danych
+      // Zapisz nową osobę w bazie danych
       const savedPerson = await newPerson.save();
   
-
+      // Sprawdź, czy istnieje osoba, do której dodajemy relację
+      if (relationType && id) {
+        const existingPerson = await Person.findById(id).exec();
   
-          // Sprawdź, czy osoba, do której dodajemy relację, istnieje
-          const relatedPerson = await Person.findById(id).exec();
+        if (existingPerson) {
+          // Dodaj relację do nowo utworzonej osoby
+          savedPerson.relationships.push({
+            person: id,
+            type: getInverseRelationshipType(relationType),
+          });
   
-          if (relatedPerson) {
-            // Dodaj relację do nowo utworzonej osoby
-            savedPerson.relationships.push({
-              person: savedPerson._id,  // Konwertuj ObjectId na string
-              type: getInverseRelationshipType(relationType),
-            });
-            
-            // Dodaj odwrotną relację do osoby, do której tworzymy relację
-            relatedPerson.relationships.push({
-              person: savedPerson._id,  // Konwertuj ObjectId na string
-              type: relationType,
-            });
-            
-            await relatedPerson.save();            
-          } else {
-            // Jeśli osoba, do której dodajemy relację, nie istnieje
-            return res.status(404).json({ message: `Osoba o ID ${id} nie została znaleziona.` });
+          // Dodaj odwrotną relację do istniejącej osoby
+          existingPerson.relationships.push({
+            person: savedPerson._id, // Konwertuj ObjectId na string
+            type: relationType,
+          });
+  
+          // Jeśli dodawana osoba jest rodzeństwem, aktualizuj relacje rodzeństwa
+          if (relationType === 'Sibling') {
+            // Aktualizuj istniejące osoby rodzeństwa
+            const existingSiblings = existingPerson.relationships.filter(rel => rel.type === 'Sibling');
+  
+            for (const siblingRel of existingSiblings) {
+              const siblingPerson = await Person.findById(siblingRel.person).exec();
+              if (siblingPerson && siblingPerson._id.toString() !== savedPerson._id.toString()) {
+                // Dodaj nową osobę do relacji rodzeństwa istniejącej osoby
+                if (!siblingPerson.relationships.some(rel => rel.person === savedPerson._id && rel.type === 'Sibling')) {
+                  siblingPerson.relationships.push({
+                    person: savedPerson._id, // Konwertuj ObjectId na string
+                    type: 'Sibling',
+                  });
+                  await siblingPerson.save();
+                }
+              }
+            }
+  
+            // Aktualizuj relacje rodzeństwa nowo dodanej osoby
+            const newPersonSiblings = await Person.find({
+              'relationships.person': savedPerson._id.toString(),
+              'relationships.type': 'Sibling'
+            }).exec();
+  
+            for (const newSibling of newPersonSiblings) {
+              if (!savedPerson.relationships.some(rel => rel.person === newSibling._id && rel.type === 'Sibling')) {
+                savedPerson.relationships.push({
+                  person: newSibling._id, // Konwertuj ObjectId na string
+                  type: 'Sibling',
+                });
+              }
+            }
           }
   
-        // Zapisz nowo utworzoną osobę z dodanymi relacjami
-        await savedPerson.save();
+          // Zapisz zmiany
+          await savedPerson.save();
+          await existingPerson.save();
   
-      return res.status(201).json({ message: 'Osoba została dodana z relacjami.', person: savedPerson });
+          return res.status(201).json({ message: 'Osoba została dodana z relacjami.', person: savedPerson });
+        } else {
+          return res.status(404).json({ message: `Osoba o ID ${id} nie została znaleziona.` });
+        }
+      } else {
+        return res.status(400).json({ message: 'Niepoprawny typ relacji lub brak ID osoby do powiązania.' });
+      }
     } catch (error) {
       console.error('Błąd podczas dodawania osoby z relacjami:', error);
       return res.status(500).json({ message: 'Wewnętrzny błąd serwera' });
@@ -240,19 +275,11 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
     const inverseRelationshipMap: Record<string, string> = {
       'Father': 'Child',
       'Mother': 'Child',
-      'Brother': 'Sibling',
-      'Sister': 'Sibling',
+      'Sibling': 'Sibling',
       'Daughter': 'Parent',
       'Son': 'Parent',
       'Partner': 'Partner',
     };
   
-    // Sprawdzamy, czy przekazany typ istnieje w mapie
-    if (type in inverseRelationshipMap) {
-      return inverseRelationshipMap[type];
-    } else {
-      // Jeżeli typ nie istnieje w mapie, zwracamy 'unknown'
-      return 'unknown';
-    }
+    return inverseRelationshipMap[type] || 'unknown';
   };
-  

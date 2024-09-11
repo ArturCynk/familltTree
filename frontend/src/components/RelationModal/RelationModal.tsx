@@ -107,7 +107,7 @@ const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personNa
             <button
               className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
               style={{ top: '50%', left: '10%', transform: 'translate(-50%, -50%)' }}
-              onClick={() => handleButtonClick('Dodaj brata', 'Brother')}
+              onClick={() => handleButtonClick('Dodaj brata', 'Sibling')}
             >
               <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
               <p className="mt-2 text-sm font-medium">Brat</p>
@@ -116,7 +116,7 @@ const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personNa
             <button
               className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
               style={{ top: '50%', right: '10%', transform: 'translate(50%, -50%)' }}
-              onClick={() => handleButtonClick('Dodaj siostrę', 'Sister')}
+              onClick={() => handleButtonClick('Dodaj siostrę', 'Sibling')}
             >
               <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
               <p className="mt-2 text-sm font-medium">Siostra</p>
