@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMale, faFemale, faPen, faPlus, faUser } from '@fortawesome/free-solid-svg-icons'; // Dodano faUser
+import { faMale, faFemale, faGenderless, faPen, faPlus } from '@fortawesome/free-solid-svg-icons';
 import PersonModal from '../Edit/Edit';
 import RelationModal from '../RelationModal/RelationModal';
 
@@ -15,14 +15,12 @@ interface PersonBoxProps {
 const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName, onPersonUpdated }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRelationModalOpen, setIsRelationModalOpen] = useState(false);
-  const [isHover, setIsHover] = useState(false);
 
   const isMale = gender === 'male';
   const isFemale = gender === 'female';
-  
-  // Definiowanie koloru i ikony na podstawie płci
+
   const boxClass = isMale ? 'border-blue-500' : isFemale ? 'border-orange-500' : 'border-purple-500';
-  const icon = isMale ? faMale : isFemale ? faFemale : faUser; // Ikona człowieka dla niebinarnych
+  const icon = isMale ? faMale : isFemale ? faFemale : faGenderless;
 
   const handleEditClick = () => {
     setIsModalOpen(true);
@@ -40,32 +38,32 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
     setIsRelationModalOpen(false);
   };
 
-  const handleDoubleClickBox = () => {
-    setIsRelationModalOpen(true);
+  const handleSaveRelation = (relation: any) => {
+    console.log('Save relation:', relation);
+    // Handle save relation logic
   };
 
-  const handleRelationClick = () => {
-    setIsRelationModalOpen(true);
+  const handleDeleteRelation = (relationId: any) => {
+    console.log('Delete relation:', relationId);
+    // Handle delete relation logic
   };
 
   return (
     <div className="relative flex flex-col items-center p-4">
       {/* Person Box */}
-      <div 
+      <div
         className={`relative flex items-center p-4 border-2 rounded-lg ${boxClass} shadow-lg`}
-        onMouseEnter={() => setIsHover(true)}
-        onMouseLeave={() => setIsHover(false)}
-        onDoubleClick={handleDoubleClickBox}
         style={{ width: '5cm', height: '1.6cm' }}
       >
-        <div className="absolute top-0 right-0 flex items-center justify-center w-8 h-8 cursor-pointer"
+        <div
+          className="absolute top-0 right-0 flex items-center justify-center w-8 h-8 cursor-pointer"
           title="Relacje"
-          onClick={handleRelationClick}
+          onClick={handleAddClick}
         >
           <FontAwesomeIcon icon={faPlus} size="sm" color="#333" />
         </div>
         <div className="flex-shrink-0 mr-3">
-          <div 
+          <div
             className={`flex items-center justify-center w-12 h-12 rounded-full ${isMale ? 'bg-blue-500' : isFemale ? 'bg-orange-500' : 'bg-purple-500'}`}
             style={{ width: '1cm', height: '1cm' }}
           >
@@ -75,7 +73,7 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
         <div className="flex-1 text-gray-800">
           <p className="text-sm font-semibold">{firstName} {lastName}</p>
         </div>
-        <div 
+        <div
           className="absolute bottom-0 right-0 flex items-center justify-center w-8 h-8 cursor-pointer"
           title="Edytuj"
           onClick={handleEditClick}
@@ -87,8 +85,8 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
       {/* Modal Edycji */}
       {isModalOpen && (
         <PersonModal id={_id} onClose={() => {
-            handleCloseModal();
-            onPersonUpdated();
+          handleCloseModal();
+          onPersonUpdated();
         }} />
       )}
 
@@ -97,15 +95,11 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
         <RelationModal
           isOpen={isRelationModalOpen}
           onClose={handleCloseRelationModal}
-          onSave={(relation: any, personId: any) => {
-            console.log('Save relation:', relation, personId);
-            // Handle save relation
-          }}
-          onDelete={(relationId: any) => {
-            console.log('Delete relation:', relationId);
-            // Handle delete relation
-          }}
-          personId={_id}
+          // personId={_id}
+          personName={`${firstName} ${lastName}`}
+          personGender={gender}
+          // onSave={handleSaveRelation}
+          // onDelete={handleDeleteRelation}
         />
       )}
     </div>

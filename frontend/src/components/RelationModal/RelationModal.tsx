@@ -1,86 +1,115 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSave, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { useSpring, animated } from '@react-spring/web'; // Import react-spring
+import { faMale, faFemale, faGenderless, faHandshake, faUser, faUserFriends } from '@fortawesome/free-solid-svg-icons';
 
 interface RelationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (relation: string, personId: string) => void;
-  onDelete: (relationId: string) => void;
-  personId: string; // ID osoby, z którą związana jest relacja
-  existingRelation?: { relationId: string; relation: string }; // Opcjonalnie, istniejąca relacja do edycji
+  personName: string;
+  personGender: 'male' | 'female' | 'not-binary';
 }
 
-const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, onSave, onDelete, personId, existingRelation }) => {
-  const [relation, setRelation] = useState(existingRelation?.relation || '');
-  const [isDeleting, setIsDeleting] = useState(false);
+const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personName, personGender }) => {
+  if (!isOpen) return null;
 
-  // Animacja dla modal
-  const modalAnimation = useSpring({
-    opacity: isOpen ? 1 : 0,
-    transform: isOpen ? 'translateY(0%)' : 'translateY(-50%)',
-    config: { duration: 300 }
-  });
-
-  const handleSave = () => {
-    onSave(relation, personId);
-    onClose();
-  };
-
-  const handleDelete = () => {
-    if (existingRelation?.relationId) {
-      onDelete(existingRelation.relationId);
-      onClose();
-    }
-  };
+  // Determine the icon based on gender
+  const icon = personGender === 'male' ? faMale : personGender === 'female' ? faFemale : faGenderless;
 
   return (
-    <animated.div
-      className={`fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 ${isOpen ? 'block' : 'hidden'}`}
-      style={modalAnimation}
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
       onClick={onClose}
+      style={{ zIndex: 1000 }}
     >
       <div
-        className="bg-white p-6 rounded-lg shadow-lg w-80"
         onClick={(e) => e.stopPropagation()}
+        className="relative flex items-center justify-center p-6"
+        style={{ zIndex: 1001 }}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Zarządzaj Relacją</h2>
-          <button onClick={onClose}>
-            <FontAwesomeIcon icon={faTimes} size="lg" color="#333" />
-          </button>
-        </div>
-        <div className="mb-4">
-          <label htmlFor="relation" className="block text-gray-700">Relacja:</label>
-          <input
-            id="relation"
-            type="text"
-            value={relation}
-            onChange={(e) => setRelation(e.target.value)}
-            className="border border-gray-300 p-2 w-full rounded"
-          />
-        </div>
-        <div className="flex justify-between">
-          {existingRelation && (
-            <button
-              onClick={handleDelete}
-              className="flex items-center bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-            >
-              <FontAwesomeIcon icon={faTrash} className="mr-2" />
-              Usuń
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            className="flex items-center bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+        <div className="relative w-[600px] h-[600px] flex items-center justify-center">
+          {/* Central Box */}
+          
+          <div
+            className="relative flex items-center justify-center p-4 border-4 border-gray-300 rounded-full bg-white shadow-lg"
+            style={{ width: '120px', height: '120px' }}
           >
-            <FontAwesomeIcon icon={faSave} className="mr-2" />
-            Zapisz
-          </button>
+            <div
+              className={`flex items-center justify-center w-20 h-20 rounded-full ${personGender === 'male' ? 'bg-blue-500' : personGender === 'female' ? 'bg-pink-500' : 'bg-gray-500'}`}
+              style={{ width: '80px', height: '80px' }}
+            >
+              <FontAwesomeIcon icon={icon} size="2x" color="#fff" />
+            </div>
+          </div>
+
+          {/* Surrounding Boxes */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {/* Top Left */}
+            <div
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md"
+              style={{ top: '10%', left: '20%', transform: 'translate(-50%, -50%)' }}
+            >
+              <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Ojciec</p>
+            </div>
+
+            {/* Top Center */}
+            <div
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md"
+              style={{ top: '10%', left: '50%', transform: 'translate(-50%, -50%)' }}
+            >
+              <FontAwesomeIcon icon={faHandshake} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">małżonek</p>
+            </div>
+
+            {/* Top Right */}
+            <div
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md"
+              style={{ top: '10%', right: '20%', transform: 'translate(50%, -50%)' }}
+            >
+              <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Matka</p>
+            </div>
+
+            {/* Bottom Left */}
+            <div
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md"
+              style={{ bottom: '10%', left: '20%', transform: 'translate(-50%, 50%)' }}
+            >
+              <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Córka</p>
+            </div>
+
+            {/* Bottom Right */}
+            <div
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md"
+              style={{ bottom: '10%', right: '20%', transform: 'translate(50%, 50%)' }}
+            >
+              <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Syn</p>
+            </div>
+
+            {/* Middle Left */}
+            <div
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md"
+              style={{ top: '50%', left: '10%', transform: 'translate(-50%, -50%)' }}
+            >
+              <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Brat</p>
+            </div>
+
+            {/* Middle Right */}
+            <div
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md"
+              style={{ top: '50%', right: '10%', transform: 'translate(50%, -50%)' }}
+            >
+              <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Siostra</p>
+            </div>
+
+          </div>
         </div>
       </div>
-    </animated.div>
+    </div>
   );
 };
 
