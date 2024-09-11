@@ -8,32 +8,28 @@ interface RelationModalProps {
   onClose: () => void;
   personName: string;
   personGender: 'male' | 'female' | 'not-binary';
+  id: string;
 }
 
-const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personName, personGender }) => {
+const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personName, personGender, id }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedRelation, setSelectedRelation] = useState<string>('');
+  const [relationType, setRelationType] = useState<string>('');
 
-
-  const handleButtonClick = (label: string) => {
+  const handleButtonClick = (label: string, type: string) => {
     setSelectedRelation(label);
-    setIsModalOpen(true)  // Otwórz modal po kliknięciu przycisku
+    setRelationType(type); // Set the type of relation
+    setIsModalOpen(true);  // Open modal after clicking button
   };
-  
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
   };
+
   if (!isOpen) return null;
-  
 
   // Determine the icon based on gender
   const icon = personGender === 'male' ? faMale : personGender === 'female' ? faFemale : faGenderless;
-
-  // Handler for button clicks
-
-  
-
 
   return (
     <div
@@ -64,76 +60,76 @@ const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personNa
           <div className="absolute inset-0 flex items-center justify-center">
             {/* Top Left */}
             <button
-  className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
-  style={{ top: '10%', left: '20%', transform: 'translate(-50%, -50%)' }}
-  onClick={() => handleButtonClick('Dodaj ojca')}
->
-  <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
-  <p className="mt-2 text-sm font-medium">Ojciec</p>
-</button>
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
+              style={{ top: '10%', left: '20%', transform: 'translate(-50%, -50%)' }}
+              onClick={() => handleButtonClick('Dodaj ojca', 'Father')}
+            >
+              <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Ojciec</p>
+            </button>
 
-<button
-  className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
-  style={{ top: '10%', left: '50%', transform: 'translate(-50%, -50%)' }}
-  onClick={() => handleButtonClick('Dodaj małżonka')}
->
-  <FontAwesomeIcon icon={faUserFriends} size="lg" color="#333" />
-  <p className="mt-2 text-sm font-medium">Małżonek</p>
-</button>
+            <button
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
+              style={{ top: '10%', left: '50%', transform: 'translate(-50%, -50%)' }}
+              onClick={() => handleButtonClick('Dodaj małżonka', 'Spouse')}
+            >
+              <FontAwesomeIcon icon={faUserFriends} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Małżonek</p>
+            </button>
 
-<button
-  className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
-  style={{ top: '10%', right: '20%', transform: 'translate(50%, -50%)' }}
-  onClick={() => handleButtonClick('Dodaj matkę')}
->
-  <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
-  <p className="mt-2 text-sm font-medium">Matka</p>
-</button>
+            <button
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
+              style={{ top: '10%', right: '20%', transform: 'translate(50%, -50%)' }}
+              onClick={() => handleButtonClick('Dodaj matkę', 'Mother')}
+            >
+              <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Matka</p>
+            </button>
 
-<button
-  className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
-  style={{ bottom: '10%', left: '20%', transform: 'translate(-50%, 50%)' }}
-  onClick={() => handleButtonClick('Dodaj córkę')}
->
-  <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
-  <p className="mt-2 text-sm font-medium">Córka</p>
-</button>
+            <button
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
+              style={{ bottom: '10%', left: '20%', transform: 'translate(-50%, 50%)' }}
+              onClick={() => handleButtonClick('Dodaj córkę', 'Daughter')}
+            >
+              <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Córka</p>
+            </button>
 
-<button
-  className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
-  style={{ bottom: '10%', right: '20%', transform: 'translate(50%, 50%)' }}
-  onClick={() => handleButtonClick('Dodaj syna')}
->
-  <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
-  <p className="mt-2 text-sm font-medium">Syn</p>
-</button>
+            <button
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
+              style={{ bottom: '10%', right: '20%', transform: 'translate(50%, 50%)' }}
+              onClick={() => handleButtonClick('Dodaj syna', 'Son')}
+            >
+              <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Syn</p>
+            </button>
 
-<button
-  className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
-  style={{ top: '50%', left: '10%', transform: 'translate(-50%, -50%)' }}
-  onClick={() => handleButtonClick('Dodaj brata')}
->
-  <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
-  <p className="mt-2 text-sm font-medium">Brat</p>
-</button>
+            <button
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
+              style={{ top: '50%', left: '10%', transform: 'translate(-50%, -50%)' }}
+              onClick={() => handleButtonClick('Dodaj brata', 'Brother')}
+            >
+              <FontAwesomeIcon icon={faMale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Brat</p>
+            </button>
 
-<button
-  className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
-  style={{ top: '50%', right: '10%', transform: 'translate(50%, -50%)' }}
-  onClick={() => handleButtonClick('Dodaj siostrę')}
->
-  <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
-  <p className="mt-2 text-sm font-medium">Siostra</p>
-</button>
-
+            <button
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
+              style={{ top: '50%', right: '10%', transform: 'translate(50%, -50%)' }}
+              onClick={() => handleButtonClick('Dodaj siostrę', 'Sister')}
+            >
+              <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium">Siostra</p>
+            </button>
           </div>
         </div>
         <AddPersonModal
-  isOpen={isModalOpen}
-  onClose={handleCloseModal}
-  relationLabel={selectedRelation} // Przekaż etykietę relacji
-/>
-
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          relationLabel={selectedRelation} // Przekaż etykietę relacji
+          relationType={relationType} // Przekaż typ relacji w języku angielskim
+          id={id}
+        />
       </div>
     </div>
   );

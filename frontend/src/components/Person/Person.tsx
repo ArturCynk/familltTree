@@ -102,6 +102,7 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
 
           personName={`${firstName} ${lastName}`}
           personGender={gender}
+          id={_id}
         />
       )}
     </div>

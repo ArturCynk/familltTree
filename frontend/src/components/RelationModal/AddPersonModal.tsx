@@ -2,14 +2,15 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-
 interface AddPersonModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  relationLabel: string;
-}
-
-const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relationLabel }) => {
+    isOpen: boolean;
+    onClose: () => void;
+    relationLabel: string; // Przekazywana etykieta relacji
+    relationType: string; // Typ relacji w języku angielskim
+    id: string;
+  }
+  
+  const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relationLabel, relationType, id }) => {
   const [gender, setGender] = useState<'male' | 'female' | 'non-binary'>('male');
   const [firstName, setFirstName] = useState<string>('');
   const [middleName, setMiddleName] = useState<string>('');
@@ -25,6 +26,8 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relati
   const [deathDateFrom, setDeathDateFrom] = useState<string>('');
   const [deathDate, setDeathDate] = useState<string>('');
   const [deathDateTo, setDeathDateTo] = useState<string>('');
+  console.log(relationType, id);
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +56,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relati
     };
 
     try {
-      await axios.post('http://localhost:3001/api/person/add', personData);
+      await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', {...personData, relationType, id});
       toast.success('Osoba została pomyślnie dodana!');
       onClose();
     } catch (error) {

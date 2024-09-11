@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import Person from '../models/Person'; // Zakładam, że masz model w tym katalogu
+import mongoose, { Types } from 'mongoose';
+
+import Person, { IPerson } from '../models/Person';
+
 
 export const addPerson = async (req: Request, res: Response): Promise<void> => {
   // Sprawdź wyniki walidacji
@@ -147,3 +150,109 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       res.status(500).json({ message: error.message });
     }
   }
+
+  interface IRelationship {
+    personId: string;
+    type: string;
+  }
+  
+  export const addPersonWithRelationships = async (req: Request, res: Response) => {
+    try {
+      const {
+        gender,
+        firstName,
+        middleName,
+        lastName,
+        maidenName,
+        birthDateType,
+        birthDate,
+        birthDateFrom,
+        birthDateTo,
+        birthPlace,
+        status,
+        deathDate,
+        deathDateType,
+        deathDateFrom,
+        deathDateTo,
+        relationType,
+        id
+      } = req.body;
+  
+      // Utwórz nową osobę z danymi z żądania
+      const newPerson: IPerson = new Person({
+        gender,
+        firstName,
+        middleName,
+        lastName,
+        maidenName,
+        birthDateType,
+        birthDate,
+        birthDateFrom,
+        birthDateTo,
+        birthPlace,
+        status,
+        deathDate,
+        deathDateType,
+        deathDateFrom,
+        deathDateTo,
+        relationships: []
+      });
+  
+      // Zapisz osobę w bazie danych
+      const savedPerson = await newPerson.save();
+  
+
+  
+          // Sprawdź, czy osoba, do której dodajemy relację, istnieje
+          const relatedPerson = await Person.findById(id).exec();
+  
+          if (relatedPerson) {
+            // Dodaj relację do nowo utworzonej osoby
+            savedPerson.relationships.push({
+              person: savedPerson._id,  // Konwertuj ObjectId na string
+              type: getInverseRelationshipType(relationType),
+            });
+            
+            // Dodaj odwrotną relację do osoby, do której tworzymy relację
+            relatedPerson.relationships.push({
+              person: savedPerson._id,  // Konwertuj ObjectId na string
+              type: relationType,
+            });
+            
+            await relatedPerson.save();            
+          } else {
+            // Jeśli osoba, do której dodajemy relację, nie istnieje
+            return res.status(404).json({ message: `Osoba o ID ${id} nie została znaleziona.` });
+          }
+  
+        // Zapisz nowo utworzoną osobę z dodanymi relacjami
+        await savedPerson.save();
+  
+      return res.status(201).json({ message: 'Osoba została dodana z relacjami.', person: savedPerson });
+    } catch (error) {
+      console.error('Błąd podczas dodawania osoby z relacjami:', error);
+      return res.status(500).json({ message: 'Wewnętrzny błąd serwera' });
+    }
+  };
+  
+  // Funkcja pomocnicza do uzyskania odwrotnego typu relacji
+  const getInverseRelationshipType = (type: string): string => {
+    const inverseRelationshipMap: Record<string, string> = {
+      'Father': 'Child',
+      'Mother': 'Child',
+      'Brother': 'Sibling',
+      'Sister': 'Sibling',
+      'Daughter': 'Parent',
+      'Son': 'Parent',
+      'Partner': 'Partner',
+    };
+  
+    // Sprawdzamy, czy przekazany typ istnieje w mapie
+    if (type in inverseRelationshipMap) {
+      return inverseRelationshipMap[type];
+    } else {
+      // Jeżeli typ nie istnieje w mapie, zwracamy 'unknown'
+      return 'unknown';
+    }
+  };
+  

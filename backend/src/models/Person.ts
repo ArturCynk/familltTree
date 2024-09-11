@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IPerson extends Document {
+  _id: mongoose.Types.ObjectId; // Typ _id jako ObjectId
   gender: 'male' | 'female' | 'non-binary';
   firstName: string;
   middleName?: string;
@@ -8,11 +9,18 @@ export interface IPerson extends Document {
   maidenName?: string;
   birthDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo';
   birthDate?: Date;
-  birthDateEnd?: Date;
-  deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo';
+  birthDateFrom?: Date;
+  birthDateTo?: Date;
+  birthPlace?: string;
+  status: 'alive' | 'deceased';
   deathDate?: Date;
-  deathDateEnd?: Date;
-  status: 'alive' | 'deceased'; // Dodano status
+  deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo';
+  deathDateFrom?: Date;
+  deathDateTo?: Date;
+  relationships: {
+    person: mongoose.Types.ObjectId; // Typ relacji jako ObjectId
+    type: string;
+  }[];
 }
 
 const PersonSchema: Schema = new Schema({
@@ -42,24 +50,37 @@ const PersonSchema: Schema = new Schema({
   birthDate: {
     type: Date,
   },
-  birthDateEnd: {
+  birthDateFrom: {
+    type: Date,
+  },
+  birthDateTo: {
+    type: Date,
+  },
+  birthPlace: {
+    type: String,
+  },
+  status: {
+    type: String,
+    enum: ['alive', 'deceased'],
+    required: [true, 'Status is required'],
+  },
+  deathDate: {
     type: Date,
   },
   deathDateType: {
     type: String,
     enum: ['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo'],
   },
-  deathDate: {
+  deathDateFrom: {
     type: Date,
   },
-  deathDateEnd: {
+  deathDateTo: {
     type: Date,
   },
-  status: {
-    type: String,
-    enum: ['alive', 'deceased'], // Dodano status
-    required: [true, 'Status is required'],
-  },
+  relationships: [{
+    person: { type: Schema.Types.ObjectId, ref: 'Person' },
+    type: { type: String, required: true },
+  }],
 });
 
 export default mongoose.model<IPerson>('Person', PersonSchema);
