@@ -10,9 +10,10 @@ interface PersonBoxProps {
   firstName: string;
   lastName: string;
   onPersonUpdated: () => void;
+  handleRefreshData: () => void;
 }
 
-const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName, onPersonUpdated }) => {
+const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName, onPersonUpdated, handleRefreshData}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRelationModalOpen, setIsRelationModalOpen] = useState(false);
 
@@ -94,12 +95,13 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
       {isRelationModalOpen && (
         <RelationModal
           isOpen={isRelationModalOpen}
-          onClose={handleCloseRelationModal}
-          // personId={_id}
+          onClose={()=> {
+            handleCloseRelationModal();
+            handleRefreshData();
+          }}
+
           personName={`${firstName} ${lastName}`}
           personGender={gender}
-          // onSave={handleSaveRelation}
-          // onDelete={handleDeleteRelation}
         />
       )}
     </div>

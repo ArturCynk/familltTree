@@ -71,6 +71,7 @@ const App: React.FC = () => {
             lastName={person.lastName}
             _id={person._id}
             onPersonUpdated={handleRefreshData}
+            handleRefreshData={handleRefreshData}
           />
         ))}
       </div>
