@@ -5,6 +5,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PersonBox from './components/Person/Person';
 import Header from './components/Header/Header';
+import ErrorScreen from './components/Error/ErrorScreen';
+import LoadingSpinner from './components/Loader/LoadingSpinner';
 
 interface Person {
   _id: string;
@@ -16,33 +18,46 @@ interface Person {
 const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [persons, setPersons] = useState<Person[]>([]);
-  const fetchPersons = async () => {
-      try {
-        // Pobierz listę użytkowników z endpointu
-        const response = await axios.get('http://localhost:3001/api/person/users');
-        const personsData: Person[] = response.data; 
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Dodaj stan do śledzenia ładowania
 
-        if (personsData.length === 0) {
-          setIsModalOpen(true); 
-        } else {
-          setPersons(personsData); 
-        }
-      } catch (error) {
-        toast.error('Błąd podczas pobierania danych użytkowników.');
-        console.error('Error fetching persons:', error);
+  const fetchPersons = async () => {
+    setIsLoading(true); // Rozpocznij ładowanie
+    try {
+      const response = await axios.get('http://localhost:3001/api/person/users');
+      const personsData: Person[] = response.data;
+
+      if (personsData.length === 0) {
+        setIsModalOpen(true);
+      } else {
+        setPersons(personsData);
       }
-    };
+    } catch (error) {
+      setError('Błąd podczas pobierania danych użytkowników.');
+      console.error('Error fetching persons:', error);
+    } finally {
+      setIsLoading(false); // Zakończ ładowanie
+    }
+  };
 
   useEffect(() => {
-
     fetchPersons();
   }, []);
 
   const handleModalClose = () => setIsModalOpen(false);
 
   const handleRefreshData = async () => {
+    setError(null);
     await fetchPersons();
   };
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <ErrorScreen message={error} onRetry={handleRefreshData} />;
+  }
 
   return (
     <div>
@@ -61,7 +76,7 @@ const App: React.FC = () => {
       </div>
       <AddPersonModal isOpen={isModalOpen} onClose={() => {
         handleModalClose();
-        handleRefreshData(); 
+        handleRefreshData();
       }} />
       <ToastContainer />
     </div>
