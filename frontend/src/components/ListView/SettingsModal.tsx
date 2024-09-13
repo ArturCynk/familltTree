@@ -5,15 +5,23 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons';
 interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  showColorCoding: boolean; // Stan dla opcji kolorowania
-  onColorCodingChange: (enabled: boolean) => void; // Funkcja do zmiany stanu kolorowania
+  showColorCoding: boolean;
+  onColorCodingChange: (enabled: boolean) => void;
+  showMaidenName: boolean; // Stan dla opcji wyświetlania nazwiska panieńskiego
+  onMaidenNameChange: (enabled: boolean) => void; // Funkcja do zmiany stanu wyświetlania nazwiska panieńskiego
+  showHusbandSurname: boolean; // Stan dla opcji wyświetlania nazwiska po mężu
+  onHusbandSurnameChange: (enabled: boolean) => void; // Funkcja do zmiany stanu wyświetlania nazwiska po mężu
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
   isOpen,
   onClose,
   showColorCoding,
-  onColorCodingChange
+  onColorCodingChange,
+  showMaidenName,
+  onMaidenNameChange,
+  showHusbandSurname,
+  onHusbandSurnameChange
 }) => {
   return (
     <div
@@ -54,26 +62,30 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <label htmlFor="colorCoding">Pokaż kodowanie kolorami</label>
             </div>
           </div>
-          <div>
-            <h3 className="text-md font-semibold mb-2">Opcje nazw</h3>
+          <div className="border-b pb-4 mb-4">
+            <h3 className="text-md font-semibold mb-2">Opcje nazwisk</h3>
             <div className="flex items-center mb-2">
               <input
                 type="checkbox"
                 id="displayHusbandSurname"
                 className="mr-2"
+                checked={showHusbandSurname}
+                onChange={(e) => onHusbandSurnameChange(e.target.checked)}
               />
               <label htmlFor="displayHusbandSurname">
-                Wyświetl nazwisko po mężu (Nazwisko panieńskie)
+                Wyświetl nazwisko po mężu
               </label>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center mb-2">
               <input
                 type="checkbox"
                 id="displayMaidenSurname"
                 className="mr-2"
+                checked={showMaidenName}
+                onChange={(e) => onMaidenNameChange(e.target.checked)}
               />
               <label htmlFor="displayMaidenSurname">
-                Wyświetl nazwisko panieńskie (Nazwisko po mężu)
+                Wyświetl nazwisko panieńskie
               </label>
             </div>
           </div>

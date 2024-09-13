@@ -13,10 +13,11 @@ interface Person {
   _id: string;
   firstName: string;
   lastName: string;
+  maidenName?: string;
   birth?: string;
   death?: string;
   location?: string;
-  gender: 'male' | 'female' | 'not-binary'; // Typ wymagany
+  gender: 'male' | 'female' | 'not-binary';
 }
 
 const PeopleTable: React.FC = () => {
@@ -28,6 +29,8 @@ const PeopleTable: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState<boolean>(false); // Stan panelu ustawień
   const [showColorCoding, setShowColorCoding] = useState<boolean>(false); // Stan dla kolorowania
+  const [showMaidenName, setShowMaidenName] = useState<boolean>(false); // Stan dla nazwiska panieńskiego
+  const [showHusbandSurname, setShowHusbandSurname] = useState<boolean>(false); // Stan dla nazwiska po mężu
 
   const fetchPeople = async () => {
     setLoading(true);
@@ -72,6 +75,14 @@ const PeopleTable: React.FC = () => {
     setShowColorCoding(enabled);
   };
 
+  const handleMaidenNameChange = (enabled: boolean) => {
+    setShowMaidenName(enabled);
+  };
+
+  const handleHusbandSurnameChange = (enabled: boolean) => {
+    setShowHusbandSurname(enabled);
+  };
+
   const getColorByGender = (gender: 'male' | 'female' | 'not-binary') => {
     switch (gender) {
       case 'male':
@@ -81,6 +92,12 @@ const PeopleTable: React.FC = () => {
       default:
         return 'bg-gray-100'; // Domyślny kolor dla innych opcji
     }
+  };
+
+  const getDisplayName = (person: Person) => {
+    if(showMaidenName) return person.maidenName ? `${person.firstName} ${person.lastName} (z dom. ${person.maidenName})` : `${person.firstName} ${person.lastName}`;
+    if(showHusbandSurname) return person.maidenName ? `${person.firstName} ${person.maidenName} (po meżu ${person.lastName})` : `${person.firstName} ${person.lastName}`
+    if( showHusbandSurname == false && showMaidenName == false ) return `${person.firstName} ${person.lastName}`
   };
 
   if (loading) return <LoadingSpinner />;
@@ -139,7 +156,7 @@ const PeopleTable: React.FC = () => {
                   {person.firstName[0]}{person.lastName[0]}
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-800">{`${person.firstName} ${person.lastName}`}</div>
+                  <div className="font-semibold text-gray-800">{getDisplayName(person)}</div>
                 </div>
               </td>
               <td className="p-4 text-gray-500">{person.birth}</td>
@@ -186,11 +203,15 @@ const PeopleTable: React.FC = () => {
         />
       )}
              {/* Panel ustawień */}
-      <SettingsPanel
+             <SettingsPanel
         isOpen={isSettingsPanelOpen}
         onClose={toggleSettingsPanel}
         showColorCoding={showColorCoding}
         onColorCodingChange={handleColorCodingChange}
+        showMaidenName={showMaidenName}
+        onMaidenNameChange={handleMaidenNameChange}
+        showHusbandSurname={showHusbandSurname}
+        onHusbandSurnameChange={handleHusbandSurnameChange}
       />
     </div>
   );
