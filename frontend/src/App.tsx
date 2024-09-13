@@ -7,6 +7,8 @@ import PersonBox from './components/Person/Person';
 import Header from './components/Header/Header';
 import ErrorScreen from './components/Error/ErrorScreen';
 import LoadingSpinner from './components/Loader/LoadingSpinner';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ListView from './components/ListView/ListView';
 
 interface Person {
   _id: string;
@@ -61,8 +63,17 @@ const App: React.FC = () => {
 
   return (
     <div>
+      <Router>
       <Header />
-      <div className="p-6">
+      <Routes>
+        {/* <Route path="/family-view" element={<FamilyView />} />
+        <Route path="/ancestry-view" element={<AncestryView />} />
+        <Route path="/fan-view" element={<FanView />} /> */}
+        <Route path="/list-view" element={<ListView />} />
+        {/* Dodaj inne trasy w zależności od potrzeb */}
+      </Routes>
+    </Router>
+      {/* <div className="p-6">
         {persons.map((person) => (
           <PersonBox
             key={person._id}
@@ -74,7 +85,7 @@ const App: React.FC = () => {
             handleRefreshData={handleRefreshData}
           />
         ))}
-      </div>
+      </div> */}
       <AddPersonModal isOpen={isModalOpen} onClose={() => {
         handleModalClose();
         handleRefreshData();

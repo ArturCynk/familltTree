@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // Import axios do obsługi zapytań HTTP
+import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faTree, faFan, faList, faSearch, faCog } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom'; // Importowanie hooka useNavigate
 
 const Header: React.FC = () => {
   const [personCount, setPersonCount] = useState<number>(0);
+  const navigate = useNavigate(); // Użycie hooka do nawigacji
 
   // Funkcja do pobierania liczby osób
   const fetchPersonCount = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/person/count'); // Zamień '/count' na pełny URL, jeśli jest to wymagane
-      setPersonCount(response.data.count); // Zakładając, że odpowiedź zawiera 'count'
+      const response = await axios.get('http://localhost:3001/api/person/count');
+      setPersonCount(response.data.count);
     } catch (error) {
       console.error('Error fetching person count:', error);
     }
@@ -21,22 +23,43 @@ const Header: React.FC = () => {
     fetchPersonCount();
   }, []);
 
+  // Funkcja obsługująca nawigację do różnych widoków
+  const handleNavigate = (path: string) => {
+    navigate(path);
+  };
+
   return (
     <header className="w-full sticky top-0">
       {/* First Section */}
       <div className="bg-white text-gray-800 p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Drzewo genealogiczne</h1>
         <div className="flex space-x-4">
-          <button title="Widok rodzinny" className="p-2 rounded hover:bg-gray-200">
+          <button
+            title="Widok rodzinny"
+            className="p-2 rounded hover:bg-gray-200"
+            onClick={() => handleNavigate('/family-view')} // Przenosi do widoku rodzinnego
+          >
             <FontAwesomeIcon icon={faTree} className="text-gray-800" />
           </button>
-          <button title="Widok rodowodu" className="p-2 rounded hover:bg-gray-200">
+          <button
+            title="Widok rodowodu"
+            className="p-2 rounded hover:bg-gray-200"
+            onClick={() => handleNavigate('/ancestry-view')} // Przenosi do widoku rodowodu
+          >
             <FontAwesomeIcon icon={faUsers} className="text-gray-800" />
           </button>
-          <button title="Widok wentylatora" className="p-2 rounded hover:bg-gray-200">
+          <button
+            title="Widok wentylatora"
+            className="p-2 rounded hover:bg-gray-200"
+            onClick={() => handleNavigate('/fan-view')} // Przenosi do widoku wentylatora
+          >
             <FontAwesomeIcon icon={faFan} className="text-gray-800" />
           </button>
-          <button title="Widok listy" className="p-2 rounded hover:bg-gray-200">
+          <button
+            title="Widok listy"
+            className="p-2 rounded hover:bg-gray-200"
+            onClick={() => handleNavigate('/list-view')} // Przenosi do widoku listy
+          >
             <FontAwesomeIcon icon={faList} className="text-gray-800" />
           </button>
         </div>

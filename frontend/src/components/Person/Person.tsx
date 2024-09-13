@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMale, faFemale, faGenderless, faPen, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faMale, faFemale, faGenderless, faPen, faPlus, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { useSpring, animated } from '@react-spring/web';
 import PersonModal from '../Edit/Edit';
 import RelationModal from '../RelationModal/RelationModal';
 
@@ -13,9 +14,10 @@ interface PersonBoxProps {
   handleRefreshData: () => void;
 }
 
-const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName, onPersonUpdated, handleRefreshData}) => {
+const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName, onPersonUpdated, handleRefreshData }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRelationModalOpen, setIsRelationModalOpen] = useState(false);
+  const [isInfoBoxOpen, setIsInfoBoxOpen] = useState(false);
 
   const isMale = gender === 'male';
   const isFemale = gender === 'female';
@@ -23,31 +25,22 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
   const boxClass = isMale ? 'border-blue-500' : isFemale ? 'border-orange-500' : 'border-purple-500';
   const icon = isMale ? faMale : isFemale ? faFemale : faGenderless;
 
-  const handleEditClick = () => {
-    setIsModalOpen(true);
+  const handleEditClick = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+  const handleAddClick = () => setIsRelationModalOpen(true);
+  const handleCloseRelationModal = () => setIsRelationModalOpen(false);
+  const handleDeleteClick = () => {
+    // Implement deletion logic here
+    setIsInfoBoxOpen(false);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
+  const toggleInfoBox = () => setIsInfoBoxOpen(prev => !prev);
 
-  const handleAddClick = () => {
-    setIsRelationModalOpen(true);
-  };
-
-  const handleCloseRelationModal = () => {
-    setIsRelationModalOpen(false);
-  };
-
-  const handleSaveRelation = (relation: any) => {
-    console.log('Save relation:', relation);
-    // Handle save relation logic
-  };
-
-  const handleDeleteRelation = (relationId: any) => {
-    console.log('Delete relation:', relationId);
-    // Handle delete relation logic
-  };
+  const infoBoxSpring = useSpring({
+    transform: isInfoBoxOpen ? 'translateX(0)' : 'translateX(-100%)',
+    opacity: isInfoBoxOpen ? 1 : 0,
+    config: { tension: 300, friction: 25 },
+  });
 
   return (
     <div className="relative flex flex-col items-center p-4">
@@ -60,6 +53,7 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
           className="absolute top-0 right-0 flex items-center justify-center w-8 h-8 cursor-pointer"
           title="Relacje"
           onClick={handleAddClick}
+          style={{ zIndex: 2 }} // Ensure it's above the InfoBox
         >
           <FontAwesomeIcon icon={faPlus} size="sm" color="#333" />
         </div>
@@ -71,16 +65,22 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
             <FontAwesomeIcon icon={icon} size="lg" color="#fff" />
           </div>
         </div>
-        <div className="flex-1 text-gray-800">
+        <div className="flex-1 text-gray-800 flex items-center">
           <p className="text-sm font-semibold">{firstName} {lastName}</p>
         </div>
         <div
           className="absolute bottom-0 right-0 flex items-center justify-center w-8 h-8 cursor-pointer"
           title="Edytuj"
           onClick={handleEditClick}
+          style={{ zIndex: 2 }} // Ensure it's above the InfoBox
         >
           <FontAwesomeIcon icon={faPen} size="sm" color="#333" />
         </div>
+        <div
+          className="absolute top-0 left-0 w-full h-full cursor-pointer bg-gray-900 bg-opacity-0"
+          title="Toggle Info"
+          onClick={toggleInfoBox}
+        />
       </div>
 
       {/* Modal Edycji */}
@@ -95,11 +95,10 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
       {isRelationModalOpen && (
         <RelationModal
           isOpen={isRelationModalOpen}
-          onClose={()=> {
+          onClose={() => {
             handleCloseRelationModal();
             handleRefreshData();
           }}
-
           personName={`${firstName} ${lastName}`}
           personGender={gender}
           id={_id}

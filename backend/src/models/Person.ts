@@ -17,10 +17,10 @@ export interface IPerson extends Document {
   deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo';
   deathDateFrom?: Date;
   deathDateTo?: Date;
-  relationships: {
-    person: mongoose.Types.ObjectId; // Typ relacji jako ObjectId
-    type: string;
-  }[];
+  parents: mongoose.Types.ObjectId[];
+  siblings: mongoose.Types.ObjectId[];
+  spouses: mongoose.Types.ObjectId[];
+  children: mongoose.Types.ObjectId[];
 }
 
 const PersonSchema: Schema = new Schema({
@@ -77,10 +77,10 @@ const PersonSchema: Schema = new Schema({
   deathDateTo: {
     type: Date,
   },
-  relationships: [{
-    person: { type: Schema.Types.ObjectId, ref: 'Person' },
-    type: { type: String, required: true },
-  }],
+  parents: [{ type: Schema.Types.ObjectId, ref: 'Person' }],
+  siblings: [{ type: Schema.Types.ObjectId, ref: 'Person' }],
+  spouses: [{ type: Schema.Types.ObjectId, ref: 'Person' }],
+  children: [{ type: Schema.Types.ObjectId, ref: 'Person' }],
 });
 
 export default mongoose.model<IPerson>('Person', PersonSchema);
