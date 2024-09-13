@@ -192,7 +192,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
               />
             </div>
             <div>
-              <label htmlFor="maidenName" className="block text-sm font-medium text-gray-700 mb-1">Nazwisko po ślubie</label>
+              <label htmlFor="maidenName" className="block text-sm font-medium text-gray-700 mb-1">Nazwisko panieńskie</label>
               <input
                 id="maidenName"
                 name="maidenName"

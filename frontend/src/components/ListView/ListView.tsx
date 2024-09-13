@@ -16,7 +16,7 @@ interface Person {
   birth?: string;
   death?: string;
   location?: string;
-  personGender: 'male' | 'female' | 'not-binary'; // Typ wymagany
+  gender: 'male' | 'female' | 'not-binary'; // Typ wymagany
 }
 
 const PeopleTable: React.FC = () => {
@@ -27,6 +27,7 @@ const PeopleTable: React.FC = () => {
   const [isRelationModalOpen, setIsRelationModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState<boolean>(false); // Stan panelu ustawień
+  const [showColorCoding, setShowColorCoding] = useState<boolean>(false); // Stan dla kolorowania
 
   const fetchPeople = async () => {
     setLoading(true);
@@ -34,6 +35,8 @@ const PeopleTable: React.FC = () => {
       const response = await axios.get('http://localhost:3001/api/person/users');
       setPeople(response.data);
       setError(null);
+      console.log(people);
+      
     } catch (error) {
       setError('Nie udało się pobrać danych');
     } finally {
@@ -65,6 +68,20 @@ const PeopleTable: React.FC = () => {
   const toggleSettingsPanel = () => {
     setIsSettingsPanelOpen(prev => !prev);
   };
+  const handleColorCodingChange = (enabled: boolean) => {
+    setShowColorCoding(enabled);
+  };
+
+  const getColorByGender = (gender: 'male' | 'female' | 'not-binary') => {
+    switch (gender) {
+      case 'male':
+        return 'bg-blue-100'; // Jasnoniebieski dla mężczyzn
+      case 'female':
+        return 'bg-pink-100'; // Jasnoróżowy dla kobiet
+      default:
+        return 'bg-gray-100'; // Domyślny kolor dla innych opcji
+    }
+  };
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorScreen message={error} onRetry={fetchPeople} />;
@@ -93,7 +110,7 @@ const PeopleTable: React.FC = () => {
           </div>
           <button
             className="p-2 rounded-full hover:bg-gray-200 transition duration-300"
-            onClick={toggleSettingsPanel} // Otwórz lub zamknij panel ustawień po kliknięciu
+            onClick={toggleSettingsPanel}
           >
             <FontAwesomeIcon icon={faCog} className="text-gray-600 text-lg" />
           </button>
@@ -112,42 +129,42 @@ const PeopleTable: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {people.map((person) => {
-              console.log(person._id); // Dodanie console.log dla id osoby
-              return (
-                <tr key={person._id} className="relative group border-b transition duration-300 ease-in-out hover:bg-gray-200">
-                  <td className="p-4 flex items-center">
-                    <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white font-semibold rounded-full mr-3">
-                      {person.firstName[0]}{person.lastName[0]}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-800">{`${person.firstName} ${person.lastName}`}</div>
-                    </div>
-                  </td>
-                  <td className="p-4 text-gray-500">{person.birth}</td>
-                  <td className="p-4 text-gray-500">
-                    {person.death && `${person.death}${person.location ? `, ${person.location}` : ""}`}
-                  </td>
-                  <td className="relative p-6">
-                    {/* Akcje */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                      <button
-                        className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition duration-300 mr-2"
-                        onClick={() => openRelationModal(person)}
-                      >
-                        <FontAwesomeIcon icon={faPlus} className="text-gray-600 text-lg" />
-                      </button>
-                      <button
-                        className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition duration-300"
-                        onClick={() => openEditModal(person)}
-                      >
-                        <FontAwesomeIcon icon={faPen} className="text-gray-600 text-lg" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            {people.map((person) => (
+              <tr
+              key={person._id}
+              className={`relative group border-b transition duration-300 ease-in-out hover:bg-gray-200 ${showColorCoding ? getColorByGender(person.gender) : ''}`}
+            >
+              <td className="p-4 flex items-center">
+                <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white font-semibold rounded-full mr-3">
+                  {person.firstName[0]}{person.lastName[0]}
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-800">{`${person.firstName} ${person.lastName}`}</div>
+                </div>
+              </td>
+              <td className="p-4 text-gray-500">{person.birth}</td>
+              <td className="p-4 text-gray-500">
+                {person.death && `${person.death}${person.location ? `, ${person.location}` : ""}`}
+              </td>
+              <td className="relative p-6">
+                {/* Akcje */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                  <button
+                    className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition duration-300 mr-2"
+                    onClick={() => openRelationModal(person)}
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="text-gray-600 text-lg" />
+                  </button>
+                  <button
+                    className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition duration-300"
+                    onClick={() => openEditModal(person)}
+                  >
+                    <FontAwesomeIcon icon={faPen} className="text-gray-600 text-lg" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -157,7 +174,7 @@ const PeopleTable: React.FC = () => {
         <RelationModal
           isOpen={isRelationModalOpen}
           onClose={closeModals}
-          personGender={selectedPerson.personGender}
+          personGender={selectedPerson.gender}
           id={selectedPerson._id}
           personName={`${selectedPerson.firstName} ${selectedPerson.lastName}`}
         />
@@ -168,8 +185,13 @@ const PeopleTable: React.FC = () => {
           onClose={closeModals}
         />
       )}
-       {/* Panel ustawień */}
-       <SettingsPanel isOpen={isSettingsPanelOpen} onClose={() => setIsSettingsPanelOpen(false)} />
+             {/* Panel ustawień */}
+      <SettingsPanel
+        isOpen={isSettingsPanelOpen}
+        onClose={toggleSettingsPanel}
+        showColorCoding={showColorCoding}
+        onColorCodingChange={handleColorCodingChange}
+      />
     </div>
   );
 };
