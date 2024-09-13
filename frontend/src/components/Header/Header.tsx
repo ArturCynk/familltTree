@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faTree, faFan, faList, faSearch, faCog } from '@fortawesome/free-solid-svg-icons';
-import { useNavigate } from 'react-router-dom'; // Importowanie hooka useNavigate
+import { useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const [personCount, setPersonCount] = useState<number>(0);
-  const navigate = useNavigate(); // Użycie hooka do nawigacji
+  const navigate = useNavigate();
 
   // Funkcja do pobierania liczby osób
   const fetchPersonCount = async () => {
@@ -29,7 +29,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="w-full sticky top-0">
+    <header className="w-full sticky top-0 z-50">
       {/* First Section */}
       <div className="bg-white text-gray-800 p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Drzewo genealogiczne</h1>
@@ -37,35 +37,36 @@ const Header: React.FC = () => {
           <button
             title="Widok rodzinny"
             className="p-2 rounded hover:bg-gray-200"
-            onClick={() => handleNavigate('/family-view')} // Przenosi do widoku rodzinnego
+            onClick={() => handleNavigate('/family-view')}
           >
             <FontAwesomeIcon icon={faTree} className="text-gray-800" />
           </button>
           <button
             title="Widok rodowodu"
             className="p-2 rounded hover:bg-gray-200"
-            onClick={() => handleNavigate('/ancestry-view')} // Przenosi do widoku rodowodu
+            onClick={() => handleNavigate('/ancestry-view')}
           >
             <FontAwesomeIcon icon={faUsers} className="text-gray-800" />
           </button>
           <button
             title="Widok wentylatora"
             className="p-2 rounded hover:bg-gray-200"
-            onClick={() => handleNavigate('/fan-view')} // Przenosi do widoku wentylatora
+            onClick={() => handleNavigate('/fan-view')}
           >
             <FontAwesomeIcon icon={faFan} className="text-gray-800" />
           </button>
           <button
             title="Widok listy"
             className="p-2 rounded hover:bg-gray-200"
-            onClick={() => handleNavigate('/list-view')} // Przenosi do widoku listy
+            onClick={() => handleNavigate('/list-view')}
           >
             <FontAwesomeIcon icon={faList} className="text-gray-800" />
           </button>
         </div>
       </div>
 
-      {/* Second Section */}
+      {/*
+      Second Section
       <div className="bg-[#f2f2f2] text-gray-800 p-4 flex justify-between items-center">
         <div className="text-lg font-medium">Liczba osób: {personCount}</div>
         <div className="flex items-center space-x-4">
@@ -73,7 +74,6 @@ const Header: React.FC = () => {
             <option value="1">1 Pokolenie</option>
             <option value="2">2 Pokolenia</option>
             <option value="3">3 Pokolenia</option>
-            {/* Add more options as needed */}
           </select>
           <div className="relative">
             <input
@@ -90,6 +90,7 @@ const Header: React.FC = () => {
           </button>
         </div>
       </div>
+      */}
     </header>
   );
 };

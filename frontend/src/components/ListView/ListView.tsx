@@ -1,22 +1,177 @@
-import React from 'react';
+// components/PeopleTable/PeopleTable.tsx
+import React, { useEffect, useState } from "react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilter, faSort, faSearch, faCog, faPen, faPlus } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
+import LoadingSpinner from "../Loader/LoadingSpinner";
+import ErrorScreen from "../Error/ErrorScreen";
+import RelationModal from "../RelationModal/RelationModal";
+import EditModal from '../Edit/Edit';
+import SettingsPanel from './SettingsModal'; // Importuj komponent ustawień
 
-const ListView: React.FC = () => {
-  // Tu możesz dodać stan, funkcje lub efekty, jeśli widok listy będzie miał jakieś dodatkowe funkcjonalności.
+interface Person {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  birth?: string;
+  death?: string;
+  location?: string;
+  personGender: 'male' | 'female' | 'not-binary'; // Typ wymagany
+}
+
+const PeopleTable: React.FC = () => {
+  const [people, setPeople] = useState<Person[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [isRelationModalOpen, setIsRelationModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState<boolean>(false); // Stan panelu ustawień
+
+  const fetchPeople = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('http://localhost:3001/api/person/users');
+      setPeople(response.data);
+      setError(null);
+    } catch (error) {
+      setError('Nie udało się pobrać danych');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPeople();
+  }, []);
+
+  const openRelationModal = (person: Person) => {
+    setSelectedPerson(person);
+    setIsRelationModalOpen(true);
+  };
+
+  const openEditModal = (person: Person) => {
+    setSelectedPerson(person);
+    setIsEditModalOpen(true);
+  };
+
+  const closeModals = async () => {
+    setIsRelationModalOpen(false);
+    setIsEditModalOpen(false);
+    setSelectedPerson(null);
+    await fetchPeople(); // Odświeżanie danych po zamknięciu modali
+  };
+
+  const toggleSettingsPanel = () => {
+    setIsSettingsPanelOpen(prev => !prev);
+  };
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorScreen message={error} onRetry={fetchPeople} />;
 
   return (
-    <div className="p-6 bg-white">
-      <h2 className="text-2xl font-bold mb-4">Widok listy</h2>
-      {/* Tu możesz dodać zawartość widoku listy, np. tabelę z osobami */}
-      
-      <ul className="list-disc pl-6">
-        {/* Przykładowe dane */}
-        <li>Osoba 1</li>
-        <li>Osoba 2</li>
-        <li>Osoba 3</li>
-        {/* Dodaj więcej elementów listy w zależności od potrzeb */}
-      </ul>
+    <div className="p-8 bg-gray-100 min-h-screen flex flex-col items-center">
+      {/* Header */}
+      <div className="flex justify-between items-center w-full max-w-4xl mb-6">
+        <div className="text-gray-700 text-sm">Wyświetlanie 1-{people.length} z {people.length} osób</div>
+        <div className="flex gap-4 items-center">
+          <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300">
+            <FontAwesomeIcon icon={faFilter} className="text-gray-600 text-lg" />
+          </button>
+          <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300">
+            <FontAwesomeIcon icon={faSort} className="text-gray-600 text-lg" />
+          </button>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Szukaj"
+              className="pl-10 pr-4 py-2 rounded-full shadow text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+              <FontAwesomeIcon icon={faSearch} />
+            </span>
+          </div>
+          <button
+            className="p-2 rounded-full hover:bg-gray-200 transition duration-300"
+            onClick={toggleSettingsPanel} // Otwórz lub zamknij panel ustawień po kliknięciu
+          >
+            <FontAwesomeIcon icon={faCog} className="text-gray-600 text-lg" />
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="w-full max-w-4xl bg-white rounded-lg shadow">
+        <table className="min-w-full text-sm">
+          <thead className="sticky top-16 z-50 bg-white shadow">
+            <tr>
+              <th className="p-4 text-left font-semibold text-gray-600">Imię i nazwisko</th>
+              <th className="p-4 text-left font-semibold text-gray-600">Rok urodzenia</th>
+              <th className="p-4 text-left font-semibold text-gray-600">Data śmierci</th>
+              <th className="p-4"></th> {/* Pusty nagłówek dla kolumny akcji */}
+            </tr>
+          </thead>
+          <tbody>
+            {people.map((person) => {
+              console.log(person._id); // Dodanie console.log dla id osoby
+              return (
+                <tr key={person._id} className="relative group border-b transition duration-300 ease-in-out hover:bg-gray-200">
+                  <td className="p-4 flex items-center">
+                    <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white font-semibold rounded-full mr-3">
+                      {person.firstName[0]}{person.lastName[0]}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-800">{`${person.firstName} ${person.lastName}`}</div>
+                    </div>
+                  </td>
+                  <td className="p-4 text-gray-500">{person.birth}</td>
+                  <td className="p-4 text-gray-500">
+                    {person.death && `${person.death}${person.location ? `, ${person.location}` : ""}`}
+                  </td>
+                  <td className="relative p-6">
+                    {/* Akcje */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                      <button
+                        className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition duration-300 mr-2"
+                        onClick={() => openRelationModal(person)}
+                      >
+                        <FontAwesomeIcon icon={faPlus} className="text-gray-600 text-lg" />
+                      </button>
+                      <button
+                        className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition duration-300"
+                        onClick={() => openEditModal(person)}
+                      >
+                        <FontAwesomeIcon icon={faPen} className="text-gray-600 text-lg" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modals */}
+      {isRelationModalOpen && selectedPerson && (
+        <RelationModal
+          isOpen={isRelationModalOpen}
+          onClose={closeModals}
+          personGender={selectedPerson.personGender}
+          id={selectedPerson._id}
+          personName={`${selectedPerson.firstName} ${selectedPerson.lastName}`}
+        />
+      )}
+      {isEditModalOpen && selectedPerson && (
+        <EditModal
+          id={selectedPerson._id}
+          onClose={closeModals}
+        />
+      )}
+       {/* Panel ustawień */}
+       <SettingsPanel isOpen={isSettingsPanelOpen} onClose={() => setIsSettingsPanelOpen(false)} />
     </div>
   );
 };
 
-export default ListView;
+export default PeopleTable;
