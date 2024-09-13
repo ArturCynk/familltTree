@@ -129,11 +129,54 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   };
   
 
- export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+  interface PersonData {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  }
+  
+  // Funkcja pomocnicza do pobierania danych osób na podstawie ID
+  const getPersonData = async (ids: mongoose.Types.ObjectId[]): Promise<PersonData[]> => {
+    if (ids.length === 0) return [];
+  
+    const people = await Person.find({ _id: { $in: ids } }, 'firstName lastName _id').exec();
+    return people.map(person => ({
+      _id: person._id.toString(),
+      firstName: person.firstName,
+      lastName: person.lastName
+    }));
+  };
+  
+  export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      const users = await Person.find({}, 'firstName lastName maidenName _id birthDate deathDate gender'); // Pobierz tylko pola firstName, lastName i gender
-      res.status(200).json(users);
+      // Pobieranie wszystkich użytkowników
+      const users = await Person.find({}, 'firstName lastName maidenName _id birthDate deathDate gender parents siblings spouses children').exec();
+  
+      // Pobieranie pełnych danych dla relacji
+      const result = await Promise.all(users.map(async user => {
+        const parents = await getPersonData(user.parents);
+        const siblings = await getPersonData(user.siblings);
+        const spouses = await getPersonData(user.spouses);
+        const children = await getPersonData(user.children);
+  
+        return {
+          _id: user._id.toString(),
+          firstName: user.firstName,
+          lastName: user.lastName,
+          maidenName: user.maidenName,
+          birthDate: user.birthDate,
+          deathDate: user.deathDate,
+          gender: user.gender,
+          parents,
+          siblings,
+          spouses,
+          children
+        };
+      }));
+  
+      res.status(200).json(result);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });
     }
   };
@@ -245,4 +288,6 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
     }
   };
   
+  
+
   

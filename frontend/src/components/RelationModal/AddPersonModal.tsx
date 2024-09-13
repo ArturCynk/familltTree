@@ -191,7 +191,7 @@ interface AddPersonModalProps {
                 </label>
                 <input
                   id="birthDate"
-                  type="text"
+                  type="date"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
                   className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
@@ -233,16 +233,6 @@ interface AddPersonModalProps {
                     type="text"
                     value={birthDateFrom}
                     onChange={(e) => setBirthDateFrom(e.target.value)}
-                    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="birthDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                  <input
-                    id="birthDateTo"
-                    type="text"
-                    value={birthDateTo}
-                    onChange={(e) => setBirthDateTo(e.target.value)}
                     className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                   />
                 </div>

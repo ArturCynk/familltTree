@@ -250,13 +250,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
               </div>
             )}
 
-            {formData?.birthDateType === 'freeText' && (
+            {formData?.birthDateType === 'exact' && (
               <div className="mt-4">
                 <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">Data urodzenia</label>
                 <input
                   id="birthDate"
                   name="birthDate"
-                  type="text"
+                  type="date"
                   value={formData?.birthDate || ''}
                   onChange={handleChange}
                   className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"

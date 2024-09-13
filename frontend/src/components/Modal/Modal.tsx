@@ -142,7 +142,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
               />
             </div>
             <div>
-              <label htmlFor="maidenName" className="block text-sm font-medium text-gray-700 mb-1">Nazwisko po ślubie</label>
+              <label htmlFor="maidenName" className="block text-sm font-medium text-gray-700 mb-1">Nazwisko panieńskie</label>
               <input
                 id="maidenName"
                 type="text"
@@ -236,18 +236,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
               </div>
             )}
 
-            {birthDateType === 'freeText' && (
-              <div>
-                <label htmlFor="birthPlace" className="block text-sm font-medium text-gray-700 mb-1">Opis daty urodzenia</label>
-                <input
-                  id="birthPlace"
-                  type="text"
-                  value={birthPlace}
-                  onChange={(e) => setBirthPlace(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-            )}
+          
           </div>
 
           {/* Data śmierci */}

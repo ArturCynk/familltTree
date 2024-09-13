@@ -1,4 +1,3 @@
-// components/PeopleTable/PeopleTable.tsx
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort, faSearch, faCog, faPen, faPlus } from '@fortawesome/free-solid-svg-icons';
@@ -14,10 +13,14 @@ interface Person {
   firstName: string;
   lastName: string;
   maidenName?: string;
-  birth?: string;
-  death?: string;
+  birthDate?: string;
+  deathDate?: string;
   location?: string;
   gender: 'male' | 'female' | 'not-binary';
+  parents: { _id: string; firstName?: string; lastName?: string }[];
+  siblings: { _id: string; firstName?: string; lastName?: string }[];
+  spouses: { _id: string; firstName?: string; lastName?: string }[];
+  children: { _id: string; firstName?: string; lastName?: string }[];
 }
 
 const PeopleTable: React.FC = () => {
@@ -31,6 +34,7 @@ const PeopleTable: React.FC = () => {
   const [showColorCoding, setShowColorCoding] = useState<boolean>(false); // Stan dla kolorowania
   const [showMaidenName, setShowMaidenName] = useState<boolean>(false); // Stan dla nazwiska panieńskiego
   const [showHusbandSurname, setShowHusbandSurname] = useState<boolean>(false); // Stan dla nazwiska po mężu
+  const [showRelatives, setShowRelatives] = useState<boolean>(false); // Stan dla wyświetlania najbliższych krewnych
 
   const fetchPeople = async () => {
     setLoading(true);
@@ -38,8 +42,6 @@ const PeopleTable: React.FC = () => {
       const response = await axios.get('http://localhost:3001/api/person/users');
       setPeople(response.data);
       setError(null);
-      console.log(people);
-      
     } catch (error) {
       setError('Nie udało się pobrać danych');
     } finally {
@@ -94,11 +96,34 @@ const PeopleTable: React.FC = () => {
     }
   };
 
+
+  const handleRelativesChange = (enabled: boolean) => {
+    setShowRelatives(enabled);
+  };
+
   const getDisplayName = (person: Person) => {
-    if(showMaidenName) return person.maidenName ? `${person.firstName} ${person.lastName} (z dom. ${person.maidenName})` : `${person.firstName} ${person.lastName}`;
-    if(showHusbandSurname) return person.maidenName ? `${person.firstName} ${person.maidenName} (po meżu ${person.lastName})` : `${person.firstName} ${person.lastName}`
+    if(showMaidenName) return person.maidenName ? `${person.firstName} ${person.lastName} (z d. ${person.maidenName})` : `${person.firstName} ${person.lastName}`;
+    if(showHusbandSurname) return person.maidenName ? `${person.firstName} ${person.maidenName} (${person.lastName})` : `${person.firstName} ${person.lastName}`
     if( showHusbandSurname == false && showMaidenName == false ) return `${person.firstName} ${person.lastName}`
   };
+
+
+  const renderRelations = (person: Person) => (
+    <>
+      {person.parents.length > 0 && (
+        <span>Rodzice: {person.parents.map(p => `${p.firstName} ${p.lastName}`).join(', ')} <br /></span>
+      )}
+      {person.siblings.length > 0 && (
+        <span>Rodzeństwo: {person.siblings.map(s => `${s.firstName} ${s.lastName}`).join(', ')}<br /></span>
+      )}
+      {person.spouses.length > 0 && (
+        <span>Małżonkowie: {person.spouses.map(s => `${s.firstName} ${s.lastName}`).join(', ')}<br /></span>
+      )}
+      {person.children.length > 0 && (
+        <span>Dzieci: {person.children.map(c => `${c.firstName} ${c.lastName}`).join(', ')}<br /></span>
+      )}
+    </>
+  );
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorScreen message={error} onRetry={fetchPeople} />;
@@ -157,13 +182,18 @@ const PeopleTable: React.FC = () => {
                 </div>
                 <div>
                   <div className="font-semibold text-gray-800">{getDisplayName(person)}</div>
+                  {showRelatives && (
+            <div className="px-4 py-2">
+              {renderRelations(person)}
+            </div>
+          )}
                 </div>
               </td>
-              <td className="p-4 text-gray-500">{person.birth}</td>
+              <td className="p-4 text-gray-500">{person.birthDate}</td>
               <td className="p-4 text-gray-500">
-                {person.death && `${person.death}${person.location ? `, ${person.location}` : ""}`}
+                {person.deathDate && `${person.deathDate}${person.location ? `, ${person.location}` : ""}`}
               </td>
-              <td className="relative p-6">
+              <td className="relative p-10">
                 {/* Akcje */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                   <button
@@ -212,6 +242,8 @@ const PeopleTable: React.FC = () => {
         onMaidenNameChange={handleMaidenNameChange}
         showHusbandSurname={showHusbandSurname}
         onHusbandSurnameChange={handleHusbandSurnameChange}
+        showRelatives={showRelatives}
+        onRelativesChange={handleRelativesChange}
       />
     </div>
   );

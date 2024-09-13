@@ -7,10 +7,12 @@ interface SettingsPanelProps {
   onClose: () => void;
   showColorCoding: boolean;
   onColorCodingChange: (enabled: boolean) => void;
-  showMaidenName: boolean; // Stan dla opcji wyświetlania nazwiska panieńskiego
-  onMaidenNameChange: (enabled: boolean) => void; // Funkcja do zmiany stanu wyświetlania nazwiska panieńskiego
-  showHusbandSurname: boolean; // Stan dla opcji wyświetlania nazwiska po mężu
-  onHusbandSurnameChange: (enabled: boolean) => void; // Funkcja do zmiany stanu wyświetlania nazwiska po mężu
+  showMaidenName: boolean;
+  onMaidenNameChange: (enabled: boolean) => void;
+  showHusbandSurname: boolean;
+  onHusbandSurnameChange: (enabled: boolean) => void;
+  showRelatives: boolean; // Stan dla opcji wyświetlania najbliższych krewnych
+  onRelativesChange: (enabled: boolean) => void; // Funkcja do zmiany stanu wyświetlania najbliższych krewnych
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -21,7 +23,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   showMaidenName,
   onMaidenNameChange,
   showHusbandSurname,
-  onHusbandSurnameChange
+  onHusbandSurnameChange,
+  showRelatives,
+  onRelativesChange
 }) => {
   return (
     <div
@@ -48,6 +52,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 type="checkbox"
                 id="showRelatives"
                 className="mr-2"
+                checked={showRelatives}
+                onChange={(e) => onRelativesChange(e.target.checked)}
               />
               <label htmlFor="showRelatives">Pokaż najbliższych krewnych</label>
             </div>
