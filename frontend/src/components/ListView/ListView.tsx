@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faSort, faSearch, faCog, faPen, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faFilter, faSort, faSearch, faCog, faPen, faPlus, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import LoadingSpinner from "../Loader/LoadingSpinner";
 import ErrorScreen from "../Error/ErrorScreen";
@@ -37,6 +37,9 @@ const PeopleTable: React.FC = () => {
   const [showRelatives, setShowRelatives] = useState<boolean>(false); // Stan dla wyświetlania najbliższych krewnych
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [isAlphabetFilterOpen, setIsAlphabetFilterOpen] = useState<boolean>(false); // Stan dla okna filtra alfabetu
+  const [currentPage, setCurrentPage] = useState<number>(1); // Dodano stan dla aktualnej strony
+  const [totalPages, setTotalPages] = useState<number>(1); // Dodano stan dla całkowitej liczby stron
+  const itemsPerPage = 10; // Liczba użytkowników na stronie
 
   // Funkcja do filtrowania nazwisk na podstawie wybranej litery
   const filterByLetter = (people: Person[], letter: string | null) => {
@@ -76,12 +79,16 @@ const PeopleTable: React.FC = () => {
 
   const filteredPeople = filterByLetter(people, selectedLetter);
 
-  const fetchPeople = async (letter: string | null = null) => {
+  const fetchPeople = async (letter: string | null = null, page: number = 1) => {
     setLoading(true);
     try {
-      const query = letter ? `?letter=${letter}` : '';
+      const query = `?page=${page}&limit=${itemsPerPage}${letter ? `&letter=${letter}` : ''}`;
       const response = await axios.get(`http://localhost:3001/api/person/users${query}`);
-      setPeople(response.data);
+      setPeople(response.data.users);
+      console.log(people);
+      console.log(query);
+      
+      setTotalPages(response.data.totalPages);
       setError(null);
     } catch (error) {
       setError('Nie udało się pobrać danych');
@@ -91,9 +98,14 @@ const PeopleTable: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchPeople();
-  }, []);
+    fetchPeople(selectedLetter, currentPage); // Paginacja na podstawie wybranej strony i litery
+  }, [selectedLetter, currentPage]);
 
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
   const openRelationModal = (person: Person) => {
     setSelectedPerson(person);
     setIsRelationModalOpen(true);
@@ -302,6 +314,27 @@ const PeopleTable: React.FC = () => {
         showRelatives={showRelatives}
         onRelativesChange={handleRelativesChange}
       />
+
+       {/* Pagination */}
+       <div className="flex items-center justify-center gap-4 mt-4">
+        <button
+          className={`p-2 rounded-full ${currentPage === 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-200'}`}
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <FontAwesomeIcon icon={faChevronLeft} />
+        </button>
+        <span className="text-sm text-gray-700">
+          Strona {currentPage} z {totalPages}
+        </span>
+        <button
+          className={`p-2 rounded-full ${currentPage === totalPages ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-200'}`}
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          <FontAwesomeIcon icon={faChevronRight} />
+        </button>
+      </div>
     </div>
   );
 };
