@@ -138,11 +138,12 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   const getPersonData = async (ids: mongoose.Types.ObjectId[]): Promise<PersonData[]> => {
     if (ids.length === 0) return [];
   
-    const people = await Person.find({ _id: { $in: ids } }, 'firstName lastName _id').exec();
+    const people = await Person.find({ _id: { $in: ids } }, 'firstName lastName _id gender').exec();
     return people.map(person => ({
       _id: person._id.toString(),
       firstName: person.firstName,
-      lastName: person.lastName
+      lastName: person.lastName,
+      gender: person.gender
     }));
   };
   
