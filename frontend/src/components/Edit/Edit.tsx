@@ -354,13 +354,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                 </div>
               )}
 
-              {formData?.deathDateType === 'freeText' && (
+              {formData?.deathDateType === 'exact' && (
                 <div className="mt-4">
                   <label htmlFor="deathDate" className="block text-sm font-medium text-gray-700 mb-1">Data śmierci</label>
                   <input
                     id="deathDate"
                     name="deathDate"
-                    type="text"
+                    type="date"
                     value={formData?.deathDate || ''}
                     onChange={handleChange}
                     className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"

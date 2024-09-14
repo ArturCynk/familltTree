@@ -300,14 +300,14 @@ interface AddPersonModalProps {
                 <option value="freeText">Wolny tekst</option>
               </select>
 
-              {(deathDateType !== 'between' && deathDateType !== 'fromTo') && (
+              {(deathDateType === 'exact') && (
                 <div>
                   <label htmlFor="deathDate" className="block text-sm font-medium text-gray-700 mb-1">
-                    {deathDateType === 'freeText' ? 'Data śmierci (tekst)' : 'Data śmierci'}
+                    {deathDateType === 'exact' ? 'Data śmierci' : 'Data śmierci'}
                   </label>
                   <input
                     id="deathDate"
-                    type="text"
+                    type="date"
                     value={deathDate}
                     onChange={(e) => setDeathDate(e.target.value)}
                     className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"

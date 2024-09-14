@@ -258,10 +258,10 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                 <option value="freeText">Wolny tekst</option>
               </select>
 
-              {(deathDateType !== 'between' && deathDateType !== 'fromTo') && (
+              {(deathDateType === 'exact') && (
                 <div>
                   <label htmlFor="deathDate" className="block text-sm font-medium text-gray-700 mb-1">
-                    {deathDateType === 'freeText' ? 'Opis daty śmierci' : 'Data śmierci'}
+                    {deathDateType === 'exact' ? 'Data śmierci' : 'Data śmierci'}
                   </label>
                   <input
                     id="deathDate"

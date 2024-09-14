@@ -104,7 +104,7 @@ const PeopleTable: React.FC = () => {
   const getDisplayName = (person: Person) => {
     if(showMaidenName) return person.maidenName ? `${person.firstName} ${person.lastName} (z d. ${person.maidenName})` : `${person.firstName} ${person.lastName}`;
     if(showHusbandSurname) return person.maidenName ? `${person.firstName} ${person.maidenName} (${person.lastName})` : `${person.firstName} ${person.lastName}`
-    if( showHusbandSurname == false && showMaidenName == false ) return `${person.firstName} ${person.lastName}`
+    if( showHusbandSurname === false && showMaidenName === false ) return `${person.firstName} ${person.lastName}`
   };
 
 
@@ -124,6 +124,16 @@ const PeopleTable: React.FC = () => {
       )}
     </>
   );
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "Brak daty";
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Miesiące w Date zaczynają się od 0
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+  
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorScreen message={error} onRetry={fetchPeople} />;
@@ -189,9 +199,9 @@ const PeopleTable: React.FC = () => {
           )}
                 </div>
               </td>
-              <td className="p-4 text-gray-500">{person.birthDate}</td>
+              <td className="p-4 text-gray-500">{formatDate(person.birthDate)}</td>
               <td className="p-4 text-gray-500">
-                {person.deathDate && `${person.deathDate}${person.location ? `, ${person.location}` : ""}`}
+                {person.deathDate && `${formatDate(person.deathDate)}${person.location ? `, ${person.location}` : ""}`}
               </td>
               <td className="relative p-10">
                 {/* Akcje */}
