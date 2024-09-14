@@ -135,7 +135,6 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
     lastName: string;
   }
   
-  // Funkcja pomocnicza do pobierania danych osób na podstawie ID
   const getPersonData = async (ids: mongoose.Types.ObjectId[]): Promise<PersonData[]> => {
     if (ids.length === 0) return [];
   
@@ -149,8 +148,17 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   
   export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Pobieranie wszystkich użytkowników
-      const users = await Person.find({}, 'firstName lastName maidenName _id birthDate deathDate gender parents siblings spouses children').exec();
+      // Pobierz literę do filtrowania z zapytania (query string)
+      const letter = req.query.letter as string | undefined;
+  
+      // Budowanie zapytania
+      let query = {};
+      if (letter) {
+        query = { lastName: { $regex: `^${letter}`, $options: 'i' } }; // Filtrowanie według pierwszej litery nazwiska
+      }
+  
+      // Pobieranie wszystkich użytkowników z opcjonalnym filtrowaniem
+      const users = await Person.find(query, 'firstName lastName maidenName _id birthDate deathDate gender parents siblings spouses children').exec();
   
       // Pobieranie pełnych danych dla relacji
       const result = await Promise.all(users.map(async user => {

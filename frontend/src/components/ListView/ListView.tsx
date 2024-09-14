@@ -35,11 +35,52 @@ const PeopleTable: React.FC = () => {
   const [showMaidenName, setShowMaidenName] = useState<boolean>(false); // Stan dla nazwiska panieńskiego
   const [showHusbandSurname, setShowHusbandSurname] = useState<boolean>(false); // Stan dla nazwiska po mężu
   const [showRelatives, setShowRelatives] = useState<boolean>(false); // Stan dla wyświetlania najbliższych krewnych
+  const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
+  const [isAlphabetFilterOpen, setIsAlphabetFilterOpen] = useState<boolean>(false); // Stan dla okna filtra alfabetu
 
-  const fetchPeople = async () => {
+  // Funkcja do filtrowania nazwisk na podstawie wybranej litery
+  const filterByLetter = (people: Person[], letter: string | null) => {
+    if (!letter) return people;
+    return people.filter(person => person.lastName.startsWith(letter));
+  };
+
+  const AlphabetFilter: React.FC<{ selectedLetter: string | null, onSelectLetter: (letter: string | null) => void }> = ({ selectedLetter, onSelectLetter }) => {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  
+    const handleLetterClick = (letter: string | null) => {
+      onSelectLetter(letter);
+      fetchPeople(letter); // Wywołaj fetchPeople z wybraną literą
+    };
+  
+    return (
+      <div className="flex justify-center mb-4">
+        {alphabet.map(letter => (
+          <button
+            key={letter}
+            className={`p-2 mx-1 rounded ${selectedLetter === letter ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'} hover:bg-blue-300 transition duration-300`}
+            onClick={() => handleLetterClick(letter)}
+          >
+            {letter}
+          </button>
+        ))}
+        <button
+          className={`p-2 mx-1 rounded ${selectedLetter === null ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'} hover:bg-blue-300 transition duration-300`}
+          onClick={() => handleLetterClick(null)}
+        >
+          All
+        </button>
+      </div>
+    );
+  };
+  
+
+  const filteredPeople = filterByLetter(people, selectedLetter);
+
+  const fetchPeople = async (letter: string | null = null) => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/person/users');
+      const query = letter ? `?letter=${letter}` : '';
+      const response = await axios.get(`http://localhost:3001/api/person/users${query}`);
       setPeople(response.data);
       setError(null);
     } catch (error) {
@@ -73,6 +114,11 @@ const PeopleTable: React.FC = () => {
   const toggleSettingsPanel = () => {
     setIsSettingsPanelOpen(prev => !prev);
   };
+
+  const toggleAlphabetFilter = () => {
+    setIsAlphabetFilterOpen(prev => !prev);
+  };
+
   const handleColorCodingChange = (enabled: boolean) => {
     setShowColorCoding(enabled);
   };
@@ -83,6 +129,10 @@ const PeopleTable: React.FC = () => {
 
   const handleHusbandSurnameChange = (enabled: boolean) => {
     setShowHusbandSurname(enabled);
+  };
+
+  const handleRelativesChange = (enabled: boolean) => {
+    setShowRelatives(enabled);
   };
 
   const getColorByGender = (gender: 'male' | 'female' | 'not-binary') => {
@@ -96,17 +146,11 @@ const PeopleTable: React.FC = () => {
     }
   };
 
-
-  const handleRelativesChange = (enabled: boolean) => {
-    setShowRelatives(enabled);
-  };
-
   const getDisplayName = (person: Person) => {
     if(showMaidenName) return person.maidenName ? `${person.firstName} ${person.lastName} (z d. ${person.maidenName})` : `${person.firstName} ${person.lastName}`;
-    if(showHusbandSurname) return person.maidenName ? `${person.firstName} ${person.maidenName} (${person.lastName})` : `${person.firstName} ${person.lastName}`
-    if( showHusbandSurname === false && showMaidenName === false ) return `${person.firstName} ${person.lastName}`
+    if(showHusbandSurname) return person.maidenName ? `${person.firstName} ${person.maidenName} (${person.lastName})` : `${person.firstName} ${person.lastName}`;
+    return `${person.firstName} ${person.lastName}`;
   };
-
 
   const renderRelations = (person: Person) => (
     <>
@@ -126,14 +170,13 @@ const PeopleTable: React.FC = () => {
   );
 
   const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "Brak daty";
+    if (!dateString) return "";
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Miesiące w Date zaczynają się od 0
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   };
-  
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorScreen message={error} onRetry={fetchPeople} />;
@@ -144,30 +187,34 @@ const PeopleTable: React.FC = () => {
       <div className="flex justify-between items-center w-full max-w-4xl mb-6">
         <div className="text-gray-700 text-sm">Wyświetlanie 1-{people.length} z {people.length} osób</div>
         <div className="flex gap-4 items-center">
-          <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300">
+          <button
+            className="p-2 rounded-full hover:bg-gray-200 transition duration-300"
+            onClick={toggleAlphabetFilter} // Dodano otwieranie filtra alfabetu
+          >
             <FontAwesomeIcon icon={faFilter} className="text-gray-600 text-lg" />
           </button>
           <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300">
             <FontAwesomeIcon icon={faSort} className="text-gray-600 text-lg" />
           </button>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Szukaj"
-              className="pl-10 pr-4 py-2 rounded-full shadow text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-              <FontAwesomeIcon icon={faSearch} />
-            </span>
-          </div>
-          <button
-            className="p-2 rounded-full hover:bg-gray-200 transition duration-300"
-            onClick={toggleSettingsPanel}
-          >
+          <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300">
+            <FontAwesomeIcon icon={faSearch} className="text-gray-600 text-lg" />
+          </button>
+          <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300" onClick={toggleSettingsPanel}>
             <FontAwesomeIcon icon={faCog} className="text-gray-600 text-lg" />
           </button>
         </div>
       </div>
+
+      {/* Alphabet Filter Panel */}
+      {isAlphabetFilterOpen && (
+  <div className="mb-2">
+    <div className=" p-6 max-w- w-full">
+      <AlphabetFilter selectedLetter={selectedLetter} onSelectLetter={setSelectedLetter} />
+      
+    </div>
+  </div>
+)}
+
 
       {/* Table */}
       <div className="w-full max-w-4xl bg-white rounded-lg shadow">
@@ -181,7 +228,7 @@ const PeopleTable: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {people.map((person) => (
+          {people.map(person => (
               <tr
               key={person._id}
               className={`relative group border-b transition duration-300 ease-in-out hover:bg-gray-200 ${showColorCoding ? getColorByGender(person.gender) : ''}`}
