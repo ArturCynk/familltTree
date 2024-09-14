@@ -148,22 +148,32 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   
   export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Pobierz literę do filtrowania z zapytania (query string)
+      // Pobranie wartości z query string (filtrowanie według litery lub pełnego imienia i nazwiska)
+      const searchQuery = req.query.searchQuery as string | undefined;
       const letter = req.query.letter as string | undefined;
       const page = parseInt(req.query.page as string) || 1; // Strona (domyślnie 1)
       const limit = parseInt(req.query.limit as string) || 10; // Liczba użytkowników na stronie (domyślnie 10)
   
       // Budowanie zapytania
       let query = {};
-      if (letter) {
-        query = { lastName: { $regex: `^${letter}`, $options: 'i' } }; // Filtrowanie według pierwszej litery nazwiska
+      
+      if (searchQuery) {
+        // Szukanie po pełnym imieniu i nazwisku (łączenie firstName i lastName)
+        query = {
+          $or: [
+            { $expr: { $regexMatch: { input: { $concat: ['$firstName', ' ', '$lastName'] }, regex: searchQuery, options: 'i' } } }
+          ]
+        };
+      } else if (letter) {
+        // Filtrowanie według pierwszej litery nazwiska
+        query = { lastName: { $regex: `^${letter}`, $options: 'i' } };
       }
   
       // Pobieranie użytkowników z paginacją
       const users = await Person.find(query)
         .skip((page - 1) * limit) // Przeskocz odpowiednią liczbę wyników
         .limit(limit) // Ogranicz liczbę wyników do limitu
-        .select('firstName lastName maidenName _id birthDate deathDate gender parents siblings spouses children')
+        .select('firstName lastName maidenName _id birthDate deathDate gender parents siblings spouses children') // Wybierz pola do zwrócenia
         .exec();
   
       // Pobieranie całkowitej liczby użytkowników (do wyliczenia ilości stron)
@@ -203,6 +213,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });
     }
   };
+  
   
 
   export const getUser = async(req: Request, res: Response): Promise<void> => {

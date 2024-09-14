@@ -40,12 +40,12 @@ const PeopleTable: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1); // Dodano stan dla aktualnej strony
   const [totalPages, setTotalPages] = useState<number>(1); // Dodano stan dla całkowitej liczby stron
   const itemsPerPage = 10; // Liczba użytkowników na stronie
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false); // Stan do kontrolowania widoczności inputa
+  const [searchQuery, setSearchQuery] = useState<string>(''); // Stan dla wartości wyszukiwania
+  const [totalUsers, setTotalUsers] = useState<string>(''); 
 
-  // Funkcja do filtrowania nazwisk na podstawie wybranej litery
-  const filterByLetter = (people: Person[], letter: string | null) => {
-    if (!letter) return people;
-    return people.filter(person => person.lastName.startsWith(letter));
-  };
+
+
 
   const AlphabetFilter: React.FC<{ selectedLetter: string | null, onSelectLetter: (letter: string | null) => void }> = ({ selectedLetter, onSelectLetter }) => {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -76,18 +76,13 @@ const PeopleTable: React.FC = () => {
     );
   };
   
-
-  const filteredPeople = filterByLetter(people, selectedLetter);
-
-  const fetchPeople = async (letter: string | null = null, page: number = 1) => {
+  const fetchPeople = async (letter: string | null = null, page: number = 1, searchQuery: string = '') => {
     setLoading(true);
     try {
-      const query = `?page=${page}&limit=${itemsPerPage}${letter ? `&letter=${letter}` : ''}`;
+      const query = `?page=${page}&limit=${itemsPerPage}${letter ? `&letter=${letter}` : ''}${searchQuery !== '' ? `&searchQuery=${searchQuery}` : ''}`;
       const response = await axios.get(`http://localhost:3001/api/person/users${query}`);
       setPeople(response.data.users);
-      console.log(people);
-      console.log(query);
-      
+      setTotalUsers(response.data.totalUsers);
       setTotalPages(response.data.totalPages);
       setError(null);
     } catch (error) {
@@ -96,10 +91,13 @@ const PeopleTable: React.FC = () => {
       setLoading(false);
     }
   };
-
+  
+  // UseEffect tylko dla paginacji i wybranej litery
   useEffect(() => {
     fetchPeople(selectedLetter, currentPage); // Paginacja na podstawie wybranej strony i litery
   }, [selectedLetter, currentPage]);
+  
+  
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -197,7 +195,7 @@ const PeopleTable: React.FC = () => {
     <div className="p-8 bg-gray-100 min-h-screen flex flex-col items-center">
       {/* Header */}
       <div className="flex justify-between items-center w-full max-w-4xl mb-6">
-        <div className="text-gray-700 text-sm">Wyświetlanie 1-{people.length} z {people.length} osób</div>
+        <div className="text-gray-700 text-sm">Wyświetlanie 1-{people.length} z {totalUsers} osób</div>
         <div className="flex gap-4 items-center">
           <button
             className="p-2 rounded-full hover:bg-gray-200 transition duration-300"
@@ -205,12 +203,32 @@ const PeopleTable: React.FC = () => {
           >
             <FontAwesomeIcon icon={faFilter} className="text-gray-600 text-lg" />
           </button>
-          <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300">
-            <FontAwesomeIcon icon={faSort} className="text-gray-600 text-lg" />
-          </button>
-          <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300">
+          <button
+            className="p-2 rounded-full hover:bg-gray-200 transition duration-300"
+            onClick={() => setIsSearchOpen(prev => !prev)} // Przełącz widoczność inputa
+          >
             <FontAwesomeIcon icon={faSearch} className="text-gray-600 text-lg" />
           </button>
+
+          {/* Animowany input szukania */}
+          <div className={`relative overflow-hidden transition-all duration-300 ${isSearchOpen ? 'w-64' : 'w-0'}`}>
+          <input
+            type="text"
+            className="relative right-4 ml-4 p-2 pl-8 pr-4 border border-gray-300 rounded-full shadow transition-all duration-300"
+            placeholder="Szukaj..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)} // Aktualizacja wartości inputa
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                // Wywołanie funkcji fetchPeople tylko po wciśnięciu Enter
+                fetchPeople(null, 1, searchQuery); // 1 to pierwsza strona wyników
+              }
+            }}
+            style={{ width: isSearchOpen ? '100%' : '0' }} // Stylizacja width, gdy input otwarty
+          />
+
+
+          </div>
           <button className="p-2 rounded-full hover:bg-gray-200 transition duration-300" onClick={toggleSettingsPanel}>
             <FontAwesomeIcon icon={faCog} className="text-gray-600 text-lg" />
           </button>
