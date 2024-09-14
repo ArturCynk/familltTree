@@ -10,7 +10,8 @@ import AlphabetFilter from './AlphabetFilter';
 import usePeople from './usePeople'; 
 import {getDisplayName, renderRelations, formatDate } from './PersonUtils';
 import TableRow from "./TableRow";
-import { Person } from "./Types"; 
+import { Person } from './Types'; 
+import ProfileCard from "./ProfileCard";
 
 const PeopleTable: React.FC = () => {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -26,6 +27,20 @@ const PeopleTable: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+
+// Funkcja do otwierania panelu
+const openSidebar = (person: Person) => {
+  setSelectedPerson(person);
+  setIsSidebarOpen(p => !p);
+};
+
+// Funkcja do zamykania panelu
+const closeSidebar = () => {
+  setIsSidebarOpen(false);
+  setSelectedPerson(null);
+};
+
 
   const { people, loading, error, totalPages, totalUsers, refetch } = usePeople(selectedLetter, currentPage, searchQuery);
 
@@ -76,6 +91,12 @@ const PeopleTable: React.FC = () => {
     setShowRelatives(enabled);
   };
 
+  
+  const handleSearchEnter = () => {
+    // Refetch data with the current search query
+    refetch();
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorScreen message={error} onRetry={() => {}} />;
 
@@ -89,7 +110,7 @@ const PeopleTable: React.FC = () => {
         isSearchOpen={isSearchOpen}
         searchQuery={searchQuery}
         onSearchChange={(e) => setSearchQuery(e.target.value)}
-        onSearchEnter={() => {}}
+        onSearchEnter={handleSearchEnter}  // Przekaż funkcję obsługi wyszukiwania
       />
 
       {/* Alphabet Filter Panel */}
@@ -115,20 +136,32 @@ const PeopleTable: React.FC = () => {
           <tbody>
           {people.map(person => (
             <TableRow
-              key={person._id}
-              person={person}
-              showColorCoding={showColorCoding}
-              showRelatives={showRelatives}
-              getDisplayName={(p) => getDisplayName(p, showMaidenName, showHusbandSurname)}
-              renderRelations={renderRelations}
-              formatDate={formatDate}
-              onOpenRelationModal={openRelationModal}
-              onOpenEditModal={openEditModal}
-            />
+  key={person._id}
+  person={person}
+  showColorCoding={showColorCoding}
+  showRelatives={showRelatives}
+  getDisplayName={(p) => getDisplayName(p, showMaidenName, showHusbandSurname)}
+  renderRelations={renderRelations}
+  formatDate={formatDate}
+  onOpenRelationModal={openRelationModal}
+  onOpenEditModal={openEditModal}
+  onClickRow={() => openSidebar(person)}  // Dodaj tę linię
+/>
+
           ))}
           </tbody>
         </table>
       </div>
+
+     {/* Sidebar Panel */}
+        {selectedPerson && (
+          <ProfileCard 
+            isSidebarOpen={isSidebarOpen} 
+            closeSidebar={closeSidebar} 
+            selectedPerson={selectedPerson}
+            onOpenRelationModal={openRelationModal}
+            onOpenEditModal={openEditModal} />
+        )}
 
       {/* Modals */}
       {isRelationModalOpen && selectedPerson && (

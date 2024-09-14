@@ -283,6 +283,11 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   
         if (existingPerson) {
           switch (relationType) {
+            case 'Father':
+            case 'Mother':
+              savedPerson.children.push(id); // Dodaj rodzica do nowej osoby
+              existingPerson.parents.push(savedPerson._id); // Dodaj dziecko do istniejącej osoby
+              break;
             case 'Sibling':
               // Dodaj nową osobę jako rodzeństwo do istniejącej osoby
               if (!existingPerson.siblings.includes(savedPerson._id)) {
@@ -307,7 +312,15 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
               savedPerson.siblings.push(existingPerson._id)
   
               break;
-            // Inne przypadki relacji...
+            case 'Daughter':
+                case 'Son':
+                  savedPerson.parents.push(id); // Dodaj dziecko do nowej osoby
+                  existingPerson.children.push(savedPerson._id); // Dodaj rodzica do istniejącej osoby
+                  break;
+              case 'Partner':
+                  savedPerson.spouses.push(id); // Dodaj partnera do nowej osoby
+                  existingPerson.spouses.push(savedPerson._id); // Dodaj partnera do istniejącej osoby
+                  break;
             default:
               return res.status(400).json({ message: 'Nieznany typ relacji.' });
           }

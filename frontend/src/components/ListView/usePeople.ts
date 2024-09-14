@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Person } from './Types';
 
-const usePeople = (letter: string | null, page: number, searchQuery: string) => {
+const usePeople = (letter: string | null, page: number, searchQuery: string | null) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ const usePeople = (letter: string | null, page: number, searchQuery: string) => 
   
   useEffect(() => {
     fetchPeople();
-  }, [letter, page, searchQuery]);
+  }, [letter, page]);
 
   return { people, loading, error, totalPages, totalUsers, refetch: fetchPeople };
 };

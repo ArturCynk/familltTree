@@ -26,6 +26,7 @@ interface TableRowProps {
   formatDate: (dateString: string | undefined) => string;
   onOpenRelationModal: (person: Person) => void;
   onOpenEditModal: (person: Person) => void;
+  onClickRow: () => void;
 }
 
 const TableRow: React.FC<TableRowProps> = ({
@@ -37,11 +38,13 @@ const TableRow: React.FC<TableRowProps> = ({
   formatDate,
   onOpenRelationModal,
   onOpenEditModal,
+  onClickRow,
 }) => {
   return (
     <tr
       key={person._id}
       className={`relative group border-b transition duration-300 ease-in-out hover:bg-gray-200 ${showColorCoding ? getColorByGender(person.gender) : ''}`}
+      onClick={onClickRow} 
     >
       <td className="p-4 flex items-center">
         <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white font-semibold rounded-full mr-3">

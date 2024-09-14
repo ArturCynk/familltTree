@@ -32,7 +32,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       className={`fixed top-16 right-0 h-[calc(100%-4rem)] w-80 bg-white shadow-lg transition-transform transform ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
-      style={{ zIndex: 1000 }}
+      style={{ zIndex: 500 }}
     >
       <div className="flex flex-col h-full">
         <div className="flex justify-between items-center p-4 border-b">
