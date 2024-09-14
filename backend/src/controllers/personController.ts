@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import mongoose, { Types } from 'mongoose';
+import { SortOrder } from 'mongoose'; // Import if you are using Mongoose
 
 import Person, { IPerson } from '../models/Person';
 
@@ -148,28 +149,31 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   
   export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Pobierz literę do filtrowania z zapytania (query string)
       const letter = req.query.letter as string | undefined;
-      const page = parseInt(req.query.page as string) || 1; // Strona (domyślnie 1)
-      const limit = parseInt(req.query.limit as string) || 10; // Liczba użytkowników na stronie (domyślnie 10)
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const sortBy = req.query.sortBy as string || ''; 
+      const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1;
   
-      // Budowanie zapytania
       let query = {};
       if (letter) {
-        query = { lastName: { $regex: `^${letter}`, $options: 'i' } }; // Filtrowanie według pierwszej litery nazwiska
+        query = { lastName: { $regex: `^${letter}`, $options: 'i' } };
       }
   
-      // Pobieranie użytkowników z paginacją
+      const sortOption: { [key: string]: SortOrder } = {};
+      if (sortBy) {
+        sortOption[sortBy] = sortOrder;
+      }
+  
       const users = await Person.find(query)
-        .skip((page - 1) * limit) // Przeskocz odpowiednią liczbę wyników
-        .limit(limit) // Ogranicz liczbę wyników do limitu
-        .select('firstName lastName maidenName _id birthDate deathDate gender parents siblings spouses children')
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .sort(sortOption)
+        .select('firstName lastName maidenName _id birthDate deathDate gender location parents siblings spouses children')
         .exec();
   
-      // Pobieranie całkowitej liczby użytkowników (do wyliczenia ilości stron)
       const totalUsers = await Person.countDocuments(query);
   
-      // Pobieranie pełnych danych dla relacji
       const result = await Promise.all(users.map(async user => {
         const parents = await getPersonData(user.parents);
         const siblings = await getPersonData(user.siblings);
@@ -191,7 +195,6 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         };
       }));
   
-      // Zwracamy użytkowników, całkowitą liczbę użytkowników i aktualną stronę
       res.status(200).json({
         users: result,
         totalUsers,
