@@ -26,10 +26,10 @@ const App: React.FC = () => {
   const fetchPersons = async () => {
     setIsLoading(true); // Rozpocznij ładowanie
     try {
-      const response = await axios.get('http://localhost:3001/api/person/users');
-      const personsData: Person[] = response.data;
+      const response = await axios.get('http://localhost:3001/api/person//count');
+      const personsData: Person[] = response.data;      
 
-      if (personsData.length === 0) {
+      if (response.data.count === 0) {
         setIsModalOpen(true);
       } else {
         setPersons(personsData);

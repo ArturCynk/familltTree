@@ -248,7 +248,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         deathDateFrom,
         deathDateTo,
         relationType,
-        id // ID istniejącej osoby, z którą dodajemy relację
+        id // ID istniejącej osoby, do której dodajemy relację
       } = req.body;
   
       // Utwórz nową osobę z danymi z żądania
@@ -282,26 +282,32 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         const existingPerson = await Person.findById(id).exec();
   
         if (existingPerson) {
-          // Dodaj relację w zależności od typu
           switch (relationType) {
-            case 'Father':
-            case 'Mother':
-              savedPerson.children.push(id); // Dodaj rodzica do nowej osoby
-              existingPerson.parents.push(savedPerson._id); // Dodaj dziecko do istniejącej osoby
-              break;
             case 'Sibling':
-              savedPerson.siblings.push(id); // Dodaj rodzeństwo do nowej osoby
-              existingPerson.siblings.push(savedPerson._id); // Dodaj rodzeństwo do istniejącej osoby
+              // Dodaj nową osobę jako rodzeństwo do istniejącej osoby
+              if (!existingPerson.siblings.includes(savedPerson._id)) {
+                existingPerson.siblings.push(savedPerson._id);
+              }
+  
+              // Uaktualnij rodzeństwo wśród istniejących rodzeństw
+              for (const siblingId of existingPerson.siblings) {
+                if (siblingId.toString() !== savedPerson._id.toString()) {
+                  const sibling = await Person.findById(siblingId).exec();
+                  if (sibling && !sibling.siblings.includes(savedPerson._id)) {
+                    sibling.siblings.push(savedPerson._id);
+                    await sibling.save();
+                  }
+                }
+              }
+  
+              // Ustaw rodzeństwo dla nowo dodanej osoby
+              savedPerson.siblings = [...existingPerson.siblings.filter(
+                (siblingId) => siblingId.toString() !== savedPerson._id.toString()
+              )];
+              savedPerson.siblings.push(existingPerson._id)
+  
               break;
-            case 'Daughter':
-            case 'Son':
-              savedPerson.parents.push(id); // Dodaj dziecko do nowej osoby
-              existingPerson.children.push(savedPerson._id); // Dodaj rodzica do istniejącej osoby
-              break;
-            case 'Partner':
-              savedPerson.spouses.push(id); // Dodaj partnera do nowej osoby
-              existingPerson.spouses.push(savedPerson._id); // Dodaj partnera do istniejącej osoby
-              break;
+            // Inne przypadki relacji...
             default:
               return res.status(400).json({ message: 'Nieznany typ relacji.' });
           }
@@ -322,7 +328,4 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       return res.status(500).json({ message: 'Wewnętrzny błąd serwera' });
     }
   };
-  
-  
-
   

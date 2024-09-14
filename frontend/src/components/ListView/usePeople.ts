@@ -24,12 +24,13 @@ const usePeople = (letter: string | null, page: number, searchQuery: string) => 
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     fetchPeople();
   }, [letter, page, searchQuery]);
 
-  return { people, loading, error, totalPages, totalUsers };
+  return { people, loading, error, totalPages, totalUsers, refetch: fetchPeople };
 };
+
 
 export default usePeople;

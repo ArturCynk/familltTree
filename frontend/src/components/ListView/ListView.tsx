@@ -27,7 +27,7 @@ const PeopleTable: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const { people, loading, error, totalPages, totalUsers } = usePeople(selectedLetter, currentPage, searchQuery);
+  const { people, loading, error, totalPages, totalUsers, refetch } = usePeople(selectedLetter, currentPage, searchQuery);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -49,6 +49,7 @@ const PeopleTable: React.FC = () => {
     setIsRelationModalOpen(false);
     setIsEditModalOpen(false);
     setSelectedPerson(null);
+    await refetch();
   };
 
   const toggleSettingsPanel = () => {
