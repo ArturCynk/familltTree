@@ -652,3 +652,57 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       });
     }
   };
+
+  export const addRelation = async (req: Request, res: Response) => {
+    const { personId, relatedPersonId, relationType } = req.body;
+  
+    if (!personId || !relatedPersonId || !relationType) {
+      return res.status(400).json({ message: 'Brak wymaganych pól' });
+    }
+  
+    // Validate relation type
+    const validRelationTypes = ['parent', 'sibling', 'spouse', 'child'];
+    if (!validRelationTypes.includes(relationType)) {
+      return res.status(400).json({ message: 'Nieprawidłowy typ relacji' });
+    }
+  
+    try {
+      const person = await Person.findById(personId);
+      const relatedPerson = await Person.findById(relatedPersonId);
+  
+      if (!person || !relatedPerson) {
+        return res.status(404).json({ message: 'Osoba nie znaleziona' });
+      }
+  
+      // Add relation
+      switch (relationType) {
+        case 'parent':
+          if (!person.parents.includes(relatedPersonId)) person.parents.push(relatedPersonId);
+          if (!relatedPerson.children.includes(personId)) relatedPerson.children.push(personId);
+          break;
+        case 'sibling':
+          if (!person.siblings.includes(relatedPersonId)) person.siblings.push(relatedPersonId);
+          if (!relatedPerson.siblings.includes(personId)) relatedPerson.siblings.push(personId);
+          break;
+        case 'spouse':
+          if (!person.spouses.includes(relatedPersonId)) person.spouses.push(relatedPersonId);
+          if (!relatedPerson.spouses.includes(personId)) relatedPerson.spouses.push(personId);
+          break;
+        case 'child':
+          if (!person.children.includes(relatedPersonId)) person.children.push(relatedPersonId);
+          if (!relatedPerson.parents.includes(personId)) relatedPerson.parents.push(personId);
+          break;
+        default:
+          return res.status(400).json({ message: 'Nieprawidłowy typ relacji' });
+      }
+  
+      await person.save();
+      await relatedPerson.save();
+  
+      res.status(200).json({ message: 'Relacja została pomyślnie dodana' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Błąd serwera' });
+    }
+  };
+  
