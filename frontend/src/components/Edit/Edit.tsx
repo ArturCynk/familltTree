@@ -231,7 +231,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                     id="birthDateFrom"
                     name="birthDateFrom"
                     type="date"
-                    value={formData?.birthDateFrom || ''}
+                    value={formData.birthDateFrom ? new Date(formData.birthDateFrom).toISOString().substring(0, 10) : ''}
                     onChange={handleChange}
                     className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                   />
@@ -242,7 +242,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                     id="birthDateTo"
                     name="birthDateTo"
                     type="date"
-                    value={formData?.birthDateTo || ''}
+                    value={formData.birthDateTo ? new Date(formData.birthDateTo).toISOString().substring(0, 10) : ''}
                     onChange={handleChange}
                     className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                   />
@@ -257,7 +257,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                   id="birthDate"
                   name="birthDate"
                   type="date"
-                  value={formData?.birthDate || ''}
+                  value={formData.birthDate ? new Date(formData.birthDate).toISOString().substring(0, 10) : ''}
                   onChange={handleChange}
                   className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                 />
@@ -335,7 +335,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                       id="deathDateFrom"
                       name="deathDateFrom"
                       type="date"
-                      value={formData?.deathDateFrom || ''}
+                      value={formData.deathDateFrom ? new Date(formData.deathDateFrom).toISOString().substring(0, 10) : ''}
                       onChange={handleChange}
                       className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                     />
@@ -346,7 +346,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                       id="deathDateTo"
                       name="deathDateTo"
                       type="date"
-                      value={formData?.deathDateTo || ''}
+                      value={formData.deathDateTo ? new Date(formData.deathDateTo).toISOString().substring(0, 10) : ''}
                       onChange={handleChange}
                       className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                     />
@@ -361,7 +361,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                     id="deathDate"
                     name="deathDate"
                     type="date"
-                    value={formData?.deathDate || ''}
+                    value={formData.deathDate ? new Date(formData.deathDate).toISOString().substring(0, 10) : ''}
                     onChange={handleChange}
                     className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                   />
