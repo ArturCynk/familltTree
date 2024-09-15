@@ -160,7 +160,8 @@ const closeSidebar = () => {
             closeSidebar={closeSidebar} 
             selectedPerson={selectedPerson}
             onOpenRelationModal={openRelationModal}
-            onOpenEditModal={openEditModal} />
+            onOpenEditModal={openEditModal}
+            refetch={refetch} />
         )}
 
       {/* Modals */}

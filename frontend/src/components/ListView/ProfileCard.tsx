@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faBirthdayCake, faCross } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { Person } from './Types';
 import { formatDate } from './PersonUtils';
+import { toast } from 'react-toastify';
 
 const calculateAge = (birthDate: Date, deathDate: Date): number => {
   const birthYear = birthDate.getFullYear();
@@ -27,13 +29,13 @@ interface FamilyMember {
   gender?: 'male' | 'female' | 'not-binary';
 }
 
-
 interface ProfileSidebarProps {
   isSidebarOpen: boolean;
   closeSidebar: () => void;
   selectedPerson: Person | null;
   onOpenRelationModal: (person: Person) => void;
   onOpenEditModal: (person: Person) => void;
+  refetch: () => void;
 }
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ 
@@ -42,13 +44,33 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   selectedPerson,
   onOpenRelationModal,
   onOpenEditModal,
+  refetch
 }) => {
   const navigate = useNavigate();
   const [showFamily, setShowFamily] = useState(false);
   const [showFacts, setShowFacts] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Modal for deletion confirmation
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = () => {
-    alert("Czy na pewno chcesz usunąć tę osobę?");
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedPerson && selectedPerson._id) {
+      setIsDeleting(true);
+      try {
+        let response  = await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson._id}`);
+        setIsDeleteModalOpen(false);
+        setIsDeleting(false);
+        toast(response.data.message);
+        refetch();
+        closeSidebar()
+      } catch (error) {
+        setIsDeleting(false);
+        toast('Błąd podczas usuwania osoby.');
+      }
+    }
   };
 
   const handleDeleteRelationship = () => {
@@ -58,28 +80,40 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   const handleProfileClick = (id: string) => {
     navigate(`/profile/${id}`);
   };
+  
   const renderFamilyMembers = (members: FamilyMember[], label: string) => (
     <div className="mt-4">
       {members.length > 0 ? (
         <>
           <h4 className="text-lg font-semibold text-gray-800 mb-2">{label}</h4>
           <ul className="space-y-2">
-            {members.map(member => (
-              <li key={member._id} className="flex items-center space-x-3 p-2 bg-gray-100 rounded-md shadow-sm hover:bg-gray-200 transition-colors">
+            {members.map((member) => (
+              <li
+                key={member._id}
+                className="flex items-center space-x-3 p-2 bg-gray-100 rounded-md shadow-sm hover:bg-gray-200 transition-colors"
+              >
                 <FontAwesomeIcon
                   icon={faUser}
-                  className={`text-2xl ${member.gender === 'female' ? 'text-pink-500' : member.gender === 'male' ? 'text-blue-500' : 'text-gray-500'}`}
+                  className={`text-2xl cursor-pointer ${
+                    member.gender === "female"
+                      ? "text-pink-500"
+                      : member.gender === "male"
+                      ? "text-blue-500"
+                      : "text-gray-500"
+                  }`}
+                  aria-label={`Przejdź do profilu ${member.firstName} ${member.lastName}`}
                 />
-                <span className="text-gray-700 font-medium">{member.firstName} {member.lastName}</span>
+                <span className="text-gray-700 font-medium">
+                  {member.firstName} {member.lastName}
+                </span>
               </li>
             ))}
           </ul>
         </>
-      ) : (
-        <></>
-      )}
+      ) : null}
     </div>
   );
+  
 
   const ProfileCard: React.FC<{ person: Person }> = ({ person }) => {
     const birthDate = person.birthDate ? new Date(person.birthDate) : null;
@@ -154,15 +188,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           </button>
         </div>
 
+        {/* Stylizowane przyciski "Pokaż fakty" i "Pokaż najbliższą rodzinę" */}
         <div className="mt-10">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-            <button
-              className="text-blue-600 hover:underline"
-              onClick={() => setShowFamily(!showFamily)}
-            >
-              {showFamily ? 'Ukryj najbliższą rodzinę' : 'Pokaż najbliższą rodzinę'}
-            </button>
-          </h3>
+          <button
+            className={`w-full py-2 text-white font-semibold bg-gradient-to-r from-blue-500 to-teal-500 rounded-md shadow-md hover:from-teal-500 hover:to-blue-500 transition-all focus:outline-none`}
+            onClick={() => setShowFamily(!showFamily)}
+          >
+            {showFamily ? 'Ukryj najbliższą rodzinę' : 'Pokaż najbliższą rodzinę'}
+          </button>
           {showFamily && (
             <div className="mt-4 text-gray-600">
               {renderFamilyMembers(person.parents, 'Rodzice')}
@@ -171,20 +204,24 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               {renderFamilyMembers(person.children, 'Dzieci')}
             </div>
           )}
+        </div>
 
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6">
-            <button
-              className="text-blue-600 hover:underline"
-              onClick={() => setShowFacts(!showFacts)}
-            >
-              {showFacts ? 'Ukryj fakty' : 'Pokaż fakty'}
-            </button>
-          </h3>
+        <div className="mt-6">
+          <button
+            className={`w-full py-2 text-white font-semibold bg-gradient-to-r from-purple-500 to-pink-500 rounded-md shadow-md hover:from-pink-500 hover:to-purple-500 transition-all focus:outline-none`}
+            onClick={() => setShowFacts(!showFacts)}
+          >
+            {showFacts ? 'Ukryj fakty' : 'Pokaż fakty'}
+          </button>
           {showFacts && (
             <div className="mt-4 text-gray-600">
-              <p>Data urodzenia: {birthDate ? formatDate(person.birthDate) : 'Brak danych'}</p>
-              <p>Data śmierci: {deathDate ? formatDate(person.deathDate) : 'Brak danych'}</p>
-              <p>Wiek: {birthDate && deathDate ? calculateAge(birthDate, deathDate) : 'Nieznany'}</p>
+              <ul>
+                {/* {person.facts.map((fact, index) => (
+                  <li key={index} className="mb-2">
+                    {fact}
+                  </li>
+                ))} */}
+              </ul>
             </div>
           )}
         </div>
@@ -193,19 +230,44 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   };
 
   return (
-    <div className={`fixed top-16 left-0 h-full bg-white shadow-lg transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-80 p-6 z-50`}>
-      <button
-        className="absolute top-2 right-2 text-gray-600"
-        onClick={closeSidebar}
-      >
-        <FontAwesomeIcon icon={faTimes} className="text-2xl" />
-      </button>
-      {selectedPerson ? (
-        <ProfileCard person={selectedPerson} />
-      ) : (
-        <div className="text-center text-gray-500">Wybierz osobę, aby wyświetlić szczegóły</div>
+    <>
+      {isSidebarOpen && selectedPerson && (
+        <div className="fixed top-16 left-0 w-80 h-full bg-white shadow-lg z-50 p-6 overflow-auto">
+          <button
+            className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
+            onClick={closeSidebar}
+          >
+            <FontAwesomeIcon icon={faTimes} size="2x" />
+          </button>
+
+          <ProfileCard person={selectedPerson} />
+
+          {/* Delete Confirmation Modal */}
+          {isDeleteModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Czy na pewno chcesz usunąć osobę?</h3>
+                <div className="flex justify-end space-x-4">
+                  <button
+                    className="px-4 py-2 bg-red-600 text-white font-semibold rounded-md shadow-sm hover:bg-red-700 focus:outline-none"
+                    onClick={confirmDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Usuwanie...' : 'Usuń'}
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-md shadow-sm hover:bg-gray-400 focus:outline-none"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                  >
+                    Anuluj
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 };
 
