@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faBirthdayCake, faCross } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +38,13 @@ interface ProfileSidebarProps {
   refetch: () => void;
 }
 
+interface IEvent {
+  type: 'Narodziny' | 'Śmierć' | 'Ślub'; // Event type
+  who: string; // Description of the person(s) involved
+  date: string; // Date of the event
+  description: string; // Description of the event
+}
+
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ 
   isSidebarOpen, 
   closeSidebar, 
@@ -51,6 +58,74 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   const [showFacts, setShowFacts] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Modal for deletion confirmation
   const [isDeleting, setIsDeleting] = useState(false);
+  const [facts, setFacts] = useState<IEvent[]>([]);
+
+  useEffect(() => {
+    const fetchFacts = async () => {
+      if (selectedPerson && selectedPerson._id) {
+        try {
+          const response = await axios.get(`http://localhost:3001/api/person/users/fact/${selectedPerson._id}`);
+          setFacts(response.data);
+        } catch (error) {
+          console.error('Error fetching facts:', error);
+        }
+      }
+    };
+
+    fetchFacts();
+  }, [selectedPerson]);
+
+  // Other functions...
+
+  const renderFacts = (events: IEvent[]) => (
+    <div className="mt-8 text-gray-900">
+      <ul className="space-y-8">
+        {events.map((event, index) => (
+          <li
+            key={index}
+            className="p-8 bg-white shadow-lg rounded-xl border border-gray-200 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 grid grid-cols-5 gap-6"
+          >
+            {/* Lewa część: Rok (cyfry lub "Brak" pod sobą) */}
+            <div className="col-span-1 flex items-center justify-center">
+              {event.date ? (
+                <span className="text-gray-900 flex flex-col items-center">
+                  {new Date(event.date).getFullYear().toString().split("").map((digit, i) => (
+                    <span key={i}>{digit}</span>
+                  ))}
+                </span>
+              ) : (
+                <span className="text-gray-500 flex flex-col items-center">
+                  {"Brak".split("").map((letter, i) => (
+                    <span key={i}>{letter}</span>
+                  ))}
+                </span>
+              )}
+            </div>
+  
+            {/* Prawa część: Typ, Osoba, Data */}
+            <div className="col-span-4">
+              <h4 className="mb-4">{event.type}</h4>
+              {/* Sekcja osoby z elipsą na długie teksty */}
+              <div className="text-gray-700 mb-3 flex items-center">
+                <span className="mr-2">Osoba:</span>
+                <span className="truncate max-w-xs block">{event.who}</span> {/* Elipsa dla długich nazwisk */}
+              </div>
+              <div className="text-gray-700 mb-3 flex items-center">
+                <span className="mr-2">Data:</span> 
+                {event.date ? formatDate(event.date) : "Brak"}
+              </div>
+              <p className="text-gray-600 leading-relaxed">{event.description}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+  
+  
+  
+  
+
 
   const handleDelete = () => {
     setIsDeleteModalOpen(true);
@@ -213,17 +288,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           >
             {showFacts ? 'Ukryj fakty' : 'Pokaż fakty'}
           </button>
-          {showFacts && (
-            <div className="mt-4 text-gray-600">
-              <ul>
-                {/* {person.facts.map((fact, index) => (
-                  <li key={index} className="mb-2">
-                    {fact}
-                  </li>
-                ))} */}
-              </ul>
-            </div>
-          )}
+          {showFacts && renderFacts(facts)}
         </div>
       </div>
     );
