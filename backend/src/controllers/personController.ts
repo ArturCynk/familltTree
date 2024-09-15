@@ -558,3 +558,46 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       res.status(500).json({ message: 'Internal server error' });
     }
   };
+
+  export const deleteRelationship = async (req: Request, res: Response) => {
+    const { personId, relationId } = req.params;
+  
+    try {
+      // Find the person from whom we are removing the relation
+      const person = await Person.findById(personId);
+      if (!person) {
+        return res.status(404).json({ message: 'Person not found' });
+      }
+  
+      // Remove the relation from the person's relations array
+      const relationTypes: (keyof IPerson)[] = ['parents', 'siblings', 'spouses', 'children'];
+      for (const type of relationTypes) {
+        const relations = person[type] as mongoose.Types.ObjectId[];
+        const index = relations.indexOf(relationId as unknown as mongoose.Types.ObjectId);
+        if (index > -1) {
+          relations.splice(index, 1);
+          await person.save();
+          break;
+        }
+      }
+  
+      // Remove the person from the relations of the related person
+      const relatedPerson = await Person.findById(relationId);
+      if (relatedPerson) {
+        for (const type of relationTypes) {
+          const relations = relatedPerson[type] as mongoose.Types.ObjectId[];
+          const index = relations.indexOf(personId as unknown as mongoose.Types.ObjectId);
+          if (index > -1) {
+            relations.splice(index, 1);
+            await relatedPerson.save();
+            break;
+          }
+        }
+      }
+  
+      res.status(200).json({ message: 'Relation removed successfully' });
+    } catch (error) {
+      console.error('Error removing relation:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };

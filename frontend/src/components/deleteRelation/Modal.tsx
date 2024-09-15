@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Person } from '../ListView/Types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMale, faFemale, faGenderless } from '@fortawesome/free-solid-svg-icons';
+import { faMale, faFemale, faGenderless, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 
 interface ModalProps {
   isOpen: boolean;
@@ -59,6 +59,22 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
     console.log('Selected ID:', id); // Log selected ID to the console
   };
 
+  const handleDelete = async () => {
+    if (selectedId) {
+      try {
+        // Użyj personId i selectedId w trasie
+        await axios.delete(`http://localhost:3001/api/person/relation/${person._id}/${selectedId}`);
+        // Aktualizuj stan lub wykonaj inne operacje po udanym usunięciu
+        setSelectedId(null);
+        onClose();
+      } catch (error) {
+        console.error('Error deleting relation:', error);
+        // Opcjonalnie wyświetl komunikat o błędzie
+      }
+    }
+  };
+  
+
   if (!isOpen) return null;
 
   return (
@@ -79,7 +95,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
                       <li
                         key={p._id}
                         className={`flex items-center p-2 rounded-lg border cursor-pointer ${
-                          selectedId === p._id ? 'bg-gray-200' : ''
+                          selectedId === p._id ? 'bg-gray-200' : 'hover:bg-gray-100'
                         }`}
                         onClick={() => handleSelect(p._id)}
                       >
@@ -93,7 +109,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
                           )}
                         </span>
                         <span className={`text-gray-800 ${selectedId === p._id ? 'font-semibold' : ''}`}>
-                          {p.firstName} {p.lastName} 
+                          {p.firstName} {p.lastName}
                         </span>
                       </li>
                     ))}
@@ -105,6 +121,15 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
             </div>
           ))}
         </div>
+        {selectedId && (
+          <button
+            onClick={handleDelete}
+            className="mt-6 px-4 py-2 bg-red-500 text-white rounded-lg flex items-center space-x-2 hover:bg-red-600 focus:outline-none"
+          >
+            <FontAwesomeIcon icon={faTrashAlt} />
+            <span>Usuń</span>
+          </button>
+        )}
       </div>
     </div>
   );
