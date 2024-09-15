@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMale, faFemale, faGenderless, faUserFriends } from '@fortawesome/free-solid-svg-icons';
 import AddPersonModal from './AddPersonModal';
+import SelectExistingPersonModal from './SelectExistingPersonModal'
 
 interface RelationModalProps {
   isOpen: boolean;
@@ -13,18 +14,23 @@ interface RelationModalProps {
 
 const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personName, personGender, id }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isSelectExistingOpen, setIsSelectExistingOpen] = useState<boolean>(false);
   const [selectedRelation, setSelectedRelation] = useState<string>('');
   const [relationType, setRelationType] = useState<string>('');
 
-  const handleButtonClick = (label: string, type: string) => {
+  const handleButtonClick = (label: string, type: string, isExisting: boolean = false) => {
     setSelectedRelation(label);
-    setRelationType(type); // Set the type of relation
-    setIsModalOpen(true);  // Open modal after clicking button
+    setRelationType(type); 
+    if (isExisting) {
+      setIsSelectExistingOpen(true); // Open modal for selecting existing person
+    } else {
+      setIsModalOpen(true); // Open modal for adding a new person
+    }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
+  
+
+
 
   if (!isOpen) return null;
 
@@ -121,13 +127,28 @@ const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personNa
               <FontAwesomeIcon icon={faFemale} size="lg" color="#333" />
               <p className="mt-2 text-sm font-medium">Siostra</p>
             </button>
+
+            <button
+              className="absolute flex flex-col items-center justify-center w-20 h-20 border-2 border-gray-300 rounded-full bg-white shadow-md hover:bg-gray-100 focus:outline-none"
+              style={{ bottom: '0%', left: '50%', transform: 'translate(-50%, -50%)' }}
+              onClick={() => handleButtonClick('Wybierz istniejącą osobę', '', true)}
+            >
+              <FontAwesomeIcon icon={faUserFriends} size="lg" color="#333" />
+              <p className="mt-2 text-sm font-medium text-center">Wybierz istniejącą</p>
+            </button>
           </div>
         </div>
         <AddPersonModal
           isOpen={isModalOpen}
-          onClose={handleCloseModal}
+          onClose={onClose}
           relationLabel={selectedRelation} // Przekaż etykietę relacji
           relationType={relationType} // Przekaż typ relacji w języku angielskim
+          id={id}
+        />
+
+        <SelectExistingPersonModal
+          isOpen={isSelectExistingOpen}
+          onClose={onClose}
           id={id}
         />
       </div>

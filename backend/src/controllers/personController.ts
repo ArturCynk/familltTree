@@ -601,3 +601,54 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       res.status(500).json({ message: 'Internal server error' });
     }
   };
+
+  export const getPersonsWithoutRelation = async (req: Request, res: Response) => {
+    const personId = req.params.id;
+  
+    // Sprawdź, czy id jest poprawnym ObjectId
+    if (!mongoose.Types.ObjectId.isValid(personId)) {
+      return res.status(400).json({ message: 'Niepoprawny format ID' });
+    }
+  
+    try {
+      // Znajdź daną osobę po id
+      const person = await Person.findById(new mongoose.Types.ObjectId(personId))
+        .populate('parents siblings spouses children')
+        .exec();
+  
+      if (!person) {
+        return res.status(404).json({
+          success: false,
+          message: 'Osoba nie została znaleziona',
+        });
+      }
+  
+      // Lista wszystkich relacji danej osoby
+      const relatedPersonIds = [
+        ...person.parents,
+        ...person.siblings,
+        ...person.spouses,
+        ...person.children,
+      ].map((relatedPerson: any) => relatedPerson._id);
+  
+      // Dodaj również id samej osoby, aby nie zwrócić jej jako wyniku
+      relatedPersonIds.push(person._id);
+  
+      // Pobierz wszystkie osoby, które nie są w relacji z daną osobą
+      const personsWithoutRelation = await Person.find({
+        _id: { $nin: relatedPersonIds }, // Nie zawierają się w relacjach
+      }).select('firstName lastName gender'); // Wybieramy tylko potrzebne pola
+  
+      // Zwróć odpowiedź w formacie JSON
+      return res.status(200).json({
+        success: true,
+        data: personsWithoutRelation,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: 'Błąd serwera',
+      });
+    }
+  };
