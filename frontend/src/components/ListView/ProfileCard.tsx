@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Person } from './Types';
 import { formatDate } from './PersonUtils';
 import { toast } from 'react-toastify';
+import Modal from '../deleteRelation/Modal';
 
 const calculateAge = (birthDate: Date, deathDate: Date): number => {
   const birthYear = birthDate.getFullYear();
@@ -59,7 +60,18 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Modal for deletion confirmation
   const [isDeleting, setIsDeleting] = useState(false);
   const [facts, setFacts] = useState<IEvent[]>([]);
+  const [isRemoveRelationModalOpen, setIsRemoveRelationModalOpen] = useState(false);
 
+  const handleRemoveRelation = () => {
+    setIsRemoveRelationModalOpen(true);
+  };
+
+  const closeRemoveRelationModal = () => {
+    setIsRemoveRelationModalOpen(false);
+    refetch();
+  };
+  
+  
   useEffect(() => {
     const fetchFacts = async () => {
       if (selectedPerson && selectedPerson._id) {
@@ -195,7 +207,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     const deathDate = person.deathDate ? new Date(person.deathDate) : null;
     
     return (
-      <div className="w-full">
+      <div className="w-full pb-20">
         <div className="flex items-center mb-6">
           <div className="h-16 w-16 bg-gradient-to-br from-teal-500 to-blue-500 text-white rounded-full flex items-center justify-center text-3xl font-bold shadow-md">
             {person.firstName ? person.firstName.charAt(0) : '?'}
@@ -254,13 +266,16 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             <FontAwesomeIcon icon={faTrash} className="text-2xl mb-2" />
             <span className="text-xs font-semibold">Usuń</span>
           </button>
+          <div className="flex flex-col gap-4 mt-6">
           <button
             className="flex flex-col items-center text-gray-500 hover:text-yellow-600 transition-all"
-            onClick={handleDeleteRelationship}
+            onClick={handleRemoveRelation}
           >
             <FontAwesomeIcon icon={faUnlink} className="text-2xl mb-2" />
             <span className="text-xs font-semibold">Usuń relacje</span>
+            {isRemoveRelationModalOpen && <Modal onClose={closeRemoveRelationModal} isOpen={isRemoveRelationModalOpen} person={person} />}
           </button>
+        </div>
         </div>
 
         {/* Stylizowane przyciski "Pokaż fakty" i "Pokaż najbliższą rodzinę" */}

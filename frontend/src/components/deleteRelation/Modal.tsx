@@ -1,0 +1,113 @@
+// src/components/Modal.tsx
+import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
+import { Person } from '../ListView/Types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMale, faFemale, faGenderless } from '@fortawesome/free-solid-svg-icons';
+
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  person: Person;
+}
+
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [relations, setRelations] = useState<{
+    parents: Person[];
+    siblings: Person[];
+    spouses: Person[];
+    children: Person[];
+  }>({
+    parents: [],
+    siblings: [],
+    spouses: [],
+    children: []
+  });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+
+      // Fetch relations when modal is opened
+      const fetchRelations = async () => {
+        try {
+          const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person._id}`);
+          setRelations(response.data);
+        } catch (error) {
+          console.error('Error fetching relations:', error);
+        }
+      };
+
+      fetchRelations();
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose, person._id]);
+
+  const handleSelect = (id: string) => {
+    setSelectedId(id);
+    console.log('Selected ID:', id); // Log selected ID to the console
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+      <div
+        ref={modalRef}
+        className="bg-white p-6 rounded-lg shadow-lg w-4/5 md:w-1/2 lg:w-1/3"
+      >
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Usuń relacje</h2>
+        <div className="space-y-4">
+          {Object.entries(relations).map(([relationType, people]) => (
+            <div key={relationType}>
+              {people.length > 0 ? (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2 capitalize">{relationType}:</h3>
+                  <ul className="space-y-2">
+                    {people.map((p) => (
+                      <li
+                        key={p._id}
+                        className={`flex items-center p-2 rounded-lg border cursor-pointer ${
+                          selectedId === p._id ? 'bg-gray-200' : ''
+                        }`}
+                        onClick={() => handleSelect(p._id)}
+                      >
+                        <span className="mr-3 text-lg">
+                          {p.gender === 'male' ? (
+                            <FontAwesomeIcon icon={faMale} className="text-blue-500" />
+                          ) : p.gender === 'female' ? (
+                            <FontAwesomeIcon icon={faFemale} className="text-pink-500" />
+                          ) : (
+                            <FontAwesomeIcon icon={faGenderless} className="text-gray-500" />
+                          )}
+                        </span>
+                        <span className={`text-gray-800 ${selectedId === p._id ? 'font-semibold' : ''}`}>
+                          {p.firstName} {p.lastName} 
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <></>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Modal;

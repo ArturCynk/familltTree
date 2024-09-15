@@ -504,3 +504,57 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
     }
   };
   
+
+  export const getRelations = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    console.log(req.params);
+    
+  
+    try {
+      // Pobierz osobę z bazy danych
+      const person = await Person.findById(id)
+        .populate('parents', 'firstName lastName gender')
+        .populate('siblings', 'firstName lastName gender')
+        .populate('spouses', 'firstName lastName gender')
+        .populate('children', 'firstName lastName gender')
+        .exec();
+  
+      if (!person) {
+        return res.status(404).json({ message: 'Person not found' });
+      }
+  
+      // Przygotuj obiekt z relacjami
+      const relations = {
+        Rodzice: person.parents.map((parent: any) => ({
+          _id: parent._id,
+          firstName: parent.firstName,
+          lastName: parent.lastName,
+          gender: parent.gender,
+        })),
+        Rodzeństwo: person.siblings.map((sibling: any) => ({
+          _id: sibling._id,
+          firstName: sibling.firstName,
+          lastName: sibling.lastName,
+          gender: sibling.gender,
+        })),
+        Małżonkowie: person.spouses.map((spouse: any) => ({
+          _id: spouse._id,
+          firstName: spouse.firstName,
+          lastName: spouse.lastName,
+          gender: spouse.gender,
+        })),
+        Dzieci: person.children.map((child: any) => ({
+          _id: child._id,
+          firstName: child.firstName,
+          lastName: child.lastName,
+          gender: child.gender,
+        })),
+      };
+  
+      // Zwróć odpowiedź
+      res.json(relations);
+    } catch (error) {
+      console.error('Error fetching relations:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
