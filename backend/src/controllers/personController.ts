@@ -595,7 +595,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         }
       }
   
-      res.status(200).json({ message: 'Relation removed successfully' });
+      res.status(200).json({ message: 'Nastąpiło usunięcie relacji' });
     } catch (error) {
       console.error('Error removing relation:', error);
       res.status(500).json({ message: 'Internal server error' });

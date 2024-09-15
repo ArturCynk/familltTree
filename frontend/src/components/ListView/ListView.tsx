@@ -125,7 +125,7 @@ const closeSidebar = () => {
       {/* Table */}
       <div className="w-full max-w-4xl bg-white rounded-lg shadow">
         <table className="min-w-full text-sm">
-          <thead className="sticky top-16 z-50 bg-white shadow">
+          <thead className="sticky top-16 z-3 bg-white shadow">
             <tr>
               <th className="p-4 text-left font-semibold text-gray-600">Imię i nazwisko</th>
               <th className="p-4 text-left font-semibold text-gray-600">Rok urodzenia</th>

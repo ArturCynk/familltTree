@@ -29,7 +29,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="w-full sticky top-0 z-50">
+    <header className="w-full sticky top-0 z-3">
       {/* First Section */}
       <div className="bg-white text-gray-800 p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Drzewo genealogiczne</h1>

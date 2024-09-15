@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Person } from '../ListView/Types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMale, faFemale, faGenderless, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { toast } from 'react-toastify';
 
 interface ModalProps {
   isOpen: boolean;
@@ -63,9 +64,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
     if (selectedId) {
       try {
         // Użyj personId i selectedId w trasie
-        await axios.delete(`http://localhost:3001/api/person/relation/${person._id}/${selectedId}`);
+        let response = await axios.delete(`http://localhost:3001/api/person/relation/${person._id}/${selectedId}`);
         // Aktualizuj stan lub wykonaj inne operacje po udanym usunięciu
         setSelectedId(null);
+        toast(response.data.message)
         onClose();
       } catch (error) {
         console.error('Error deleting relation:', error);
@@ -78,7 +80,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50 ">
       <div
         ref={modalRef}
         className="bg-white p-6 rounded-lg shadow-lg w-4/5 md:w-1/2 lg:w-1/3"
