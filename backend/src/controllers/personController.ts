@@ -342,4 +342,165 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       return res.status(500).json({ message: 'Wewnętrzny błąd serwera' });
     }
   };
+
+  
+ // Interfejsy do typowania
+  interface IChild extends mongoose.Document {
+    _id: mongoose.Types.ObjectId;
+    firstName: string;
+    lastName: string;
+    birthDate?: Date;
+    deathDate?: Date;
+    spouses: mongoose.Types.ObjectId[]; // Referencje do małżonków dziecka
+  }
+  
+  interface ISpouse extends mongoose.Document {
+    _id: mongoose.Types.ObjectId;
+    firstName: string;
+    lastName: string;
+    birthDate?: Date;
+    deathDate?: Date;
+  }
+  
+  interface IEvent {
+    type: 'Narodziny' | 'Śmierć' | 'Ślub';
+    who: string; // Imię i nazwisko osoby
+    date?: Date; // Data wydarzenia
+    description: string; // Opis wydarzenia
+  }
+  
+  export const getFact = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+  
+      // Pobierz osobę na podstawie ID i załaduj jej dzieci oraz małżonków
+      const person: IPerson | null = await Person.findById(id)
+        .populate({
+          path: 'children',
+          select: 'firstName lastName birthDate deathDate spouses',
+          populate: {
+            path: 'spouses',
+            select: 'firstName lastName'
+          }
+        })
+        .populate({
+          path: 'spouses',
+          select: 'firstName lastName birthDate deathDate'
+        })
+        .exec();
+  
+      const events: IEvent[] = [];
+      
+      if (!person) {
+        res.status(404).json({ message: 'Person not found' });
+        return;
+      }
+  
+      // Dodaj wydarzenia dla osoby (narodziny, śmierć)
+      if (person.birthDate) {
+        events.push({
+          type: 'Narodziny',
+          who: `${person.firstName} ${person.lastName}`,
+          date: person.birthDate,
+          description: 'Narodziny osoby'
+        });
+      }
+  
+      if (person.deathDate) {
+        events.push({
+          type: 'Śmierć',
+          who: `${person.firstName} ${person.lastName}`,
+          date: person.deathDate,
+          description: 'Śmierć osoby'
+        });
+      }
+  
+      // Dodaj wydarzenia dla małżonków (narodziny, śmierć, ślub bez daty)
+      if (person.spouses && person.spouses.length > 0) {
+        person.spouses.forEach((spouse: any) => {
+          if (spouse.birthDate) {
+            events.push({
+              type: 'Narodziny',
+              who: `${spouse.firstName} ${spouse.lastName}`,
+              date: spouse.birthDate,
+              description: 'Narodziny małżonka/małżonki'
+            });
+          }
+          if (spouse.deathDate) {
+            events.push({
+              type: 'Śmierć',
+              who: `${spouse.firstName} ${spouse.lastName}`,
+              date: spouse.deathDate,
+              description: 'Śmierć małżonka/małżonki'
+            });
+          }
+  
+          // Dodaj wydarzenie ślubu bez daty, jeśli istnieje małżeństwo
+          events.push({
+            type: 'Ślub',
+            who: `${person.firstName} ${person.lastName} & ${spouse.firstName} ${spouse.lastName}`,
+            description: `Ślub z ${spouse.firstName} ${spouse.lastName} (bez daty)`
+          });
+        });
+      }
+  
+      // Dodaj wydarzenia dla dzieci (narodziny, śmierć, ślub)
+      if (person.children && person.children.length > 0) {
+        const childPromises = person.children.map(async (child: any) => {
+          const childEvents: IEvent[] = [];
+          
+          if (child.birthDate) {
+            childEvents.push({
+              type: 'Narodziny',
+              who: `${child.firstName} ${child.lastName}`,
+              date: child.birthDate,
+              description: 'Narodziny dziecka'
+            });
+          }
+      
+          if (child.deathDate) {
+            childEvents.push({
+              type: 'Śmierć',
+              who: `${child.firstName} ${child.lastName}`,
+              date: child.deathDate,
+              description: 'Śmierć dziecka'
+            });
+          }
+  
+          if (child.spouses && child.spouses.length > 0) {
+            const spousePromises = child.spouses.map(async (spouseId: mongoose.Types.ObjectId) => {
+              const spouse = await Person.findById(spouseId).exec();
+              if (spouse) {
+                return {
+                  type: 'Ślub',
+                  who: `${child.firstName} ${child.lastName} & ${spouse.firstName} ${spouse.lastName}`,
+                  description: `Ślub dziecka z ${spouse.firstName} ${spouse.lastName} (bez daty)`
+                };
+              }
+              return undefined;
+            });
+  
+            // Poczekaj na wszystkie obietnice i dodaj je do wydarzeń
+            const spouseEvents = await Promise.all(spousePromises);
+            childEvents.push(...spouseEvents.filter((event): event is IEvent => event !== undefined));
+          }
+  
+          return childEvents;
+        });
+  
+        // Poczekaj na zakończenie wszystkich obietnic i dodaj je do wydarzeń
+        const childEventsArray = await Promise.all(childPromises);
+        childEventsArray.flat().forEach(event => events.push(event));
+      }
+  
+      // Sortowanie wydarzeń po dacie rosnąco (jeśli data istnieje)
+      events.sort((a, b) => (a.date && b.date ? new Date(a.date).getTime() - new Date(b.date).getTime() : 0));
+  
+      // Zwrócenie wydarzeń
+      res.status(200).json(events);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };
   
