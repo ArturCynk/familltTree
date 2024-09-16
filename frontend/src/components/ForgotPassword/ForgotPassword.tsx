@@ -28,10 +28,10 @@ const ForgotPassword: React.FC = () => {
     }
 
     try {
-      // await axios.post('/api/reset-password', { email });
-      toast.success('Link do resetowania hasła został wysłany!');
-    } catch (error) {
-      toast.error('Błąd wysyłania linku do resetowania hasła.');
+      let response = await axios.post('http://localhost:3001/api/auth/reset-password', { email });
+      toast.success(response.data.msg);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.msg);
     }
   };
 

@@ -84,3 +84,61 @@ export const activateAccount = async (req: Request, res: Response) => {
         }
     }
 };
+
+
+export const sendResetPasswordEmail = async (req: Request, res: Response) => {
+    const { email } = req.body;
+    
+    try {
+        const user: UserDocument | null = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
+        }
+        
+        const resetToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET as string, {
+            expiresIn: '30m',
+        });
+        
+        user.resetPasswordToken = resetToken;
+        await user.save();
+
+        const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+        
+        await sendPasswordResetEmail(email, resetLink);
+        
+        return res.json({ msg: 'E-mail z resetowaniem hasła został wysłany' });
+    } catch (error) {
+        console.error('Błąd podczas wysyłania e-maila z resetowaniem hasła:', error);
+        return res.status(500).json({ msg: 'Błąd serwera' });
+    }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+    
+    if (!token) {
+        return res.status(400).json({ msg: 'Nieprawidłowy token' });
+    }
+    
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
+
+        const user = await User.findById(decoded.userId);
+        if (!user) {
+            return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
+        }
+        
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        
+        user.password = hashedPassword;
+        user.resetPasswordToken = undefined;
+        await user.save();
+        
+        return res.json({ msg: 'Hasło zostało pomyślnie zresetowane' });
+    } catch (error) {
+        console.error('Błąd podczas resetowania hasła:', error);
+        return res.status(400).json({ msg: 'Nieprawidłowy lub wygasły token' });
+    }
+};

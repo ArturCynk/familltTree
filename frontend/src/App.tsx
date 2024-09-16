@@ -13,6 +13,7 @@ import Login from './components/LoginPage/LoginPage';
 import Register from './components/RegisterPage/Register';
 import ActivateAccount from './components/Activate/Activate';
 import ForgotPassword from './components/ForgotPassword/ForgotPassword';
+import ChangePassword from './components/ChangePassword/ChangePassword';
 
 interface Person {
   _id: string;
@@ -79,6 +80,7 @@ const App: React.FC = () => {
         <Route path='/register' element={<Register/>} />
         <Route path="/activate/:token" element={<ActivateAccount />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ChangePassword />} />
       </Routes>
     </Router>
       {/* <div className="p-6">

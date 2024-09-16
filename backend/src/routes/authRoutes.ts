@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
-import { registerUser, activateAccount } from '../controllers/authController';
-// , loginUser, sendResetPasswordEmail, resetPassword, logoutUser
+import { registerUser, activateAccount, sendResetPasswordEmail, resetPassword } from '../controllers/authController';
+// , loginUser, , resetPassword, logoutUser
 import { registrationValidationRules, loginValidationRules, validate } from '../validation/authValidation';
 
 const router: Router = express.Router();
@@ -11,9 +11,9 @@ router.post('/activate/:token', activateAccount);
 
 // router.post('/login', loginValidationRules, validate, loginUser);
 
-// router.post('/reset-password', sendResetPasswordEmail);
+router.post('/reset-password', sendResetPasswordEmail);
 
-// router.post('/reset-password/:token', resetPassword);
+router.post('/reset-password/:token', resetPassword);
 
 // router.post('/logout', logoutUser);
 
