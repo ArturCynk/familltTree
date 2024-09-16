@@ -11,6 +11,7 @@ interface Person {
   birthDate?: string;
   deathDate?: string;
   birthPlace?: string;
+  deathPlace?: string;
   gender: 'male' | 'female' | 'not-binary';
   parents: { _id: string; firstName?: string; lastName?: string }[];
   siblings: { _id: string; firstName?: string; lastName?: string }[];
@@ -76,7 +77,7 @@ const TableRow: React.FC<TableRowProps> = ({
         </td>
         <td className="p-4 text-gray-500">{formatDate(person.birthDate)} {person.birthPlace}</td>
         <td className="p-4 text-gray-500">
-          {/* {person.deathDate && `${formatDate(person.deathDate)}${person.location ? `, ${person.location}` : ""}`} */}
+          {person.deathDate && `${formatDate(person.deathDate)}${person.deathPlace ? `, ${person.deathPlace}` : ""}`}
         </td>
         <td className="relative p-10">
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">

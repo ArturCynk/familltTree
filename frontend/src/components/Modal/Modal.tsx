@@ -24,6 +24,8 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
   const [deathDateFrom, setDeathDateFrom] = useState<string>('');
   const [deathDate, setDeathDate] = useState<string>('');
   const [deathDateTo, setDeathDateTo] = useState<string>('');
+  const [deathPlace, setDeathPlace] = useState<string>('');
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +52,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
       deathDateType,
       deathDateFrom,
       deathDateTo,
+      deathPlace
     };
 
     try {
@@ -284,7 +287,19 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                   />
                 </div>
               )}
-
+              <div>
+                {/* Existing death date fields */}
+                <div>
+                  <label htmlFor="deathPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce śmierci</label>
+                  <input
+                    id="deathPlace"
+                    type="text"
+                    value={deathPlace}
+                    onChange={(e) => setDeathPlace(e.target.value)}
+                    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                  />
+                </div>
+              </div>
               {deathDateType === 'between' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>

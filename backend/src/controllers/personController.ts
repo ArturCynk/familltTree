@@ -27,6 +27,7 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       deathDateType, 
       deathDate, 
       deathDateEnd,
+      deathPlace,
       status
     } = req.body;
 
@@ -44,6 +45,7 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       deathDateType,
       deathDate,
       deathDateEnd,
+      deathPlace,
       status
     });
 
@@ -176,7 +178,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       const users = await Person.find(query)
         .skip((page - 1) * limit) // Przeskocz odpowiednią liczbę wyników
         .limit(limit) // Ogranicz liczbę wyników do limitu
-        .select('firstName lastName maidenName birthPlace _id birthDate deathDate gender parents siblings spouses children') // Wybierz pola do zwrócenia
+        .select('firstName lastName maidenName birthPlace _id birthDate deathDate deathPlace gender parents siblings spouses children') // Wybierz pola do zwrócenia
         .exec();
   
       // Pobieranie całkowitej liczby użytkowników (do wyliczenia ilości stron)
@@ -198,6 +200,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
           deathDate: user.deathDate,
           gender: user.gender,
           birthPlace: user.birthPlace,
+          deathPlace: user.deathPlace,
           parents,
           siblings,
           spouses,

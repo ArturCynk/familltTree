@@ -17,6 +17,7 @@ export interface IPerson extends Document {
   deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo';
   deathDateFrom?: Date;
   deathDateTo?: Date;
+  deathPlace?: string
   parents: mongoose.Types.ObjectId[];
   siblings: mongoose.Types.ObjectId[];
   spouses: mongoose.Types.ObjectId[];
@@ -76,6 +77,9 @@ const PersonSchema: Schema = new Schema({
   },
   deathDateTo: {
     type: Date,
+  },
+  deathPlace: {
+    type: String,
   },
   parents: [{ type: Schema.Types.ObjectId, ref: 'Person' }],
   siblings: [{ type: Schema.Types.ObjectId, ref: 'Person' }],
