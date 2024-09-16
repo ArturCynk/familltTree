@@ -12,6 +12,7 @@ import ListView from './components/ListView/ListView';
 import Login from './components/LoginPage/LoginPage';
 import Register from './components/RegisterPage/Register';
 import ActivateAccount from './components/Activate/Activate';
+import ForgotPassword from './components/ForgotPassword/ForgotPassword';
 
 interface Person {
   _id: string;
@@ -77,6 +78,7 @@ const App: React.FC = () => {
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register/>} />
         <Route path="/activate/:token" element={<ActivateAccount />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     </Router>
       {/* <div className="p-6">
