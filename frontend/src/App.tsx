@@ -9,7 +9,7 @@ import ErrorScreen from './components/Error/ErrorScreen';
 import LoadingSpinner from './components/Loader/LoadingSpinner';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ListView from './components/ListView/ListView';
-import Login from './LoginPage/LoginPage';
+import Login from './components/LoginPage/LoginPage';
 import Register from './components/RegisterPage/Register';
 
 interface Person {
