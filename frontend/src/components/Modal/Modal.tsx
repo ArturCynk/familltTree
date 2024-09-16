@@ -235,6 +235,18 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
             )}
+            {/* Birth Place */}
+            <div>
+              <label htmlFor="birthPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce urodzenia</label>
+              <input
+                id="birthPlace"
+                type="text"
+                value={birthPlace}
+                onChange={(e) => setBirthPlace(e.target.value)}
+                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+              />
+            </div>
+
 
           
           </div>
