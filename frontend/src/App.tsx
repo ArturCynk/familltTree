@@ -10,6 +10,7 @@ import LoadingSpinner from './components/Loader/LoadingSpinner';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ListView from './components/ListView/ListView';
 import Login from './LoginPage/LoginPage';
+import Register from './components/RegisterPage/Register';
 
 interface Person {
   _id: string;
@@ -73,6 +74,7 @@ const App: React.FC = () => {
         <Route path="/list-view" element={<ListView />} />
         {/* Dodaj inne trasy w zależności od potrzeb */}
         <Route path='/login' element={<Login />} />
+        <Route path='/register' element={<Register/>} />
       </Routes>
     </Router>
       {/* <div className="p-6">
