@@ -41,3 +41,46 @@ export const registerUser = async (req: Request, res: Response) => {
         return res.status(500).send('Błąd serwera');
     }
 };
+
+export const activateAccount = async (req: Request, res: Response) => {
+    // Pobierz token z parametrów zapytania
+    const { token } = req.params;
+
+    // Sprawdź, czy token został przesłany
+    if (!token) {
+        return res.status(400).json({ error: 'Brak tokenu aktywacyjnego.' });
+    }
+
+    try {
+        // Zweryfikuj token JWT
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
+
+        // Znajdź użytkownika na podstawie ID z tokena
+        const user = await User.findById(decoded.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'Użytkownik nie został znaleziony.' });
+        }
+
+        // Sprawdź, czy konto już zostało aktywowane
+        if (user.isActive) {
+            return res.status(400).json({ error: 'Konto jest już aktywne.' });
+        }
+
+        // Aktywuj konto
+        user.isActive = true;
+        await user.save();
+
+        return res.status(200).json({ message: 'Konto zostało pomyślnie aktywowane.' });
+
+    } catch (error) {
+        // Obsłuż błędy związane z tokenem JWT
+        if (error instanceof jwt.JsonWebTokenError) {
+            console.error('Nieprawidłowy token aktywacyjny:', error.message);
+            return res.status(400).json({ error: 'Nieprawidłowy lub wygasły token aktywacyjny.' });
+        } else {
+            // Obsłuż inne błędy
+            console.error('Błąd weryfikacji tokena aktywacyjnego:', error);
+            return res.status(500).json({ error: 'Wystąpił nieoczekiwany błąd.' });
+        }
+    }
+};

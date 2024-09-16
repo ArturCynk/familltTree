@@ -11,6 +11,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ListView from './components/ListView/ListView';
 import Login from './components/LoginPage/LoginPage';
 import Register from './components/RegisterPage/Register';
+import ActivateAccount from './components/Activate/Activate';
 
 interface Person {
   _id: string;
@@ -75,6 +76,7 @@ const App: React.FC = () => {
         {/* Dodaj inne trasy w zależności od potrzeb */}
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register/>} />
+        <Route path="/activate/:token" element={<ActivateAccount />} />
       </Routes>
     </Router>
       {/* <div className="p-6">

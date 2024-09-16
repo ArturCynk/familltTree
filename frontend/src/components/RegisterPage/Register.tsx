@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome } from '@fortawesome/free-solid-svg-icons';
+
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,13 +11,12 @@ const Register: React.FC = () => {
   const [emailValid, setEmailValid] = useState(true);
   const [passwordValid, setPasswordValid] = useState(true);
   const [confirmPasswordValid, setConfirmPasswordValid] = useState(true);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   // Wyrażenia regularne dla różnych wymagań dotyczących hasła
   const hasLowercase = /(?=.*[a-z])/;
   const hasUppercase = /(?=.*[A-Z])/;
   const hasDigit = /(?=.*\d)/;
-  const hasSpecialChar = /(?=.*[@$!%*?&,./\()])/;
+  const hasSpecialChar = /(?=.*[@$!%*?&,./()])/;
   const minLength = /.{8,}/;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -60,7 +58,6 @@ const Register: React.FC = () => {
     try {
       let response = await axios.post('http://localhost:3001/api/auth/register', { email, password });
       toast.success(response.data.msg);
-      setRegistrationSuccess(true);
       setEmail('');
       setPassword('');
       setConfirmPassword('')

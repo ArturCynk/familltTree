@@ -33,6 +33,7 @@ const getActivationEmailTemplate = (activationLink: string): string => {
         }
           a{
             text-decoration: none;
+            color: #FFFFFF;
           }
         .content {
             margin-top: 20px;
