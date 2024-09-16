@@ -58,7 +58,7 @@ const Register: React.FC = () => {
     }
 
     try {
-      await axios.post('/api/register', { email, password });
+      await axios.post('http:', { email, password });
       toast.success('Rejestracja udana!');
       setRegistrationSuccess(true);
     } catch (error) {
@@ -124,12 +124,12 @@ const Register: React.FC = () => {
               </p>
             </div>
             <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600">
-                    Chcesz wrócić na stronę główną?{' '}
-                    <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-300">
-                    Wróć na stronę główną
-                    </Link>
-                </p>
+              <p className="text-sm text-gray-600">
+                Chcesz wrócić na stronę główną?{' '}
+                <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-300">
+                  Wróć na stronę główną
+                </Link>
+              </p>
             </div>
 
           </form>
