@@ -58,16 +58,15 @@ const Register: React.FC = () => {
     }
 
     try {
-      await axios.post('http:', { email, password });
-      toast.success('Rejestracja udana!');
+      let response = await axios.post('http://localhost:3001/api/auth/register', { email, password });
+      toast.success(response.data.msg);
       setRegistrationSuccess(true);
-    } catch (error) {
-      toast.error('Błąd rejestracji.');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('')
+    } catch (error: any) {
+      toast.error(error.response.data.msg)
     }
-  };
-
-  const goToHome = () => {
-    window.location.href = '/'; // Przekierowanie do strony głównej
   };
 
   return (
