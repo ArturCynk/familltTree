@@ -207,9 +207,6 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
           children
         };
       }));
-      console.log(result);
-      
-      // Zwracamy użytkowników, całkowitą liczbę użytkowników i aktualną stronę
       res.status(200).json({
         users: result,
         totalUsers,

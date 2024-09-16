@@ -9,6 +9,7 @@ import ErrorScreen from './components/Error/ErrorScreen';
 import LoadingSpinner from './components/Loader/LoadingSpinner';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ListView from './components/ListView/ListView';
+import Login from './LoginPage/LoginPage';
 
 interface Person {
   _id: string;
@@ -64,13 +65,14 @@ const App: React.FC = () => {
   return (
     <div>
       <Router>
-      <Header />
+      {/* <Header /> */}
       <Routes>
         {/* <Route path="/family-view" element={<FamilyView />} />
         <Route path="/ancestry-view" element={<AncestryView />} />
         <Route path="/fan-view" element={<FanView />} /> */}
         <Route path="/list-view" element={<ListView />} />
         {/* Dodaj inne trasy w zależności od potrzeb */}
+        <Route path='/login' element={<Login />} />
       </Routes>
     </Router>
       {/* <div className="p-6">
