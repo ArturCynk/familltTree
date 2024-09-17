@@ -12,6 +12,7 @@ import {getDisplayName, renderRelations, formatDate } from './PersonUtils';
 import TableRow from "./TableRow";
 import { Person } from './Types'; 
 import ProfileCard from "./ProfileCard";
+import NotAuthenticatedScreen from "../NotAuthenticatedScreen/NotAuthenticatedScreen";
 
 const PeopleTable: React.FC = () => {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -98,7 +99,16 @@ const closeSidebar = () => {
   };
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorScreen message={error} onRetry={() => {}} />;
+  if (error) {
+    // Handle specific authentication errors
+    if (error === 'Brak dostępu lub nieautoryzowany dostęp') {
+      return <NotAuthenticatedScreen />;
+    }
+    // Handle other types of errors
+    return <ErrorScreen message={error} onRetry={refetch} />;
+  }
+
+ 
 
   return (
     <div className="p-8 bg-gray-100 min-h-screen flex flex-col items-center">

@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User, { UserDocument } from '../models/User';
 import { sendActivationEmail, sendPasswordResetEmail } from '../email/sendEmail';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const registerUser = async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -140,5 +142,44 @@ export const resetPassword = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Błąd podczas resetowania hasła:', error);
         return res.status(400).json({ msg: 'Nieprawidłowy lub wygasły token' });
+    }
+};
+
+export const loginUser = async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+
+    try {
+        // Znajdź użytkownika po emailu
+        let user: UserDocument | null = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ msg: 'Konto nie zostało znalezione' });
+        }
+
+        // Sprawdź, czy konto jest aktywne
+        if (!user.isActive) {
+            return res.status(401).json({ msg: 'Konto nie jest aktywowane' });
+        }
+
+        // Porównaj hasło
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Nieprawidłowe hasło' });
+        }
+
+        // Tworzenie tokenu JWT bez limitu czasowego
+        const token = jwt.sign(
+            { userId: user._id, email: user.email },
+            process.env.JWT_SECRET as string // Bez ustawiania 'expiresIn'
+        );
+        
+        // Zwróć token i wiadomość o sukcesie
+        return res.json({
+            msg: 'Logowanie zakończone sukcesem',
+            token // Zwracamy token, który frontend może zapisać
+        });
+    } catch (err) {
+        console.error('Błąd podczas logowania:', err);
+        return res.status(500).json({ msg: 'Błąd serwera' });
     }
 };

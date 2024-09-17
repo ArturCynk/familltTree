@@ -31,7 +31,7 @@ const App: React.FC = () => {
   const fetchPersons = async () => {
     setIsLoading(true); // Rozpocznij ładowanie
     try {
-      const response = await axios.get('http://localhost:3001/api/person//count');
+      const response = await axios.get('http://localhost:3001/api/person/count');
       const personsData: Person[] = response.data;      
 
       if (response.data.count === 0) {

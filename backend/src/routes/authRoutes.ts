@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { registerUser, activateAccount, sendResetPasswordEmail, resetPassword } from '../controllers/authController';
+import { registerUser, activateAccount, sendResetPasswordEmail, resetPassword, loginUser } from '../controllers/authController';
 // , loginUser, , resetPassword, logoutUser
 import { registrationValidationRules, loginValidationRules, validate } from '../validation/authValidation';
 
@@ -9,7 +9,7 @@ router.post('/register', registrationValidationRules, validate, registerUser);
 
 router.post('/activate/:token', activateAccount);
 
-// router.post('/login', loginValidationRules, validate, loginUser);
+router.post('/login', loginValidationRules, validate, loginUser);
 
 router.post('/reset-password', sendResetPasswordEmail);
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import { addPersonValidation, updatePersonValidation } from '../validation/personValidator'; // Import reguł walidacji
 import { addPerson, deletePerson, getPersonCount, updatePerson, getAllUsers, getUser, addPersonWithRelationships, getFact, getRelations, deleteRelationship, getPersonsWithoutRelation, addRelation } from '../controllers/personController'; // Import funkcji kontrolera
+import {authenticateToken } from '../Middleware/authenticateToken';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.delete('/delete/:id', deletePerson)
 
 router.get('/count', getPersonCount);
 
-router.get('/users', getAllUsers);
+router.get('/users',authenticateToken, getAllUsers);
 
 router.get('/users/:id', getUser)
 

@@ -17,9 +17,9 @@ const Login: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     let valid = true;
-
+  
     // Sprawdzanie czy pole email nie jest puste i czy email jest poprawny
     if (!email) {
       setEmailValid(false);
@@ -32,7 +32,7 @@ const Login: React.FC = () => {
     } else {
       setEmailValid(true);
     }
-
+  
     // Sprawdzanie czy pole hasło nie jest puste
     if (!password) {
       setPasswordValid(false);
@@ -41,16 +41,31 @@ const Login: React.FC = () => {
     } else {
       setPasswordValid(true);
     }
-
+  
     if (!valid) return;
-
+  
     try {
-      // await axios.post('/api/login', { email, password });
-      toast.success('Logowanie udane!');
-    } catch (error) {
-      toast.error('Błąd logowania.');
+      // Wysłanie żądania POST do serwera z danymi logowania
+      const response = await axios.post('http://localhost:3001/api/auth/login', { email, password });
+  
+      if (response.status === 200) {
+        const { token } = response.data;
+  
+        localStorage.setItem('authToken', token);
+  
+        window.location.href = '/list-view';
+        
+        toast.success(response.data.msg || 'Logowanie udane!');
+      }
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.msg) {
+        toast.error(error.response.data.msg);
+      } else {
+        toast.error('Błąd logowania.');
+      }
     }
   };
+  
 
   const goToRegister = () => {
     window.location.href = '/register'; // Przekierowanie do strony rejestracji
