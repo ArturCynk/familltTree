@@ -15,6 +15,7 @@ import ActivateAccount from './components/Activate/Activate';
 import ForgotPassword from './components/ForgotPassword/ForgotPassword';
 import ChangePassword from './components/ChangePassword/ChangePassword';
 import LeftHeader from './components/LeftHeader/LeftHeader';
+import HomePage from './components/HomePage/HomePage';
 
 interface Person {
   _id: string;
@@ -71,12 +72,13 @@ const App: React.FC = () => {
     <div>
       <Router>
       {/* <Header /> */}
-      {<LeftHeader />}
+      {/* {<LeftHeader />} */}
       <Routes>
         {/* <Route path="/family-view" element={<FamilyView />} />
         <Route path="/ancestry-view" element={<AncestryView />} />
         <Route path="/fan-view" element={<FanView />} /> */}
         <Route path="/list-view" element={<ListView />} />
+        <Route path='/' element={<HomePage />} />
         {/* Dodaj inne trasy w zależności od potrzeb */}
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register/>} />

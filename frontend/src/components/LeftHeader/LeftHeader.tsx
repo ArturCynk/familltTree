@@ -30,8 +30,8 @@ const LeftHeader: React.FC = () => {
 
   // Handle logout
   const handleLogout = () => {
-    // Handle logout logic
-    navigate('/login');
+    window.localStorage.clear()
+    navigate('/');
   };
 
   return (

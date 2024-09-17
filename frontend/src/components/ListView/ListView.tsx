@@ -13,6 +13,7 @@ import TableRow from "./TableRow";
 import { Person } from './Types'; 
 import ProfileCard from "./ProfileCard";
 import NotAuthenticatedScreen from "../NotAuthenticatedScreen/NotAuthenticatedScreen";
+import LeftHeader from "../LeftHeader/LeftHeader";
 
 const PeopleTable: React.FC = () => {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -111,6 +112,7 @@ const closeSidebar = () => {
  
 
   return (
+    <><LeftHeader />
     <div className="p-8 bg-gray-100 min-h-screen flex flex-col items-center">
       <Header
         totalUsers={totalUsers}
@@ -211,6 +213,7 @@ const closeSidebar = () => {
         onPageChange={handlePageChange}
       />
     </div>
+    </>
   );
 };
 
