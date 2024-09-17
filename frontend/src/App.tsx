@@ -14,6 +14,7 @@ import Register from './components/RegisterPage/Register';
 import ActivateAccount from './components/Activate/Activate';
 import ForgotPassword from './components/ForgotPassword/ForgotPassword';
 import ChangePassword from './components/ChangePassword/ChangePassword';
+import LeftHeader from './components/LeftHeader/LeftHeader';
 
 interface Person {
   _id: string;
@@ -70,6 +71,7 @@ const App: React.FC = () => {
     <div>
       <Router>
       {/* <Header /> */}
+      {<LeftHeader />}
       <Routes>
         {/* <Route path="/family-view" element={<FamilyView />} />
         <Route path="/ancestry-view" element={<AncestryView />} />
