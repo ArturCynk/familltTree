@@ -18,10 +18,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
   jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
     if (err) return res.status(403).json({ msg: 'Token jest nieprawidłowy' });
-
-    // Jeżeli token jest prawidłowy, przypisz dekodowane dane do req.user
-    req.user = decoded as UserDocument;
-    
+        
     next();
   });
 };

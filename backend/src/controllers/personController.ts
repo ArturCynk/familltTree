@@ -3,7 +3,9 @@ import { validationResult } from 'express-validator';
 import mongoose, { Types } from 'mongoose';
 
 import Person, { IPerson } from '../models/Person';
-
+import User, { UserDocument } from '../models/User'; // Import the User model
+import jwt from 'jsonwebtoken';
+import { request } from 'http';
 
 export const addPerson = async (req: Request, res: Response): Promise<void> => {
   // Sprawdź wyniki walidacji
@@ -12,7 +14,8 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
     res.status(400).json({ errors: errors.array() });
     return;
   }
-
+  console.log(3);
+  
   try {
     const { 
       gender, 
@@ -22,14 +25,37 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       maidenName, 
       birthDateType, 
       birthDate, 
-      birthDateEnd, 
+      birthDateFrom, 
+      birthDateTo, 
       birthPlace,
       deathDateType, 
       deathDate, 
-      deathDateEnd,
+      deathDateFrom,
+      deathDateTo,
       deathPlace,
       status
     } = req.body;
+
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Token w nagłówku Authorization
+
+    if (!token) {
+      res.status(401).json({ msg: 'Brak tokenu' });
+      return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
+      if (err) {
+        res.status(403).json({ msg: 'Token jest nieprawidłowy' });
+      }
+      req.user = decoded as UserDocument;
+    });
+
+    const user = req.user;
+    if (!user) {
+      res.status(401).json({ msg: 'Użytkownik nie jest zalogowany' });
+      return;
+    }
 
     // Utwórz nową osobę na podstawie danych z żądania
     const newPerson = new Person({
@@ -40,26 +66,51 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       maidenName,
       birthDateType,
       birthDate,
-      birthDateEnd,
+      birthDateFrom,
+      birthDateTo,
       birthPlace,
+      status,
       deathDateType,
       deathDate,
-      deathDateEnd,
+      deathDateFrom,
+      deathDateTo,
       deathPlace,
-      status
+      parents: [],
+      siblings: [],
+      spouses: [],
+      children: [],
     });
 
-    // Zapisz osobę do bazy danych
-    await newPerson.save();
+    // Zapisz nową osobę
+    const savedPerson = await newPerson.save();
+    console.log("Nowa osoba zapisana:", savedPerson);
+
+
+    console.log('osoba ' + req.user?.email);
+    
+
+    // Zaktualizuj użytkownika, dodając ID nowej osoby do jego listy osób
+    const updatedUser = await User.findOneAndUpdate(
+      {email: req.user?.email},
+      { $push: { persons: savedPerson } }, // Dodaj ID osoby
+      { new: true, useFindAndModify: false }
+    );
+
+    console.log('update' + updatedUser);
+    
+
+    if (!updatedUser) {
+      res.status(404).json({ message: 'Użytkownik nie znaleziony' });
+      return;
+    }
 
     // Zwróć odpowiedź sukcesu
-    res.status(201).json({ message: 'Osoba została dodana', person: newPerson });
+    res.status(201).json({ message: 'Osoba została dodana', person: savedPerson });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Wystąpił błąd podczas dodawania osoby', error });
   }
 };
-
 
 // Funkcja do aktualizacji danych osoby
 export const updatePerson = async (req: Request, res: Response): Promise<void> => {

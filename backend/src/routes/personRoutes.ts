@@ -1,12 +1,12 @@
 import express from 'express';
 import { addPersonValidation, updatePersonValidation } from '../validation/personValidator'; // Import reguł walidacji
 import { addPerson, deletePerson, getPersonCount, updatePerson, getAllUsers, getUser, addPersonWithRelationships, getFact, getRelations, deleteRelationship, getPersonsWithoutRelation, addRelation } from '../controllers/personController'; // Import funkcji kontrolera
-import {authenticateToken } from '../Middleware/authenticateToken';
+import { authenticateToken } from '../Middleware/authenticateToken';
 
 const router = express.Router();
 
 // Definiowanie trasy do dodawania nowej osoby z walidacją
-router.post('/add', addPersonValidation, addPerson);
+router.post('/add', authenticateToken, addPersonValidation, addPerson);
 
 // Definiowanie trasy do aktualizacji osoby z walidacją
 router.put('/update/:id',  updatePerson);

@@ -24,7 +24,7 @@ export interface IPerson extends Document {
   children: mongoose.Types.ObjectId[];
 }
 
-const PersonSchema: Schema = new Schema({
+export const PersonSchema: Schema = new Schema({
   gender: {
     type: String,
     enum: ['male', 'female', 'non-binary'],
