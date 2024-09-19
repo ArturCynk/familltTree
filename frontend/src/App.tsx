@@ -4,7 +4,6 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PersonBox from './components/Person/Person';
-import Header from './components/Header/Header';
 import ErrorScreen from './components/Error/ErrorScreen';
 import LoadingSpinner from './components/Loader/LoadingSpinner';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -28,51 +27,41 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [persons, setPersons] = useState<Person[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Dodaj stan do śledzenia ładowania
 
-  const fetchPersons = async () => {
-    setIsLoading(true); // Rozpocznij ładowanie
-    try {
-      const response = await axios.get('http://localhost:3001/api/person/count');
-      const personsData: Person[] = response.data;      
+  // const fetchPersons = async () => {
+  //   setIsLoading(false); // Rozpocznij ładowanie
+  //   try {
+  //     const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+  //     const response = await axios.get('http://localhost:3001/api/person/count', {
+  //       headers: {
+  //         'Authorization': `Bearer ${token}` // Dodaj nagłówek autoryzacji
+  //       }
+  //     });
+  //     const personsData: Person[] = response.data;      
 
-      if (response.data.count === 0) {
-        setIsModalOpen(true);
-      } else {
-        setPersons(personsData);
-      }
-    } catch (error) {
-      setError('Błąd podczas pobierania danych użytkowników.');
-      console.error('Error fetching persons:', error);
-    } finally {
-      setIsLoading(false); // Zakończ ładowanie
-    }
-  };
+  //     if (response.data.count === 0) {
+  //       setIsModalOpen(true);
+  //     } else {
+  //       setPersons(personsData);
+  //     }
+  //   } catch (error) {
+  //     setError('Błąd podczas pobierania danych użytkowników.');
+  //     console.error('Error fetching persons:', error);
+  //   } finally {
+  //     setIsLoading(false); // Zakończ ładowanie
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchPersons();
-  }, []);
+  // useEffect(() => {
+  //   fetchPersons();
+  // }, []);
 
   const handleModalClose = () => setIsModalOpen(false);
 
-  const handleRefreshData = async () => {
-    setError(null);
-    await fetchPersons();
-  };
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return <ErrorScreen message={error} onRetry={handleRefreshData} />;
-  }
 
   return (
     <div>
       <Router>
-      {/* <Header /> */}
-      {/* {<LeftHeader />} */}
       <Routes>
         {/* <Route path="/family-view" element={<FamilyView />} />
         <Route path="/ancestry-view" element={<AncestryView />} />
@@ -100,10 +89,6 @@ const App: React.FC = () => {
           />
         ))}
       </div> */}
-      <AddPersonModal isOpen={isModalOpen} onClose={() => {
-        handleModalClose();
-        handleRefreshData();
-      }} />
       <ToastContainer />
     </div>
     

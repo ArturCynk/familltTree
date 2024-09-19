@@ -9,28 +9,28 @@ const router = express.Router();
 router.post('/add', authenticateToken, addPersonValidation, addPerson);
 
 // Definiowanie trasy do aktualizacji osoby z walidacją
-router.put('/update/:id',  updatePerson);
+router.put('/update/:id', authenticateToken,  updatePerson);
 // updatePersonValidation
 
-router.delete('/delete/:id', deletePerson)
+router.delete('/delete/:id', authenticateToken, deletePerson)
 
-router.get('/count', getPersonCount);
+router.get('/count', authenticateToken, getPersonCount);
 
 router.get('/users',authenticateToken, getAllUsers);
 
-router.get('/users/:id', getUser)
+router.get('/users/:id', authenticateToken, getUser)
 
-router.post('/addPersonWithRelationships', addPersonWithRelationships);
+router.post('/addPersonWithRelationships', authenticateToken, addPersonWithRelationships);
 
-router.get('/users/fact/:id', getFact);
+router.get('/users/fact/:id', authenticateToken, getFact);
 
-router.get('/users/relation/:id', getRelations);
+router.get('/users/relation/:id', authenticateToken, getRelations);
 
-router.delete('/relation/:personId/:relationId', deleteRelationship); // New route
+router.delete('/relation/:personId/:relationId', authenticateToken, deleteRelationship); // New route
 
-router.get('/persons-without-relation/:id', getPersonsWithoutRelation);
+router.get('/persons-without-relation/:id', authenticateToken, getPersonsWithoutRelation);
 
-router.post('/add-relation', addRelation);
+router.post('/add-relation', authenticateToken, addRelation);
 
 
 export default router;

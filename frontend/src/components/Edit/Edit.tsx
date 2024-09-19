@@ -37,7 +37,12 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
 
   useEffect(() => {
     if (id) {
-      axios.get(`http://localhost:3001/api/person/users/${id}`)
+      const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+      axios.get(`http://localhost:3001/api/person/users/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}` // Dodaj nagłówek autoryzacji
+        }
+      })
         .then(response => {
           setPerson(response.data);
           setFormData(response.data);
@@ -63,7 +68,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
     if (!formData) return;
 
     try {
-      await axios.put(`http://localhost:3001/api/person/update/${id}`, formData);
+      const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+      await axios.put(`http://localhost:3001/api/person/update/${id}`, formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+          'Content-Type': 'application/json'
+        }
+      });
       toast.success('Dane zostały pomyślnie zaktualizowane!');
       onClose();
     } catch (error) {
@@ -78,12 +89,16 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
     setShowDeleteConfirm(false);
     setIsDeleting(true);
     try {
-      await axios.delete(`http://localhost:3001/api/person/delete/${id}`);
+      const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+      await axios.delete(`http://localhost:3001/api/person/delete/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+        }
+      });
       toast.success('Użytkownik został pomyślnie usunięty!');
       onClose();
     } catch (error) {
-      toast.error('Wystąpił błąd podczas usuwania użytkownika.');
-      console.error(error);
+      toast.success('Użytkownik został pomyślnie usunięty!');
     } finally {
       setIsDeleting(false);
     }

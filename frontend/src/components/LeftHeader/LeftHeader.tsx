@@ -6,23 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import LogoutButton from '../LogoutButton/LogoutButton';
 
 const LeftHeader: React.FC = () => {
-    const [personCount, setPersonCount] = useState<number>(0);
     const [tooltip, setTooltip] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    // Fetch the number of people
-    const fetchPersonCount = async () => {
-        try {
-            const response = await axios.get('http://localhost:3001/api/person/count');
-            setPersonCount(response.data.count);
-        } catch (error) {
-            console.error('Error fetching person count:', error);
-        }
-    };
-
-    useEffect(() => {
-        fetchPersonCount();
-    }, []);
 
     // Navigate to different views
     const handleNavigate = (path: string) => {

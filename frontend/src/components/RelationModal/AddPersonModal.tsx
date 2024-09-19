@@ -56,7 +56,13 @@ interface AddPersonModalProps {
     };
 
     try {
-      await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', {...personData, relationType, id});
+      const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+      await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', {...personData, relationType, id},{
+        headers: {
+          'Authorization': `Bearer ${token}`, // Dodaj token autoryzacji
+          'Content-Type': 'application/json'
+        }
+      });
       toast.success('Osoba została pomyślnie dodana!');
       onClose();
     } catch (error) {

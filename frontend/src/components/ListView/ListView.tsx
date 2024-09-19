@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LoadingSpinner from "../Loader/LoadingSpinner";
 import ErrorScreen from "../Error/ErrorScreen";
 import RelationModal from "../RelationModal/RelationModal";
@@ -8,12 +8,14 @@ import Pagination from "./Pagination";
 import Header from "./Header";
 import AlphabetFilter from './AlphabetFilter'; 
 import usePeople from './usePeople'; 
-import {getDisplayName, renderRelations, formatDate } from './PersonUtils';
+import {getDisplayName, formatDate } from './PersonUtils';
 import TableRow from "./TableRow";
 import { Person } from './Types'; 
 import ProfileCard from "./ProfileCard";
 import NotAuthenticatedScreen from "../NotAuthenticatedScreen/NotAuthenticatedScreen";
 import LeftHeader from "../LeftHeader/LeftHeader";
+import AddPersonModal from "../Modal/Modal";
+import axios from "axios";
 
 const PeopleTable: React.FC = () => {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -41,6 +43,57 @@ const openSidebar = (person: Person) => {
 const closeSidebar = () => {
   setIsSidebarOpen(false);
   setSelectedPerson(null);
+};
+
+
+// Component to render relations for a person
+interface RelationResponse {
+  Rodzice: Array<{ firstName: string, lastName: string }>;
+  Rodzeństwo: Array<{ firstName: string, lastName: string }>;
+  Małżonkowie: Array<{ firstName: string, lastName: string }>;
+  Dzieci: Array<{ firstName: string, lastName: string }>;
+}
+
+// Component to render relations for a person
+const RenderRelations = (person: Person) => {  // Accept `person` directly
+  const [relations, setRelations] = useState<RelationResponse | null>(null);
+
+  useEffect(() => {
+    const fetchRelations = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person._id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        setRelations(response.data); // Assuming the data is in response.data
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchRelations();
+  }, [person]);
+
+  if (!relations) return <></>;
+
+  return (
+    <>
+      {relations.Rodzice && relations.Rodzice.length > 0 && (
+        <span>Rodzice: {relations.Rodzice.map(p => `${p.firstName} ${p.lastName}`).join(', ')}<br /></span>
+      )}
+      {relations.Rodzeństwo && relations.Rodzeństwo.length > 0 && (
+        <span>Rodzeństwo: {relations.Rodzeństwo.map(s => `${s.firstName} ${s.lastName}`).join(', ')}<br /></span>
+      )}
+      {relations.Małżonkowie  && relations.Małżonkowie.length > 0 && (
+        <span>Małżonkowie: {relations.Małżonkowie.map(s => `${s.firstName} ${s.lastName}`).join(', ')}<br /></span>
+      )}
+      {relations.Dzieci && relations.Dzieci.length > 0 && (
+        <span>Dzieci: {relations.Dzieci.map(c => `${c.firstName} ${c.lastName}`).join(', ')}<br /></span>
+      )}
+    </>
+  );
 };
 
 
@@ -97,7 +150,51 @@ const closeSidebar = () => {
   const handleSearchEnter = () => {
     // Refetch data with the current search query
     refetch();
+  };  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [persons, setPersons] = useState<Person[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Dodaj stan do śledzenia ładowania
+  const [errors, setError] = useState<string | null>(null);
+  const handleModalClose = () => {
+    setIsModalOpen(false)
+    refetch()
   };
+    const fetchPersons = async () => {
+    setIsLoading(false); // Rozpocznij ładowanie
+    try {
+      const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+      const response = await axios.get('http://localhost:3001/api/person/count', {
+        headers: {
+          'Authorization': `Bearer ${token}` // Dodaj nagłówek autoryzacji
+        }
+      });
+      const personsData: Person[] = response.data;      
+
+      if (response.data.count === 0) {
+        setIsModalOpen(true);
+      } else {
+        setPersons(personsData);
+      }
+    } catch (error) {
+      setError('Błąd podczas pobierania danych użytkowników.');
+      console.error('Error fetching persons:', error);
+    } finally {
+      setIsLoading(false); // Zakończ ładowanie
+    }
+  };
+
+  useEffect(() => {
+    fetchPersons();
+  }, []);
+
+    const handleRefreshData = async () => {
+    setError(null);
+    await fetchPersons();
+  };
+
+   if (error) {
+    return <ErrorScreen message={error} onRetry={handleRefreshData} />;
+  }
 
   if (loading) return <LoadingSpinner />;
   if (error) {
@@ -153,7 +250,7 @@ const closeSidebar = () => {
   showColorCoding={showColorCoding}
   showRelatives={showRelatives}
   getDisplayName={(p) => getDisplayName(p, showMaidenName, showHusbandSurname)}
-  renderRelations={renderRelations}
+  renderRelations={(p) => <RenderRelations {...p} />} 
   formatDate={formatDate}
   onOpenRelationModal={openRelationModal}
   onOpenEditModal={openEditModal}
@@ -212,6 +309,11 @@ const closeSidebar = () => {
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />
+
+      <AddPersonModal isOpen={isModalOpen} onClose={() => {
+        handleModalClose();
+        handleRefreshData();
+      }} />
     </div>
     </>
   );

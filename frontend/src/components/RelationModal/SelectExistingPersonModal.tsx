@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser } from '@fortawesome/free-solid-svg-icons';
-import { toast } from 'react-toastify'; // Assuming you're using react-toastify
+import { faMale, faFemale, faGenderless } from '@fortawesome/free-solid-svg-icons';
+import { toast } from 'react-toastify';
 
 interface SelectExistingPersonModalProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ const relationshipTypes = [
 const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ id, isOpen, onClose }) => {
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [selectedRelationType, setSelectedRelationType] = useState<string>('');
-  const [existingPersons, setExistingPersons] = useState<any[]>([]); // Adjust type based on your API response
+  const [persons, setPersons] = useState<any[]>([]);
   const [filteredPersons, setFilteredPersons] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -31,9 +31,14 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
       const fetchPersons = async () => {
         setLoading(true);
         try {
-          const response = await axios.get(`http://localhost:3001/api/person/persons-without-relation/${id}`); // Adjust URL based on your API
-          setExistingPersons(response.data.data);
-          setFilteredPersons(response.data.data); // Initialize filteredPersons with all data
+          const token = localStorage.getItem('authToken'); // Get token from localStorage
+          const response = await axios.get(`http://localhost:3001/api/person/persons-without-relation/${id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`, // Add authorization header
+            },
+          });
+          setPersons(response.data.data);
+          setFilteredPersons(response.data.data);
         } catch (err) {
           setError('Nie udało się załadować osób');
         } finally {
@@ -48,29 +53,42 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
   useEffect(() => {
     // Filter persons based on search term
     setFilteredPersons(
-      existingPersons.filter((person) =>
+      persons.filter((person) =>
         `${person.firstName} ${person.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
-  }, [searchTerm, existingPersons]);
+  }, [searchTerm, persons]);
+  console.log(filteredPersons);
+  
 
   const handlePersonSelect = (personId: string) => {
-    setSelectedPerson(personId);
-    setSelectedRelationType(''); // Reset relation type when a new person is selected
+    setSelectedPerson(personId); // Select only one person
+    console.log(personId);
+    
   };
 
   const handleSave = async () => {
     if (selectedPerson && selectedRelationType) {
       try {
-        const response = await axios.post('http://localhost:3001/api/person/add-relation', {
-          personId: id,
-          relatedPersonId: selectedPerson,
-          relationType: selectedRelationType
-        });
-        toast.success(response.data.message); // Display success message
+        const token = localStorage.getItem('authToken'); // Get token from localStorage
+        const response = await axios.post(
+          'http://localhost:3001/api/person/add-relation',
+          {
+            personId: id,
+            relatedPersonId: selectedPerson,
+            relationType: selectedRelationType,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Add authorization header
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        toast.success(response.data.message); // Show success message
         onClose();
       } catch (error: any) {
-        toast.error(error.response?.data?.message || 'Nie zapisano relacji'); // Display error message
+        toast.error(error.response?.data?.message || 'Nie zapisano relacji'); // Show error message
       }
     }
   };
@@ -84,7 +102,7 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
       style={{ zIndex: 1100 }}
     >
       <div
-        className="bg-white p-8 rounded-lg shadow-lg w-[600px]" // Increased width for a larger modal
+        className="bg-white p-8 rounded-lg shadow-lg w-[600px]" // Modal styling
         onClick={(e) => e.stopPropagation()} // Prevent closing modal on inner click
       >
         <h2 className="text-lg font-bold mb-4">Wybierz istniejącą osobę</h2>
@@ -100,19 +118,25 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
               className="w-full p-2 border rounded mb-4"
             />
             <div className="max-h-[400px] overflow-y-auto">
-              <ul>
+              <ul className="space-y-2">
                 {filteredPersons.map((person) => (
                   <li
                     key={person._id}
-                    className={`flex items-center space-x-3 p-3 mb-2 border ${selectedPerson === person._id ? 'bg-gray-300' : 'bg-white'} rounded-md shadow-sm cursor-pointer`}
+                    className={`flex items-center p-2 rounded-lg border cursor-pointer ${
+                      selectedPerson === person._id ? 'bg-gray-200' : 'hover:bg-gray-100'
+                    }`}
                     onClick={() => handlePersonSelect(person._id)}
                   >
-                    <FontAwesomeIcon
-                      icon={faUser}
-                      className={`text-2xl ${person.gender === 'female' ? 'text-pink-500' : person.gender === 'male' ? 'text-blue-500' : 'text-gray-500'}`}
-                      aria-label={`Przejdź do profilu ${person.firstName} ${person.lastName}`}
-                    />
-                    <span className="text-gray-700 font-medium">
+                    <span className="mr-3 text-lg">
+                      {person.gender === 'male' ? (
+                        <FontAwesomeIcon icon={faMale} className="text-blue-500" />
+                      ) : person.gender === 'female' ? (
+                        <FontAwesomeIcon icon={faFemale} className="text-pink-500" />
+                      ) : (
+                        <FontAwesomeIcon icon={faGenderless} className="text-gray-500" />
+                      )}
+                    </span>
+                    <span className={`text-gray-800 ${selectedPerson === person._id ? 'font-semibold' : ''}`}>
                       {person.firstName} {person.lastName}
                     </span>
                   </li>

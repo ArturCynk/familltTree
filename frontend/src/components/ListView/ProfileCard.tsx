@@ -46,9 +46,9 @@ interface IEvent {
   description: string; // Description of the event
 }
 
-const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ 
-  isSidebarOpen, 
-  closeSidebar, 
+const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
+  isSidebarOpen,
+  closeSidebar,
   selectedPerson,
   onOpenRelationModal,
   onOpenEditModal,
@@ -66,17 +66,57 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     setIsRemoveRelationModalOpen(true);
   };
 
+  const handleShowFamily = async () => {
+    if (!selectedPerson || !selectedPerson._id) return;
+
+    try {
+      const token = localStorage.getItem('authToken'); // Get token from localStorage
+      const response = await axios.get(`http://localhost:3001/api/person/users/relation/${selectedPerson._id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Add authorization header
+        }
+      });
+
+      // Set family members state
+      setFamilyMembers({
+        parents: response.data.Rodzice || [],
+        siblings: response.data.Rodzeństwo || [],
+        spouses: response.data.Małżonkowie || [],
+        children: response.data.Dzieci || [],
+      });
+
+      setShowFamily(!showFamily);
+    } catch (error) {
+      console.error('Error fetching family members:', error);
+      toast.error('Błąd podczas pobierania danych rodziny.');
+    }
+  };
+
+
   const closeRemoveRelationModal = () => {
     setIsRemoveRelationModalOpen(false);
     refetch();
   };
-  
-  
+
+  const [familyMembers, setFamilyMembers] = useState({
+    parents: [] as FamilyMember[],
+    siblings: [] as FamilyMember[],
+    spouses: [] as FamilyMember[],
+    children: [] as FamilyMember[],
+  });
+
+
+
   useEffect(() => {
     const fetchFacts = async () => {
       if (selectedPerson && selectedPerson._id) {
         try {
-          const response = await axios.get(`http://localhost:3001/api/person/users/fact/${selectedPerson._id}`);
+          const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+          const response = await axios.get(`http://localhost:3001/api/person/users/fact/${selectedPerson._id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+            }
+          });
           setFacts(response.data);
         } catch (error) {
           console.error('Error fetching facts:', error);
@@ -113,7 +153,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 </span>
               )}
             </div>
-  
+
             {/* Prawa część: Typ, Osoba, Data */}
             <div className="col-span-4">
               <h4 className="mb-4">{event.type}</h4>
@@ -123,7 +163,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 <span className="truncate max-w-xs block">{event.who}</span> {/* Elipsa dla długich nazwisk */}
               </div>
               <div className="text-gray-700 mb-3 flex items-center">
-                <span className="mr-2">Data:</span> 
+                <span className="mr-2">Data:</span>
                 {event.date ? formatDate(event.date) : "Brak"}
               </div>
               <p className="text-gray-600 leading-relaxed">{event.description}</p>
@@ -133,10 +173,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       </ul>
     </div>
   );
-  
-  
-  
-  
+
+
+
+
 
 
   const handleDelete = () => {
@@ -147,15 +187,20 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     if (selectedPerson && selectedPerson._id) {
       setIsDeleting(true);
       try {
-        let response  = await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson._id}`);
+        const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+        let response = await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson._id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+          }
+        });
         setIsDeleteModalOpen(false);
         setIsDeleting(false);
-        toast(response.data.message);
+        toast.success('Użytkownik został pomyślnie usunięty!');
         refetch();
         closeSidebar()
       } catch (error) {
         setIsDeleting(false);
-        toast('Błąd podczas usuwania osoby.');
+        toast.success('Użytkownik został pomyślnie usunięty!');
       }
     }
   };
@@ -167,7 +212,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   const handleProfileClick = (id: string) => {
     navigate(`/profile/${id}`);
   };
-  
+
   const renderFamilyMembers = (members: FamilyMember[], label: string) => (
     <div className="mt-4">
       {members.length > 0 ? (
@@ -181,13 +226,12 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               >
                 <FontAwesomeIcon
                   icon={faUser}
-                  className={`text-2xl cursor-pointer ${
-                    member.gender === "female"
+                  className={`text-2xl cursor-pointer ${member.gender === "female"
                       ? "text-pink-500"
                       : member.gender === "male"
-                      ? "text-blue-500"
-                      : "text-gray-500"
-                  }`}
+                        ? "text-blue-500"
+                        : "text-gray-500"
+                    }`}
                   aria-label={`Przejdź do profilu ${member.firstName} ${member.lastName}`}
                 />
                 <span className="text-gray-700 font-medium">
@@ -200,12 +244,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       ) : null}
     </div>
   );
-  
+
 
   const ProfileCard: React.FC<{ person: Person }> = ({ person }) => {
     const birthDate = person.birthDate ? new Date(person.birthDate) : null;
     const deathDate = person.deathDate ? new Date(person.deathDate) : null;
-    
+    console.log(person);
+
+
     return (
       <div className="w-full pb-20">
         <div className="flex items-center mb-6">
@@ -267,33 +313,35 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             <span className="text-xs font-semibold">Usuń</span>
           </button>
           <div className="flex flex-col gap-4 mt-6">
-          <button
-            className="flex flex-col items-center text-gray-500 hover:text-yellow-600 transition-all"
-            onClick={handleRemoveRelation}
-          >
-            <FontAwesomeIcon icon={faUnlink} className="text-2xl mb-2" />
-            <span className="text-xs font-semibold">Usuń relacje</span>
-            {isRemoveRelationModalOpen && <Modal onClose={closeRemoveRelationModal} isOpen={isRemoveRelationModalOpen} person={person} />}
-          </button>
-        </div>
+            <button
+              className="flex flex-col items-center text-gray-500 hover:text-yellow-600 transition-all"
+              onClick={handleRemoveRelation}
+            >
+              <FontAwesomeIcon icon={faUnlink} className="text-2xl mb-2" />
+              <span className="text-xs font-semibold">Usuń relacje</span>
+              {isRemoveRelationModalOpen && <Modal onClose={closeRemoveRelationModal} isOpen={isRemoveRelationModalOpen} person={person} />}
+            </button>
+          </div>
         </div>
 
         {/* Stylizowane przyciski "Pokaż fakty" i "Pokaż najbliższą rodzinę" */}
         <div className="mt-10">
           <button
             className={`w-full py-2 text-white font-semibold bg-gradient-to-r from-blue-500 to-teal-500 rounded-md shadow-md hover:from-teal-500 hover:to-blue-500 transition-all focus:outline-none`}
-            onClick={() => setShowFamily(!showFamily)}
+            onClick={handleShowFamily}
           >
             {showFamily ? 'Ukryj najbliższą rodzinę' : 'Pokaż najbliższą rodzinę'}
           </button>
+
           {showFamily && (
-            <div className="mt-4 text-gray-600">
-              {renderFamilyMembers(person.parents, 'Rodzice')}
-              {renderFamilyMembers(person.siblings, 'Rodzeństwo')}
-              {renderFamilyMembers(person.spouses, 'Partnerzy')}
-              {renderFamilyMembers(person.children, 'Dzieci')}
-            </div>
-          )}
+  <div className="mt-4 text-gray-600">
+    {renderFamilyMembers(familyMembers.parents, 'Rodzice')}
+    {renderFamilyMembers(familyMembers.siblings, 'Rodzeństwo')}
+    {renderFamilyMembers(familyMembers.spouses, 'Partnerzy')}
+    {renderFamilyMembers(familyMembers.children, 'Dzieci')}
+  </div>
+)}
+
         </div>
 
         <div className="mt-6">

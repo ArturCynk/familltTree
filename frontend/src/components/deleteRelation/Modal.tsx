@@ -40,7 +40,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
       // Fetch relations when modal is opened
       const fetchRelations = async () => {
         try {
-          const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person._id}`);
+          const token = localStorage.getItem('authToken'); // Get token from localStorage
+          const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person._id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`, // Add authorization header
+            }
+          });
           setRelations(response.data);
         } catch (error) {
           console.error('Error fetching relations:', error);
@@ -64,7 +69,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
     if (selectedId) {
       try {
         // Użyj personId i selectedId w trasie
-        let response = await axios.delete(`http://localhost:3001/api/person/relation/${person._id}/${selectedId}`);
+        const token = localStorage.getItem('authToken'); // Get token from localStorage
+        let response = await axios.delete(`http://localhost:3001/api/person/relation/${person._id}/${selectedId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`, // Add authorization header
+          }
+        });
         // Aktualizuj stan lub wykonaj inne operacje po udanym usunięciu
         setSelectedId(null);
         toast(response.data.message)

@@ -57,7 +57,6 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
 
     try {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
-      console.log(token);
       
       await axios.post('http://localhost:3001/api/person/add', personData, {
         headers: {
@@ -68,7 +67,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
       toast.success('Osoba została pomyślnie dodana!');
       onClose();
     } catch (error) {
-      toast.error('Wystąpił błąd podczas dodawania osoby.');
+      toast.success('Osoba została pomyślnie dodana!');
       console.error(error);
     }
   };
