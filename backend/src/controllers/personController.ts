@@ -1,21 +1,18 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import mongoose, { Types } from 'mongoose';
+import mongoose from 'mongoose';
 
 import Person, { IPerson } from '../models/Person';
-import User, { UserDocument } from '../models/User'; // Import the User model
+import User, { UserDocument } from '../models/User'; 
 import jwt from 'jsonwebtoken';
-import { request } from 'http';
-import { loginUser } from './authController';
 
 export const addPerson = async (req: Request, res: Response): Promise<void> => {
-  // Sprawdź wyniki walidacji
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400).json({ errors: errors.array() });
     return;
   }
-  
+
   try {
     const { 
       gender, 
@@ -33,11 +30,14 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       deathDateFrom,
       deathDateTo,
       deathPlace,
+      burialPlace,
+      photo, 
+      photoUrl,
       status
     } = req.body;
 
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Token w nagłówku Authorization
+    const token = authHeader && authHeader.split(' ')[1]; 
 
     if (!token) {
       res.status(401).json({ msg: 'Brak tokenu' });
@@ -50,6 +50,16 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       }
       req.user = decoded as UserDocument;
     });
+
+    let photoPath: string | null = null;
+
+    if (req.file) {
+      // Jeśli zdjęcie jest plikiem, zapisujemy jego ścieżkę
+      photoPath = `uploads/${req.file.filename}`;
+    } else if (photoUrl) {
+      // Jeśli zdjęcie jest URL-em, zapisujemy go w bazie danych
+      photoPath = photoUrl;
+    }
 
     // Utwórz nową osobę na podstawie danych z żądania
     const newPerson = new Person({
@@ -69,32 +79,48 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       deathDateFrom,
       deathDateTo,
       deathPlace,
+      burialPlace,
+      photo: photoPath,
       parents: [],
       siblings: [],
       spouses: [],
       children: [],
-    })
-    
+    });
+
+    console.log(newPerson);
+
+    await newPerson.save();  // Save the subdocument first
     const updatedUser = await User.findOneAndUpdate(
-      {email: req.user?.email},
-      { $push: { persons: newPerson } }, // Dodaj ID osoby
+      { email: req.user?.email },
+      { $push: { persons: newPerson } },
       { new: true, useFindAndModify: false }
     );
-
+    
+    // Check if updatedUser is null
+    if (!updatedUser) {
+      res.status(404).json({ message: 'Nie znaleziono użytkownika' });
+      return;
+    }
+    
+    // Save the updated user document
+    await updatedUser.save();
+    
     res.status(201).json({ message: 'Osoba została dodana', person: newPerson });
+    
+    
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Wystąpił błąd podczas dodawania osoby', error });
   }
 };
 
-// Funkcja do aktualizacji danych osoby
+
+
 export const updatePerson = async (req: Request, res: Response): Promise<void> => {
-  // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400).json({ errors: errors.array() });
-    return; // Avoid further processing in case of validation errors
+    return; 
   }
 
   try {
@@ -127,12 +153,41 @@ export const updatePerson = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    
+
     // Find the person index in the logged-in user's persons list
     const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === personId);
 
     if (personIndex === -1) {
       res.status(404).json({ message: 'Osoba nie znaleziona' });
       return;
+    }
+
+    if (updateData.spouses) {
+      // Update the wedding date for the person's spouse as well
+      const person = loggedInUser.persons[personIndex];
+      const spouse = person.spouses?.find(spouse => spouse.personId.toString() !== personId);
+
+      if (spouse) {
+        // Find the index of the spouse in the user's persons list
+        const spouseIndex = loggedInUser.persons.findIndex(p => p._id.toString() === spouse.personId.toString());
+        if (spouseIndex !== -1) {
+          // Update the spouse's wedding date
+          loggedInUser.persons[spouseIndex].spouses?.forEach(s => {
+            if (s.personId.toString() === personId) {
+              s.weddingDate = updateData.spouses[0].weddingDate;  // Update wedding date for spouse
+            }
+          });
+        }
+      }
+    }
+
+    if (req.file) {
+      updateData.photo = req.file.path; 
+    } else if (updateData.photo) {
+      updateData.photo = updateData.photo; 
+    } else if (req.file === undefined && !updateData.photo) {
+      updateData.photo = loggedInUser.persons[personIndex].photo;
     }
 
     // Update the person's details
@@ -345,11 +400,21 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   
       // Pobieranie pełnych danych dla relacji
       const result = await Promise.all(paginatedPersons.map(async person => {
+        // Pobierz dane rodziców, rodzeństwa, małżonków i dzieci
         const parents = await getPersonData(person.parents);
         const siblings = await getPersonData(person.siblings);
-        const spouses = await getPersonData(person.spouses);
         const children = await getPersonData(person.children);
-  
+      
+        // Przetwórz dane małżonków, uwzględniając zarówno ID osoby, jak i datę ślubu
+        const spouses = await Promise.all(person.spouses.map(async spouse => {
+          const spouseData = await getPersonData([spouse.personId]); // Zakładamy, że personId to ObjectId
+          return {
+            ...spouseData[0], // Zwróć dane małżonka
+            weddingDate: spouse.weddingDate // Dodaj datę ślubu
+          };
+        }));
+      
+        // Zwróć sformatowane dane
         return {
           _id: person._id.toString(),
           firstName: person.firstName,
@@ -360,12 +425,15 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
           gender: person.gender,
           birthPlace: person.birthPlace,
           deathPlace: person.deathPlace,
+          burialPlace: person.burialPlace,
+          photo: person.photo,
           parents,
           siblings,
-          spouses,
+          spouses, // Małżonkowie z datą ślubu
           children
         };
       }));
+      
   
       res.status(200).json({
         users: result,
@@ -447,6 +515,10 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
             deathDateFrom,
             deathDateTo,
             relationType,
+            burialPlace,
+            photo, 
+      photoUrl,
+      weddingDate,
             id // ID of the existing person to whom we are adding a relationship
         } = req.body;
 
@@ -476,6 +548,17 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
             return;
         }
 
+        let photoPath: string | null = null;
+
+    if (req.file) {
+      // Jeśli zdjęcie jest plikiem, zapisujemy jego ścieżkę
+      photoPath = `uploads/${req.file.filename}`;
+    } else if (photoUrl) {
+      // Jeśli zdjęcie jest URL-em, zapisujemy go w bazie danych
+      photoPath = photoUrl;
+    }
+
+
         // Create a new person with data from the request
         const newPerson = new Person({
             gender,
@@ -493,6 +576,8 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
             deathDateType,
             deathDateFrom,
             deathDateTo,
+            burialPlace,
+            photo: photoPath,
             parents: [],
             siblings: [],
             spouses: [],
@@ -529,7 +614,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
 
                         // Set siblings for the newly added person
                         newPerson.siblings = [...existingPerson.siblings.filter(
-                            (siblingId: any) => siblingId.toString() !== savedPerson._id.toString()
+                            (siblingId: any) => siblingId.toString() !== newPerson._id.toString()
                         )];
                         newPerson.siblings.push(existingPerson._id);
                         break;
@@ -539,8 +624,14 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
                         existingPerson.children.push(newPerson._id); // Add the parent to the existing person
                         break;
                     case 'Partner':
-                      newPerson.spouses.push(existingPerson._id); // Add the partner to the new person
-                        existingPerson.spouses.push(newPerson._id); // Add the partner to the existing person
+                      newPerson.spouses.push({
+                        personId: existingPerson._id,
+                        weddingDate: weddingDate
+                      }); // Add the partner to the new person
+                        existingPerson.spouses.push({
+                          personId: newPerson._id,
+                          weddingDate: weddingDate
+                        }); 
                         break;
                     default:
                         res.status(400).json({ message: 'Nieznany typ relacji.' });
@@ -781,40 +872,40 @@ export const getRelations = async (req: Request, res: Response) => {
     const getPersonsByIds = (ids: mongoose.Types.ObjectId[]) =>
       loggedInUser.persons.filter((p: IPerson) => ids.includes(p._id));
 
-    const relations = {
-      Rodzice: getPersonsByIds(person.parents),
-      Rodzeństwo: getPersonsByIds(person.siblings),
-      Małżonkowie: getPersonsByIds(person.spouses),
-      Dzieci: getPersonsByIds(person.children),
-    };
+    // const relations = {
+    //   Rodzice: getPersonsByIds(person.parents),
+    //   Rodzeństwo: getPersonsByIds(person.siblings),
+    //   Małżonkowie: getPersonsByIds(person.spouses),
+    //   Dzieci: getPersonsByIds(person.children),
+    // };
 
-    // Return the relations
-    res.json({
-      Rodzice: relations.Rodzice.map((parent: IPerson) => ({
-        _id: parent._id,
-        firstName: parent.firstName,
-        lastName: parent.lastName,
-        gender: parent.gender,
-      })),
-      Rodzeństwo: relations.Rodzeństwo.map((sibling: IPerson) => ({
-        _id: sibling._id,
-        firstName: sibling.firstName,
-        lastName: sibling.lastName,
-        gender: sibling.gender,
-      })),
-      Małżonkowie: relations.Małżonkowie.map((spouse: IPerson) => ({
-        _id: spouse._id,
-        firstName: spouse.firstName,
-        lastName: spouse.lastName,
-        gender: spouse.gender,
-      })),
-      Dzieci: relations.Dzieci.map((child: IPerson) => ({
-        _id: child._id,
-        firstName: child.firstName,
-        lastName: child.lastName,
-        gender: child.gender,
-      })),
-    });
+    // // Return the relations
+    // res.json({
+    //   Rodzice: relations.Rodzice.map((parent: IPerson) => ({
+    //     _id: parent._id,
+    //     firstName: parent.firstName,
+    //     lastName: parent.lastName,
+    //     gender: parent.gender,
+    //   })),
+    //   Rodzeństwo: relations.Rodzeństwo.map((sibling: IPerson) => ({
+    //     _id: sibling._id,
+    //     firstName: sibling.firstName,
+    //     lastName: sibling.lastName,
+    //     gender: sibling.gender,
+    //   })),
+    //   Małżonkowie: relations.Małżonkowie.map((spouse: IPerson) => ({
+    //     _id: spouse._id,
+    //     firstName: spouse.firstName,
+    //     lastName: spouse.lastName,
+    //     gender: spouse.gender,
+    //   })),
+    //   Dzieci: relations.Dzieci.map((child: IPerson) => ({
+    //     _id: child._id,
+    //     firstName: child.firstName,
+    //     lastName: child.lastName,
+    //     gender: child.gender,
+    //   })),
+    // });
   } catch (error) {
     console.error('Error fetching relations:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -958,72 +1049,67 @@ export const getPersonsWithoutRelation = async (req: Request, res: Response) => 
 export const addRelation = async (req: Request, res: Response) => {
   const { personId, relatedPersonId, relationType } = req.body;
 
-
-  // Validate relation type
   const validRelationTypes = ['parent', 'sibling', 'spouse', 'child'];
   if (!validRelationTypes.includes(relationType)) {
-      return res.status(400).json({ message: 'Nieprawidłowy typ relacji' });
+    return res.status(400).json({ message: 'Nieprawidłowy typ relacji' });
   }
 
   try {
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-      if (!token) {
-          return res.status(401).json({ msg: 'Brak tokenu' });
-      }
+    if (!token) {
+      return res.status(401).json({ msg: 'Brak tokenu' });
+    }
 
-      // Verify the token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      const user = decoded as UserDocument;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    const user = decoded as UserDocument;
 
-      if (!user) {
-          return res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-      }
+    if (!user) {
+      return res.status(401).json({ msg: 'Token jest nieprawidłowy' });
+    }
 
-      // Fetch the logged-in user and populate their persons field
-      const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+    const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
 
-      if (!loggedInUser) {
-          return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
-      }
+    if (!loggedInUser) {
+      return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
+    }
 
-      // Find the person and related person from the logged-in user's persons
-      const person = loggedInUser.persons.find(p => p._id.toString() === personId);
-      const relatedPerson = loggedInUser.persons.find(p => p._id.toString() === relatedPersonId);
+    const person = loggedInUser.persons.find((p: any) => p._id.toString() === personId);
+    const relatedPerson = loggedInUser.persons.find((p: any) => p._id.toString() === relatedPersonId);
 
-      if (!person || !relatedPerson) {
-          return res.status(404).json({ message: 'Osoba nie znaleziona' });
-      }
+    if (!person || !relatedPerson) {
+      return res.status(404).json({ message: 'Osoba nie znaleziona' });
+    }
 
-      // Add relation
-      switch (relationType) {
-          case 'parent':
-              if (!person.parents.includes(relatedPersonId)) person.parents.push(relatedPersonId);
-              if (!relatedPerson.children.includes(personId)) relatedPerson.children.push(personId);
-              break;
-          case 'sibling':
-              if (!person.siblings.includes(relatedPersonId)) person.siblings.push(relatedPersonId);
-              if (!relatedPerson.siblings.includes(personId)) relatedPerson.siblings.push(personId);
-              break;
-          case 'spouse':
-              if (!person.spouses.includes(relatedPersonId)) person.spouses.push(relatedPersonId);
-              if (!relatedPerson.spouses.includes(personId)) relatedPerson.spouses.push(personId);
-              break;
-          case 'child':
-              if (!person.children.includes(relatedPersonId)) person.children.push(relatedPersonId);
-              if (!relatedPerson.parents.includes(personId)) relatedPerson.parents.push(personId);
-              break;
-          default:
-              return res.status(400).json({ message: 'Nieprawidłowy typ relacji' });
-      }
+    // Modify the person and relatedPerson
+    switch (relationType) {
+      case 'parent':
+        if (!person.parents.includes(relatedPersonId)) person.parents.push(relatedPersonId);
+        if (!relatedPerson.children.includes(personId)) relatedPerson.children.push(personId);
+        break;
+      case 'sibling':
+        if (!person.siblings.includes(relatedPersonId)) person.siblings.push(relatedPersonId);
+        if (!relatedPerson.siblings.includes(personId)) relatedPerson.siblings.push(personId);
+        break;
+      case 'spouse':
+        if (!person.spouses.includes(relatedPersonId)) person.spouses.push(relatedPersonId);
+        if (!relatedPerson.spouses.includes(personId)) relatedPerson.spouses.push(personId);
+        break;
+      case 'child':
+        if (!person.children.includes(relatedPersonId)) person.children.push(relatedPersonId);
+        if (!relatedPerson.parents.includes(personId)) relatedPerson.parents.push(personId);
+        break;
+      default:
+        return res.status(400).json({ message: 'Nieprawidłowy typ relacji' });
+    }
 
-      await person.save();
-      await relatedPerson.save();
+    // Save the updated User document
+    await loggedInUser.save();
 
-      res.status(200).json({ message: 'Relacja została pomyślnie dodana' });
+    res.status(200).json({ message: 'Relacja została pomyślnie dodana' });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Błąd serwera' });
+    console.error(error);
+    res.status(500).json({ message: 'Błąd serwera' });
   }
 };

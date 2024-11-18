@@ -2,14 +2,30 @@ import express from 'express';
 import { addPersonValidation, updatePersonValidation } from '../validation/personValidator'; // Import reguł walidacji
 import { addPerson, deletePerson, getPersonCount, updatePerson, getAllUsers, getUser, addPersonWithRelationships, getFact, getRelations, deleteRelationship, getPersonsWithoutRelation, addRelation } from '../controllers/personController'; // Import funkcji kontrolera
 import { authenticateToken } from '../Middleware/authenticateToken';
+import multer from 'multer';
+import path from 'path';
+
+// Konfiguracja multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Folder, w którym będą przechowywane zdjęcia
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);  // Rozszerzenie pliku
+    const fileName = Date.now() + ext;  // Unikalna nazwa pliku
+    cb(null, fileName);
+  }
+});
+
+const upload = multer({ storage });
 
 const router = express.Router();
 
-// Definiowanie trasy do dodawania nowej osoby z walidacją
-router.post('/add', authenticateToken, addPersonValidation, addPerson);
+// Trasa do dodawania nowej osoby z obsługą zdjęcia jako pliku lub URL
+router.post('/add', authenticateToken, upload.single('photo'), addPersonValidation, addPerson);
 
 // Definiowanie trasy do aktualizacji osoby z walidacją
-router.put('/update/:id', authenticateToken,  updatePerson);
+router.put('/update/:id', authenticateToken, upload.single('photo'),  updatePerson);
 // updatePersonValidation
 
 router.delete('/delete/:id', authenticateToken, deletePerson)
@@ -20,7 +36,7 @@ router.get('/users',authenticateToken, getAllUsers);
 
 router.get('/users/:id', authenticateToken, getUser)
 
-router.post('/addPersonWithRelationships', authenticateToken, addPersonWithRelationships);
+router.post('/addPersonWithRelationships', authenticateToken,upload.single('photo'), addPersonWithRelationships);
 
 router.get('/users/fact/:id', authenticateToken, getFact);
 

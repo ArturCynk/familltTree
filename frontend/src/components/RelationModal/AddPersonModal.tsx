@@ -3,14 +3,14 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 interface AddPersonModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    relationLabel: string; // Przekazywana etykieta relacji
-    relationType: string; // Typ relacji w języku angielskim
-    id: string;
-  }
-  
-  const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relationLabel, relationType, id }) => {
+  isOpen: boolean;
+  onClose: () => void;
+  relationLabel: string; // Przekazywana etykieta relacji
+  relationType: string; // Typ relacji w języku angielskim
+  id: string;
+}
+
+const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relationLabel, relationType, id }) => {
   const [gender, setGender] = useState<'male' | 'female' | 'non-binary'>('male');
   const [firstName, setFirstName] = useState<string>('');
   const [middleName, setMiddleName] = useState<string>('');
@@ -26,8 +26,21 @@ interface AddPersonModalProps {
   const [deathDateFrom, setDeathDateFrom] = useState<string>('');
   const [deathDate, setDeathDate] = useState<string>('');
   const [deathDateTo, setDeathDateTo] = useState<string>('');
+  const [burialPlace, setBurialPlace] = useState<string>('');
+  const [weddingDate, setWeddingDate] = useState<string>('');
+  const [photo, setPhoto] = useState<File | null>(null); // Typ zmieniony na File
+  const [photoUrl, setPhotoUrl] = useState<string>(''); // URL zdjęcia
+  const [isFileUpload, setIsFileUpload] = useState<boolean>(true); // Określenie, czy użytkownik chce przesłać plik
+
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setPhoto(e.target.files[0]); // Zapisz pierwszy wybrany plik
+    }
+  };
+
   console.log(relationType, id);
-  
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,14 +66,27 @@ interface AddPersonModalProps {
       deathDateType,
       deathDateFrom,
       deathDateTo,
+      burialPlace,
+      photo,
+      weddingDate,
+      photoUrl
     };
+
+    if (photo) {
+      personData.photo = photo
+    }
+    console.log(photoUrl)
+    // Jeśli wybrano URL zdjęcia, dodaj go do formData
+    if (photoUrl) {
+      personData.photoUrl = photoUrl;
+    }
 
     try {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
-      await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', {...personData, relationType, id},{
+      await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', { ...personData, relationType, id }, {
         headers: {
           'Authorization': `Bearer ${token}`, // Dodaj token autoryzacji
-          'Content-Type': 'application/json'
+          'Content-Type': 'multipart/form-data'
         }
       });
       toast.success('Osoba została pomyślnie dodana!');
@@ -85,7 +111,7 @@ interface AddPersonModalProps {
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleClose} // Obsługuje kliknięcie poza modalnym oknem
     >
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg space-y-8 relative">
+      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg space-y-8 relative scroll-m-0 overflow-y-auto max-h-[800px]">
         <form onSubmit={handleSubmit} className="space-y-6">
           <h2 className="text-2xl font-bold text-gray-800 text-center">{relationLabel}</h2>
           {/* Wybór płci */}
@@ -258,6 +284,67 @@ interface AddPersonModalProps {
             />
           </div>
 
+          {/* Wybór metody wgrywania zdjęcia */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Wybierz metodę dodania zdjęcia</label>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                className={`px-4 py-2 rounded-md ${isFileUpload ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+                onClick={() => setIsFileUpload(true)}
+              >
+                Prześlij plik
+              </button>
+              <button
+                type="button"
+                className={`px-4 py-2 rounded-md ${!isFileUpload ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+                onClick={() => setIsFileUpload(false)}
+              >
+                Podaj URL
+              </button>
+            </div>
+          </div>
+
+          {/* Wybór pliku */}
+          {isFileUpload && (
+            <div>
+              <label htmlFor="photo" className="block text-sm font-medium text-gray-700 mb-1">Zdjęcie (plik)</label>
+              <input
+                id="photo"
+                type="file"
+                onChange={handleFileChange}
+                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+              />
+            </div>
+          )}
+
+          {/* Wprowadzenie URL */}
+          {!isFileUpload && (
+            <div>
+              <label htmlFor="photoUrl" className="block text-sm font-medium text-gray-700 mb-1">URL zdjęcia</label>
+              <input
+                id="photoUrl"
+                type="url"
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+              />
+            </div>
+          )}
+
+          {relationType === 'Partner' && (
+            <div>
+              <label htmlFor="weddingDate" className="block text-sm font-medium text-gray-700 mb-1">Data śluby</label>
+              <input
+                id="birthDate"
+                type="date"
+                value={weddingDate}
+                onChange={(e) => setWeddingDate(e.target.value)}
+                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+              />
+            </div>
+          )}
+
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -305,6 +392,17 @@ interface AddPersonModalProps {
                 <option value="fromTo">Od ... do ...</option>
                 <option value="freeText">Wolny tekst</option>
               </select>
+
+              <div>
+                <label htmlFor="burialPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce Pochuwku</label>
+                <input
+                  id="burialPlace"
+                  type="text"
+                  value={burialPlace}
+                  onChange={(e) => setBurialPlace(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
 
               {(deathDateType === 'exact') && (
                 <div>

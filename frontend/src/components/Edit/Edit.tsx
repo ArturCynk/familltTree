@@ -21,6 +21,9 @@ interface Person {
   deathDate?: string;
   deathDateFrom?: string;
   deathDateTo?: string;
+  burialPlace?: string;
+  spouses?: { weddingDate: string }[];
+  photo?: string;
 }
 
 interface PersonModalProps {
@@ -67,6 +70,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
     e.preventDefault();
     if (!formData) return;
 
+    console.log(formData);
+
     try {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
       await axios.put(`http://localhost:3001/api/person/update/${id}`, formData, {
@@ -88,6 +93,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
 
     setShowDeleteConfirm(false);
     setIsDeleting(true);
+
     try {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
       await axios.delete(`http://localhost:3001/api/person/delete/${id}`, {
@@ -126,9 +132,28 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
       onClick={handleOverlayClick}
     >
       <div
-        className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg space-y-8"
+        className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg space-y-8 scroll-m-0 overflow-y-auto max-h-[800px]"
         onClick={handleModalClick}
       >
+        
+        {formData?.photo &&
+  (formData.photo.includes("uploads/") ||
+    formData.photo.startsWith("http")) && (
+    <img
+      src={
+        formData.photo.includes("uploads/")
+          ? `http://localhost:3001/${formData.photo}`
+          : formData.photo
+      }
+      alt={`${formData?.firstName} ${formData?.lastName}`}
+      className="w-full h-auto rounded-md"
+    />
+  )}
+
+
+
+
+
         <h2 className="text-2xl font-bold text-gray-800 text-center">Edytuj osobę</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Wybór płci */}
@@ -293,6 +318,24 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
             />
           </div>
 
+         {/* Data ślubu */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Data ślubu</label>
+  <input
+    type="date"
+    name="weddingDate"
+    value={formData?.spouses?.[0]?.weddingDate || ''} // Pierwszy małżonek
+    onChange={(e) => {
+      if (formData && formData.spouses) {
+        const updatedSpouses = [...formData.spouses];
+        updatedSpouses[0].weddingDate = e.target.value; // Zaktualizowanie daty ślubu pierwszego małżonka
+        setFormData({ ...formData, spouses: updatedSpouses });
+      }
+    }}
+    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+  />
+</div>
+        
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -342,6 +385,18 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                 <option value="freeText">Wolny tekst</option>
               </select>
 
+              <div>
+            <label htmlFor="burialPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce Pochowku</label>
+            <input
+              id="burialPlace"
+              name="burialPlace"
+              type="text"
+              value={formData?.burialPlace || ''}
+              onChange={handleChange}
+              className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+            />
+          </div>
+
               {(formData?.deathDateType === 'between' || formData?.deathDateType === 'fromTo') && (
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
@@ -382,6 +437,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                   />
                 </div>
               )}
+              
             </div>
           )}
 
