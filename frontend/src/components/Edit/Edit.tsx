@@ -49,6 +49,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
         .then(response => {
           setPerson(response.data);
           setFormData(response.data);
+          console.table(person);
           setIsLoading(false);
         })
         .catch(error => {

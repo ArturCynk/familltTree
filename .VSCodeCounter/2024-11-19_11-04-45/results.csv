@@ -1,0 +1,20 @@
+"filename", "language", "TypeScript", "JSON with Comments", "JSON", "Properties", "comment", "blank", "total"
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\.env", "Properties", 0, 0, 0, 4, 0, 0, 4
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\app.ts", "TypeScript", 31, 0, 0, 0, 3, 13, 47
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\package-lock.json", "JSON", 0, 0, 1676, 0, 0, 1, 1677
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\package.json", "JSON", 0, 0, 35, 0, 0, 1, 36
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\Middleware\authenticateToken.ts", "TypeScript", 19, 0, 0, 0, 0, 8, 27
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\config\database.ts", "TypeScript", 13, 0, 0, 0, 0, 3, 16
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\controllers\authController.ts", "TypeScript", 132, 0, 0, 0, 13, 40, 185
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\controllers\personController.ts", "TypeScript", 837, 0, 0, 0, 92, 189, 1118
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\email\sendEmail.ts", "TypeScript", 33, 0, 0, 0, 1, 5, 39
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\email\templates\activationEmail.ts", "TypeScript", 107, 0, 0, 0, 0, 3, 110
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\email\templates\resetPasswordEmail.ts", "TypeScript", 94, 0, 0, 0, 5, 12, 111
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\models\Person.ts", "TypeScript", 99, 0, 0, 0, 0, 4, 103
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\models\User.ts", "TypeScript", 40, 0, 0, 0, 0, 4, 44
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\routes\authRoutes.ts", "TypeScript", 10, 0, 0, 0, 2, 8, 20
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\routes\personRoutes.ts", "TypeScript", 31, 0, 0, 0, 4, 18, 53
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\validation\authValidation.ts", "TypeScript", 21, 0, 0, 0, 0, 4, 25
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\src\validation\personValidator.ts", "TypeScript", 50, 0, 0, 0, 2, 5, 57
+"c:\Users\artur\OneDrive\Dokumenty\familltTree\backend\tsconfig.json", "JSON with Comments", 0, 14, 0, 0, 0, 1, 15
+"Total", "-", 1517, 14, 1711, 4, 122, 319, 3687

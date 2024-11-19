@@ -359,7 +359,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       const searchQuery = req.query.searchQuery as string | undefined;
       const letter = req.query.letter as string | undefined;
       const page = parseInt(req.query.page as string) || 1; // Strona (domyślnie 1)
-      const limit = parseInt(req.query.limit as string) || 10; // Liczba użytkowników na stronie (domyślnie 10)
+      const limit = parseInt(req.query.limit as string) || 25; // Liczba użytkowników na stronie (domyślnie 10)
   
       // Budowanie zapytania
       let query: Query = {};
@@ -841,7 +841,9 @@ export const getRelations = async (req: Request, res: Response) => {
     // Check for token in Authorization header
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-
+    console.log('====================================');
+    console.log(token);
+    console.log('====================================');
     if (!token) {
       return res.status(401).json({ msg: 'Brak tokenu' });
     }
@@ -867,45 +869,54 @@ export const getRelations = async (req: Request, res: Response) => {
     if (!person) {
       return res.status(404).json({ message: 'Person not found' });
     }
-
-    // Filter relations from logged-in user's persons
+    console.log(person)
     const getPersonsByIds = (ids: mongoose.Types.ObjectId[]) =>
-      loggedInUser.persons.filter((p: IPerson) => ids.includes(p._id));
+      loggedInUser.persons.filter((p: IPerson) =>
+        ids.some(id => id.toString() === p._id.toString())
+      );
+    
+    
+      const getPersonsByIdsSpouses = (ids: mongoose.Types.ObjectId[]) =>
+        loggedInUser.persons.filter(p =>
+          ids.some(id => id.toString() === p._id.toString()) // Porównujemy personId z _id osób w loggedInUser.persons
+        );
+      
+      const relations = {
+        Rodzice: getPersonsByIds(person.parents),
+        Rodzeństwo: getPersonsByIds(person.siblings),
+        Małżonkowie: getPersonsByIdsSpouses(person.spouses.map(spouse => spouse.personId)), // Mapujemy po personId
+        Dzieci: getPersonsByIds(person.children),
+      };
+    console.log(getPersonsByIds(person.spouses.map(spouse => spouse.personId)))
+    console.log(getPersonsByIds(person.children));
 
-    // const relations = {
-    //   Rodzice: getPersonsByIds(person.parents),
-    //   Rodzeństwo: getPersonsByIds(person.siblings),
-    //   Małżonkowie: getPersonsByIds(person.spouses),
-    //   Dzieci: getPersonsByIds(person.children),
-    // };
-
-    // // Return the relations
-    // res.json({
-    //   Rodzice: relations.Rodzice.map((parent: IPerson) => ({
-    //     _id: parent._id,
-    //     firstName: parent.firstName,
-    //     lastName: parent.lastName,
-    //     gender: parent.gender,
-    //   })),
-    //   Rodzeństwo: relations.Rodzeństwo.map((sibling: IPerson) => ({
-    //     _id: sibling._id,
-    //     firstName: sibling.firstName,
-    //     lastName: sibling.lastName,
-    //     gender: sibling.gender,
-    //   })),
-    //   Małżonkowie: relations.Małżonkowie.map((spouse: IPerson) => ({
-    //     _id: spouse._id,
-    //     firstName: spouse.firstName,
-    //     lastName: spouse.lastName,
-    //     gender: spouse.gender,
-    //   })),
-    //   Dzieci: relations.Dzieci.map((child: IPerson) => ({
-    //     _id: child._id,
-    //     firstName: child.firstName,
-    //     lastName: child.lastName,
-    //     gender: child.gender,
-    //   })),
-    // });
+    // Return the relations
+    res.json({
+      Rodzice: relations.Rodzice.map((parent: IPerson) => ({
+        _id: parent._id,
+        firstName: parent.firstName,
+        lastName: parent.lastName,
+        gender: parent.gender,
+      })),
+      Rodzeństwo: relations.Rodzeństwo.map((sibling: IPerson) => ({
+        _id: sibling._id,
+        firstName: sibling.firstName,
+        lastName: sibling.lastName,
+        gender: sibling.gender,
+      })),
+      Małżonkowie: relations.Małżonkowie.map((spouse: IPerson) => ({
+        _id: spouse._id,
+        firstName: spouse.firstName,
+        lastName: spouse.lastName,
+        gender: spouse.gender,
+      })),
+      Dzieci: relations.Dzieci.map((child: IPerson) => ({
+        _id: child._id,
+        firstName: child.firstName,
+        lastName: child.lastName,
+        gender: child.gender,
+      })),
+    });
   } catch (error) {
     console.error('Error fetching relations:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -1092,10 +1103,20 @@ export const addRelation = async (req: Request, res: Response) => {
         if (!person.siblings.includes(relatedPersonId)) person.siblings.push(relatedPersonId);
         if (!relatedPerson.siblings.includes(personId)) relatedPerson.siblings.push(personId);
         break;
-      case 'spouse':
-        if (!person.spouses.includes(relatedPersonId)) person.spouses.push(relatedPersonId);
-        if (!relatedPerson.spouses.includes(personId)) relatedPerson.spouses.push(personId);
-        break;
+        case 'spouse': {
+          const currentDate = new Date();
+      
+          // Sprawdź, czy relatedPersonId nie jest już w liście współmałżonków
+          if (!person.spouses.some(spouse => spouse.personId.equals(relatedPersonId))) {
+            person.spouses.push({ personId: relatedPersonId, weddingDate: currentDate });
+          }
+      
+          // Sprawdź, czy personId nie jest już w liście współmałżonków relatedPerson
+          if (!relatedPerson.spouses.some(spouse => spouse.personId.equals(person._id))) {
+            relatedPerson.spouses.push({ personId: person._id, weddingDate: currentDate });
+          }
+          break;
+        }
       case 'child':
         if (!person.children.includes(relatedPersonId)) person.children.push(relatedPersonId);
         if (!relatedPerson.parents.includes(personId)) relatedPerson.parents.push(personId);
