@@ -96,8 +96,18 @@ const RenderRelations = (person: Person) => {  // Accept `person` directly
   );
 };
 
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(searchQuery);
 
-  const { people, loading, error, totalPages, totalUsers, refetch } = usePeople(selectedLetter, currentPage, searchQuery);
+  const { people, loading, error, totalPages, totalUsers, refetch } = usePeople(selectedLetter, currentPage, debouncedSearchQuery);
+
+  // Funkcja do opóźnienia wyszukiwania
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 3000); // 500ms debouncing
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {

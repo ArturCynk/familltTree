@@ -348,7 +348,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   
       // Weryfikacja tokena
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      const user = decoded as UserDocument;
+      const user = decoded as { email: string }; // Zakładam, że użytkownik ma email w tokenie
   
       if (!user) {
         res.status(401).json({ msg: 'Token jest nieprawidłowy' });
@@ -359,26 +359,37 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       const searchQuery = req.query.searchQuery as string | undefined;
       const letter = req.query.letter as string | undefined;
       const page = parseInt(req.query.page as string) || 1; // Strona (domyślnie 1)
-      const limit = parseInt(req.query.limit as string) || 25; // Liczba użytkowników na stronie (domyślnie 10)
+      const limit = parseInt(req.query.limit as string) || 25; // Liczba użytkowników na stronie (domyślnie 25)
   
       // Budowanie zapytania
-      let query: Query = {};
+      let query: any = {};
+      let firstName: string | undefined;
+let lastName: string | undefined;
   
       if (searchQuery) {
-        // Szukanie po pełnym imieniu i nazwisku (łączenie firstName i lastName)
+        [firstName, lastName] = searchQuery.split(' ');
         query = {
           $or: [
-            { $expr: { $regexMatch: { input: { $concat: ['$firstName', ' ', '$lastName'] }, regex: searchQuery, options: 'i' } } }
+            { firstName: { $regex: firstName, $options: 'i' } },
+            ...(lastName ? [{ lastName: { $regex: lastName, $options: 'i' } }] : [])
           ]
         };
       } else if (letter) {
-        // Filtrowanie według pierwszej litery nazwiska
-        query = { lastName: { $regex: `^${letter}`, $options: 'i' } };
+        // Filtrowanie według pierwszej litery imienia lub nazwiska
+        query = {
+          $or: [
+            { firstName: { $regex: `^${letter}`, $options: 'i' } }, // Imiona zaczynające się na literę
+            { lastName: { $regex: `^${letter}`, $options: 'i' } }    // Nazwiska zaczynające się na literę
+          ]
+        };
       }
   
       // Pobieranie użytkownika, a następnie jego osoby
-      const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
-  
+      const loggedInUser = await User.findOne({ email: user.email }) .populate({
+        path: 'persons',
+        match: query, // Użyj zapytania MongoDB do filtrowania
+      }).exec();
+
       if (!loggedInUser) {
         res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
         return;
@@ -386,11 +397,35 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   
       // Pobieranie osób powiązanych z zalogowanym użytkownikiem
       const persons = loggedInUser.persons.filter(person => {
-        return Object.keys(query).every(key => {
-          const typedKey = key as keyof IPerson; // Type assertion
-          return person[typedKey] === query[typedKey];
-        });
+        // Jeśli firstName jest "=" to filtruj tylko po lastName
+        if (firstName === "=") {
+          if (lastName && person.lastName.toLowerCase().includes(lastName.toLowerCase())) {
+            return true;
+          }
+          // Jeśli firstName == "=" i nie ma lastName, zwróć osoby pasujące tylko po lastName
+          return !lastName;
+        }
+      
+        // Jeśli firstName jest inne niż "=", filtruj po firstName i lastName
+        if (firstName) {
+          if (person.firstName.toLowerCase().includes(firstName.toLowerCase())) {
+            if (lastName && person.lastName.toLowerCase().includes(lastName.toLowerCase())) {
+              return true;
+            }
+            // Jeśli nie ma lastName, to wystarczy, że firstName pasuje
+            return !lastName;
+          }
+        }
+      
+        // Jeśli zarówno firstName, jak i lastName są undefined, zwróć wszystkie osoby
+        if (firstName === undefined && lastName === undefined) {
+          return true;
+        }
+      
+        // Jeśli żadne z warunków nie są spełnione, zwróć false
+        return false;
       });
+      
   
       // Paginacja
       const paginatedPersons = persons.slice((page - 1) * limit, page * limit);
@@ -404,7 +439,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         const parents = await getPersonData(person.parents);
         const siblings = await getPersonData(person.siblings);
         const children = await getPersonData(person.children);
-      
+  
         // Przetwórz dane małżonków, uwzględniając zarówno ID osoby, jak i datę ślubu
         const spouses = await Promise.all(person.spouses.map(async spouse => {
           const spouseData = await getPersonData([spouse.personId]); // Zakładamy, że personId to ObjectId
@@ -413,7 +448,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
             weddingDate: spouse.weddingDate // Dodaj datę ślubu
           };
         }));
-      
+  
         // Zwróć sformatowane dane
         return {
           _id: person._id.toString(),
@@ -433,8 +468,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
           children
         };
       }));
-      
-  
+
       res.status(200).json({
         users: result,
         totalUsers,

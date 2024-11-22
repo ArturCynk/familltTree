@@ -96,7 +96,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
         className="bg-white p-6 rounded-lg shadow-lg w-4/5 md:w-1/2 lg:w-1/3"
       >
         <h2 className="text-xl font-bold text-gray-800 mb-4">Usuń relacje</h2>
-        <div className="space-y-4">
+        <div className="space-y-4 scroll-m-0 overflow-y-auto max-h-[600px]">
           {Object.entries(relations).map(([relationType, people]) => (
             <div key={relationType}>
               {people.length > 0 ? (
@@ -129,7 +129,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
                 </>
               ) : (
                 <></>
-              )}
+              )};
             </div>
           ))}
         </div>

@@ -25,6 +25,8 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      console.log('tak');
+      
       onSearchEnter();  // Wywołanie wyszukiwania po kliknięciu Enter
     }
   };
