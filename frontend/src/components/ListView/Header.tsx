@@ -21,19 +21,24 @@ const Header: React.FC<HeaderProps> = ({
   isSearchOpen,
   searchQuery,
   onSearchChange,
-  onSearchEnter
+  onSearchEnter,
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       console.log('tak');
-      
-      onSearchEnter();  // Wywołanie wyszukiwania po kliknięciu Enter
+
+      onSearchEnter(); // Wywołanie wyszukiwania po kliknięciu Enter
     }
   };
 
   return (
     <div className="flex justify-between items-center w-full max-w-4xl mb-6">
-      <div className="text-gray-700 text-sm">Wyświetlanie 1-10 z {totalUsers} osób</div>
+      <div className="text-gray-700 text-sm">
+        Wyświetlanie 1-10 z
+        {totalUsers}
+        {' '}
+        osób
+      </div>
       <div className="flex gap-4 items-center">
         <button
           className="p-2 rounded-full hover:bg-gray-200 transition duration-300"
@@ -56,7 +61,7 @@ const Header: React.FC<HeaderProps> = ({
             placeholder="Szukaj..."
             value={searchQuery}
             onChange={onSearchChange}
-            onKeyDown={handleKeyDown}  // Obsługa naciśnięcia klawisza Enter
+            onKeyDown={handleKeyDown} // Obsługa naciśnięcia klawisza Enter
             style={{ width: isSearchOpen ? '100%' : '0' }}
           />
         </div>

@@ -53,18 +53,14 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
   useEffect(() => {
     // Filter persons based on search term
     setFilteredPersons(
-      persons.filter((person) =>
-        `${person.firstName} ${person.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      persons.filter((person) => `${person.firstName} ${person.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())),
     );
   }, [searchTerm, persons]);
   console.log(filteredPersons);
-  
 
   const handlePersonSelect = (personId: string) => {
     setSelectedPerson(personId); // Select only one person
     console.log(personId);
-    
   };
 
   const handleSave = async () => {
@@ -83,7 +79,7 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
               Authorization: `Bearer ${token}`, // Add authorization header
               'Content-Type': 'application/json',
             },
-          }
+          },
         );
         toast.success(response.data.message); // Show success message
         onClose();
@@ -137,7 +133,9 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
                       )}
                     </span>
                     <span className={`text-gray-800 ${selectedPerson === person._id ? 'font-semibold' : ''}`}>
-                      {person.firstName} {person.lastName}
+                      {person.firstName}
+                      {' '}
+                      {person.lastName}
                     </span>
                   </li>
                 ))}

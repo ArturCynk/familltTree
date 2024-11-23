@@ -43,16 +43,16 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
       axios.get(`http://localhost:3001/api/person/users/${id}`, {
         headers: {
-          'Authorization': `Bearer ${token}` // Dodaj nagłówek autoryzacji
-        }
+          Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+        },
       })
-        .then(response => {
+        .then((response) => {
           setPerson(response.data);
           setFormData(response.data);
           console.table(person);
           setIsLoading(false);
         })
-        .catch(error => {
+        .catch((error) => {
           onClose();
           toast.error('Nie udało się pobrać danych o osobie.');
           setIsLoading(false);
@@ -77,9 +77,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
       await axios.put(`http://localhost:3001/api/person/update/${id}`, formData, {
         headers: {
-          'Authorization': `Bearer ${token}`, // Dodaj nagłówek autoryzacji
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+          'Content-Type': 'application/json',
+        },
       });
       toast.success('Dane zostały pomyślnie zaktualizowane!');
       onClose();
@@ -99,8 +99,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
       await axios.delete(`http://localhost:3001/api/person/delete/${id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`, // Dodaj nagłówek autoryzacji
-        }
+          Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+        },
       });
       toast.success('Użytkownik został pomyślnie usunięty!');
       onClose();
@@ -136,24 +136,20 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
         className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg space-y-8 scroll-m-0 overflow-y-auto max-h-[800px]"
         onClick={handleModalClick}
       >
-        
-        {formData?.photo &&
-  (formData.photo.includes("uploads/") ||
-    formData.photo.startsWith("http")) && (
+
+        {formData?.photo
+  && (formData.photo.includes('uploads/')
+    || formData.photo.startsWith('http')) && (
     <img
       src={
-        formData.photo.includes("uploads/")
+        formData.photo.includes('uploads/')
           ? `http://localhost:3001/${formData.photo}`
           : formData.photo
       }
       alt={`${formData?.firstName} ${formData?.lastName}`}
       className="w-full h-auto rounded-md"
     />
-  )}
-
-
-
-
+        )}
 
         <h2 className="text-2xl font-bold text-gray-800 text-center">Edytuj osobę</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -319,24 +315,24 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
             />
           </div>
 
-         {/* Data ślubu */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">Data ślubu</label>
-  <input
-    type="date"
-    name="weddingDate"
-    value={formData?.spouses?.[0]?.weddingDate || ''} // Pierwszy małżonek
-    onChange={(e) => {
-      if (formData && formData.spouses) {
-        const updatedSpouses = [...formData.spouses];
-        updatedSpouses[0].weddingDate = e.target.value; // Zaktualizowanie daty ślubu pierwszego małżonka
-        setFormData({ ...formData, spouses: updatedSpouses });
-      }
-    }}
-    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-  />
-</div>
-        
+          {/* Data ślubu */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Data ślubu</label>
+            <input
+              type="date"
+              name="weddingDate"
+              value={formData?.spouses?.[0]?.weddingDate || ''} // Pierwszy małżonek
+              onChange={(e) => {
+                if (formData && formData.spouses) {
+                  const updatedSpouses = [...formData.spouses];
+                  updatedSpouses[0].weddingDate = e.target.value; // Zaktualizowanie daty ślubu pierwszego małżonka
+                  setFormData({ ...formData, spouses: updatedSpouses });
+                }
+              }}
+              className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+            />
+          </div>
+
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -387,16 +383,16 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
               </select>
 
               <div>
-            <label htmlFor="burialPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce Pochowku</label>
-            <input
-              id="burialPlace"
-              name="burialPlace"
-              type="text"
-              value={formData?.burialPlace || ''}
-              onChange={handleChange}
-              className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-            />
-          </div>
+                <label htmlFor="burialPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce Pochowku</label>
+                <input
+                  id="burialPlace"
+                  name="burialPlace"
+                  type="text"
+                  value={formData?.burialPlace || ''}
+                  onChange={handleChange}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
 
               {(formData?.deathDateType === 'between' || formData?.deathDateType === 'fromTo') && (
                 <div className="grid grid-cols-2 gap-4 mt-4">
@@ -438,7 +434,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                   />
                 </div>
               )}
-              
+
             </div>
           )}
 
@@ -472,28 +468,28 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
 
         {/* Potwierdzenie usunięcia */}
         {showDeleteConfirm && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60" onClick={handleOverlayClick}>
-    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4" onClick={handleModalClick}>
-      <h3 className="text-lg font-bold text-gray-800">Czy na pewno chcesz usunąć tego użytkownika?</h3>
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-300"
-        >
-          Tak, usuń
-        </button>
-        <button
-          type="button"
-          onClick={handleDeleteCancel}
-          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring focus:ring-gray-300"
-        >
-          Anuluj
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60" onClick={handleOverlayClick}>
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4" onClick={handleModalClick}>
+            <h3 className="text-lg font-bold text-gray-800">Czy na pewno chcesz usunąć tego użytkownika?</h3>
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-300"
+              >
+                Tak, usuń
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring focus:ring-gray-300"
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
+        </div>
+        )}
 
         {/* Tymczasowo usunięte */}
       </div>

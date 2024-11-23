@@ -17,6 +17,10 @@ interface Person {
   siblings: { _id: string; firstName?: string; lastName?: string }[];
   spouses: { _id: string; firstName?: string; lastName?: string }[];
   children: { _id: string; firstName?: string; lastName?: string }[];
+  Dzieci: { _id: string; firstName?: string; lastName?: string }[];
+  Rodzeństwo: { _id: string; firstName?: string; lastName?: string }[];
+  Małżonkowie: { _id: string; firstName?: string; lastName?: string }[];
+  Rodzice: { _id: string; firstName?: string; lastName?: string }[];
 }
 
 interface TableRowProps {
@@ -64,7 +68,8 @@ const TableRow: React.FC<TableRowProps> = ({
       >
         <td className="p-4 flex items-center">
           <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white font-semibold rounded-full mr-3">
-            {person.firstName[0]}{person.lastName[0]}
+            {person.firstName[0]}
+            {person.lastName[0]}
           </div>
           <div>
             <div className="font-semibold text-gray-800">{getDisplayName(person)}</div>
@@ -75,9 +80,13 @@ const TableRow: React.FC<TableRowProps> = ({
             )}
           </div>
         </td>
-        <td className="p-4 text-gray-500">{formatDate(person.birthDate)} {person.birthPlace}</td>
         <td className="p-4 text-gray-500">
-          {person.deathDate && `${formatDate(person.deathDate)}${person.deathPlace ? `, ${person.deathPlace}` : ""}`}
+          {formatDate(person.birthDate)}
+          {' '}
+          {person.birthPlace}
+        </td>
+        <td className="p-4 text-gray-500">
+          {person.deathDate && `${formatDate(person.deathDate)}${person.deathPlace ? `, ${person.deathPlace}` : ''}`}
         </td>
         <td className="relative p-10">
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
@@ -111,7 +120,7 @@ const TableRow: React.FC<TableRowProps> = ({
         onClose={handleCloseModal}
         person={selectedPerson}
       />
-    )}
+      )}
     </>
   );
 };

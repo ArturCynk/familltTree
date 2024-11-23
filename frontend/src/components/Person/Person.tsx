@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMale, faFemale, faGenderless, faPen, faPlus, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import {
+  faMale, faFemale, faGenderless, faPen, faPlus, faTrashAlt,
+} from '@fortawesome/free-solid-svg-icons';
 import { useSpring, animated } from '@react-spring/web';
 import PersonModal from '../Edit/Edit';
 import RelationModal from '../RelationModal/RelationModal';
@@ -14,7 +16,9 @@ interface PersonBoxProps {
   handleRefreshData: () => void;
 }
 
-const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName, onPersonUpdated, handleRefreshData }) => {
+const PersonBox: React.FC<PersonBoxProps> = ({
+  _id, gender, firstName, lastName, onPersonUpdated, handleRefreshData,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRelationModalOpen, setIsRelationModalOpen] = useState(false);
   const [isInfoBoxOpen, setIsInfoBoxOpen] = useState(false);
@@ -34,7 +38,7 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
     setIsInfoBoxOpen(false);
   };
 
-  const toggleInfoBox = () => setIsInfoBoxOpen(prev => !prev);
+  const toggleInfoBox = () => setIsInfoBoxOpen((prev) => !prev);
 
   const infoBoxSpring = useSpring({
     transform: isInfoBoxOpen ? 'translateX(0)' : 'translateX(-100%)',
@@ -66,7 +70,11 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
           </div>
         </div>
         <div className="flex-1 text-gray-800 flex items-center">
-          <p className="text-sm font-semibold">{firstName} {lastName}</p>
+          <p className="text-sm font-semibold">
+            {firstName}
+            {' '}
+            {lastName}
+          </p>
         </div>
         <div
           className="absolute bottom-0 right-0 flex items-center justify-center w-8 h-8 cursor-pointer"
@@ -85,10 +93,13 @@ const PersonBox: React.FC<PersonBoxProps> = ({ _id, gender, firstName, lastName,
 
       {/* Modal Edycji */}
       {isModalOpen && (
-        <PersonModal id={_id} onClose={() => {
-          handleCloseModal();
-          onPersonUpdated();
-        }} />
+        <PersonModal
+          id={_id}
+          onClose={() => {
+            handleCloseModal();
+            onPersonUpdated();
+          }}
+        />
       )}
 
       {/* Modal Relacji */}

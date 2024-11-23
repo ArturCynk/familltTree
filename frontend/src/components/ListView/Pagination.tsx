@@ -31,7 +31,13 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
         <FontAwesomeIcon icon={faChevronLeft} />
       </button>
       <span className="text-sm text-gray-700">
-        Strona {currentPage} z {totalPages}
+        Strona
+        {' '}
+        {currentPage}
+        {' '}
+        z
+        {' '}
+        {totalPages}
       </span>
       <button
         className={`p-2 rounded-full ${currentPage === totalPages ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-200'}`}

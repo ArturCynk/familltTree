@@ -37,9 +37,9 @@ const ChangePassword: React.FC = () => {
     setConfirmPasswordValid(isConfirmPasswordValid);
 
     if (!newPassword || !confirmPassword) {
-        toast.error('Wszystkie pola muszą być uzupełnione.');
-        return;
-      }
+      toast.error('Wszystkie pola muszą być uzupełnione.');
+      return;
+    }
 
     if (!isNewPasswordValid) {
       validatePassword(newPassword).forEach((error) => toast.error(error));
@@ -49,13 +49,12 @@ const ChangePassword: React.FC = () => {
       toast.error('Hasła się nie zgadzają.');
     }
 
-
     if (!isNewPasswordValid || !isConfirmPasswordValid) {
       return;
     }
 
     try {
-      let response = await axios.post(`http://localhost:3001/api/auth/reset-password/${token}`, { newPassword });
+      const response = await axios.post(`http://localhost:3001/api/auth/reset-password/${token}`, { newPassword });
       toast.success(response.data.msg);
       setNewPassword('');
       setConfirmPassword('');
@@ -99,13 +98,15 @@ const ChangePassword: React.FC = () => {
           </form>
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Masz już konto?{' '}
+              Masz już konto?
+              {' '}
               <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-300">
                 Zaloguj się
               </Link>
             </p>
             <p className="text-sm text-gray-600 mt-2">
-              Chcesz wrócić na stronę główną?{' '}
+              Chcesz wrócić na stronę główną?
+              {' '}
               <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-300">
                 Wróć na stronę główną
               </Link>

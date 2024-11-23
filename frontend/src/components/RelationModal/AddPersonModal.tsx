@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+
 interface AddPersonModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,7 +11,9 @@ interface AddPersonModalProps {
   id: string;
 }
 
-const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relationLabel, relationType, id }) => {
+const AddPersonModal: React.FC<AddPersonModalProps> = ({
+  isOpen, onClose, relationLabel, relationType, id,
+}) => {
   const [gender, setGender] = useState<'male' | 'female' | 'non-binary'>('male');
   const [firstName, setFirstName] = useState<string>('');
   const [middleName, setMiddleName] = useState<string>('');
@@ -32,7 +35,6 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relati
   const [photoUrl, setPhotoUrl] = useState<string>(''); // URL zdjęcia
   const [isFileUpload, setIsFileUpload] = useState<boolean>(true); // Określenie, czy użytkownik chce przesłać plik
 
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setPhoto(e.target.files[0]); // Zapisz pierwszy wybrany plik
@@ -40,7 +42,6 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relati
   };
 
   console.log(relationType, id);
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,13 +70,13 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relati
       burialPlace,
       photo,
       weddingDate,
-      photoUrl
+      photoUrl,
     };
 
     if (photo) {
-      personData.photo = photo
+      personData.photo = photo;
     }
-    console.log(photoUrl)
+    console.log(photoUrl);
     // Jeśli wybrano URL zdjęcia, dodaj go do formData
     if (photoUrl) {
       personData.photoUrl = photoUrl;
@@ -85,9 +86,9 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose, relati
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
       await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', { ...personData, relationType, id }, {
         headers: {
-          'Authorization': `Bearer ${token}`, // Dodaj token autoryzacji
-          'Content-Type': 'multipart/form-data'
-        }
+          Authorization: `Bearer ${token}`, // Dodaj token autoryzacji
+          'Content-Type': 'multipart/form-data',
+        },
       });
       toast.success('Osoba została pomyślnie dodana!');
       onClose();

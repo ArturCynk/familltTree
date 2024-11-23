@@ -36,7 +36,10 @@ const UserSchema: Schema<UserDocument> = new Schema(
     resetPasswordToken: String,
     persons: [PersonSchema], // Embed the entire Person schema
   },
-  { timestamps: true } // Adds createdAt and updatedAt fields
+  {
+    versionKey: false,  // Wyłącza wersjonowanie
+    timestamps: true    // Dodaje pola `createdAt` i `updatedAt`
+  }
 );
 
 const User = mongoose.model<UserDocument>('User', UserSchema);

@@ -3,7 +3,6 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 
-
 const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,13 +55,13 @@ const Register: React.FC = () => {
     }
 
     try {
-      let response = await axios.post('http://localhost:3001/api/auth/register', { email, password });
+      const response = await axios.post('http://localhost:3001/api/auth/register', { email, password });
       toast.success(response.data.msg);
       setEmail('');
       setPassword('');
-      setConfirmPassword('')
+      setConfirmPassword('');
     } catch (error: any) {
-      toast.error(error.response.data.msg)
+      toast.error(error.response.data.msg);
     }
   };
 
@@ -113,7 +112,8 @@ const Register: React.FC = () => {
             </button>
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Masz już konto?{' '}
+                Masz już konto?
+                {' '}
                 <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-300">
                   Zaloguj się
                 </Link>
@@ -121,7 +121,8 @@ const Register: React.FC = () => {
             </div>
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Chcesz wrócić na stronę główną?{' '}
+                Chcesz wrócić na stronę główną?
+                {' '}
                 <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-300">
                   Wróć na stronę główną
                 </Link>

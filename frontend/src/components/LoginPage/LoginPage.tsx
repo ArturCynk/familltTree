@@ -17,9 +17,9 @@ const Login: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     let valid = true;
-  
+
     // Sprawdzanie czy pole email nie jest puste i czy email jest poprawny
     if (!email) {
       setEmailValid(false);
@@ -32,7 +32,7 @@ const Login: React.FC = () => {
     } else {
       setEmailValid(true);
     }
-  
+
     // Sprawdzanie czy pole hasło nie jest puste
     if (!password) {
       setPasswordValid(false);
@@ -41,20 +41,20 @@ const Login: React.FC = () => {
     } else {
       setPasswordValid(true);
     }
-  
+
     if (!valid) return;
-  
+
     try {
       // Wysłanie żądania POST do serwera z danymi logowania
       const response = await axios.post('http://localhost:3001/api/auth/login', { email, password });
-  
+
       if (response.status === 200) {
         const { token } = response.data;
-  
+
         localStorage.setItem('authToken', token);
-  
+
         window.location.href = '/list-view';
-        
+
         toast.success(response.data.msg || 'Logowanie udane!');
       }
     } catch (error: any) {
@@ -65,7 +65,6 @@ const Login: React.FC = () => {
       }
     }
   };
-  
 
   const goToRegister = () => {
     window.location.href = '/register'; // Przekierowanie do strony rejestracji
@@ -108,7 +107,8 @@ const Login: React.FC = () => {
           </button>
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
-              Nie masz konta?{' '}
+              Nie masz konta?
+              {' '}
               <button
                 onClick={goToRegister}
                 className="font-medium text-indigo-600 hover:text-indigo-800"
@@ -119,7 +119,8 @@ const Login: React.FC = () => {
           </div>
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Chcesz wrócić na stronę główną?{' '}
+              Chcesz wrócić na stronę główną?
+              {' '}
               <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-300">
                 Wróć na stronę główną
               </Link>

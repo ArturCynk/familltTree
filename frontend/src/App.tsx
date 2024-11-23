@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import AddPersonModal from './components/Modal/Modal';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
+import AddPersonModal from './components/Modal/Modal';
 import 'react-toastify/dist/ReactToastify.css';
 import PersonBox from './components/Person/Person';
 import ErrorScreen from './components/Error/ErrorScreen';
@@ -37,7 +37,7 @@ const App: React.FC = () => {
   //         'Authorization': `Bearer ${token}` // Dodaj nagłówek autoryzacji
   //       }
   //     });
-  //     const personsData: Person[] = response.data;      
+  //     const personsData: Person[] = response.data;
 
   //     if (response.data.count === 0) {
   //       setIsModalOpen(true);
@@ -58,24 +58,23 @@ const App: React.FC = () => {
 
   const handleModalClose = () => setIsModalOpen(false);
 
-
   return (
     <div>
       <Router>
-      <Routes>
-        {/* <Route path="/family-view" element={<FamilyView />} />
+        <Routes>
+          {/* <Route path="/family-view" element={<FamilyView />} />
         <Route path="/ancestry-view" element={<AncestryView />} />
         <Route path="/fan-view" element={<FanView />} /> */}
-        <Route path="/list-view" element={<ListView />} />
-        <Route path='/' element={<HomePage />} />
-        {/* Dodaj inne trasy w zależności od potrzeb */}
-        <Route path='/login' element={<Login />} />
-        <Route path='/register' element={<Register/>} />
-        <Route path="/activate/:token" element={<ActivateAccount />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ChangePassword />} />
-      </Routes>
-    </Router>
+          <Route path="/list-view" element={<ListView />} />
+          <Route path="/" element={<HomePage />} />
+          {/* Dodaj inne trasy w zależności od potrzeb */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/activate/:token" element={<ActivateAccount />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ChangePassword />} />
+        </Routes>
+      </Router>
       {/* <div className="p-6">
         {persons.map((person) => (
           <PersonBox
@@ -91,7 +90,7 @@ const App: React.FC = () => {
       </div> */}
       <ToastContainer />
     </div>
-    
+
   );
 };
 

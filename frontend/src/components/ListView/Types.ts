@@ -11,5 +11,8 @@ export interface Person {
     siblings: { _id: string; firstName?: string; lastName?: string }[];
     spouses: { _id: string; firstName?: string; lastName?: string }[];
     children: { _id: string; firstName?: string; lastName?: string }[];
+    Dzieci: { _id: string; firstName?: string; lastName?: string }[];
+    Rodzeństwo: { _id: string; firstName?: string; lastName?: string }[];
+    Małżonkowie: { _id: string; firstName?: string; lastName?: string }[];
+    Rodzice: { _id: string; firstName?: string; lastName?: string }[];
   }
-  

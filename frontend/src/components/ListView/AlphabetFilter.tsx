@@ -16,7 +16,7 @@ const AlphabetFilter: React.FC<AlphabetFilterProps> = ({ selectedLetter, onSelec
 
   return (
     <div className="flex justify-center mb-4">
-      {alphabet.map(letter => (
+      {alphabet.map((letter) => (
         <button
           key={letter}
           className={`p-2 mx-1 rounded ${selectedLetter === letter ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'} hover:bg-blue-300 transition duration-300`}

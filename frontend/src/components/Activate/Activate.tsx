@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams} from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const ActivateAccount: React.FC = () => {
@@ -12,15 +12,15 @@ const ActivateAccount: React.FC = () => {
     const activateAccount = async () => {
       try {
         // Wyślij token do serwera w celu aktywacji konta
-        let response = await axios.post(`http://localhost:3001/api/auth/activate/${token}`);
+        const response = await axios.post(`http://localhost:3001/api/auth/activate/${token}`);
         toast.success(response.data.message);
         setTimeout(() => {
-            window.location.href = '/login'; // Przekierowanie do strony logowania
+          window.location.href = '/login'; // Przekierowanie do strony logowania
         }, 3000);
       } catch (err: any) {
         setError('Wystąpił błąd podczas aktywacji konta. Upewnij się, że link jest poprawny.');
         console.log(err);
-        
+
         toast.error(err.response.data.error);
       } finally {
         setLoading(false);
@@ -40,7 +40,7 @@ const ActivateAccount: React.FC = () => {
           <p className="text-center text-gray-600">Trwa aktywacja konta, proszę czekać...</p>
         ) : (
           <p className="text-center text-gray-600">
-            {error ? error : 'Twoje konto zostało aktywowane. Możesz teraz się zalogować.'}
+            {error || 'Twoje konto zostało aktywowane. Możesz teraz się zalogować.'}
           </p>
         )}
       </div>

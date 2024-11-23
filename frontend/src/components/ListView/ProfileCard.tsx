@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faBirthdayCake, faCross } from '@fortawesome/free-solid-svg-icons';
+import {
+  faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faBirthdayCake, faCross,
+} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import { Person } from './Types';
 import { formatDate } from './PersonUtils';
-import { toast } from 'react-toastify';
 import Modal from '../deleteRelation/Modal';
 
 const calculateAge = (birthDate: Date, deathDate: Date): number => {
@@ -52,7 +54,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   selectedPerson,
   onOpenRelationModal,
   onOpenEditModal,
-  refetch
+  refetch,
 }) => {
   const navigate = useNavigate();
   const [showFamily, setShowFamily] = useState(false);
@@ -73,8 +75,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       const token = localStorage.getItem('authToken'); // Get token from localStorage
       const response = await axios.get(`http://localhost:3001/api/person/users/relation/${selectedPerson._id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`, // Add authorization header
-        }
+          Authorization: `Bearer ${token}`, // Add authorization header
+        },
       });
 
       // Set family members state
@@ -92,7 +94,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     }
   };
 
-
   const closeRemoveRelationModal = () => {
     setIsRemoveRelationModalOpen(false);
     refetch();
@@ -105,8 +106,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     children: [] as FamilyMember[],
   });
 
-
-
   useEffect(() => {
     const fetchFacts = async () => {
       if (selectedPerson && selectedPerson._id) {
@@ -114,8 +113,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
           const response = await axios.get(`http://localhost:3001/api/person/users/fact/${selectedPerson._id}`, {
             headers: {
-              'Authorization': `Bearer ${token}`, // Dodaj nagłówek autoryzacji
-            }
+              Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+            },
           });
           setFacts(response.data);
         } catch (error) {
@@ -141,13 +140,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             <div className="col-span-1 flex items-center justify-center">
               {event.date ? (
                 <span className="text-gray-900 flex flex-col items-center">
-                  {new Date(event.date).getFullYear().toString().split("").map((digit, i) => (
-                    <span key={i}>{digit}</span>
-                  ))}
+                  {new Date(event.date).getFullYear().toString().split('')
+                    .map((digit, i) => (
+                      <span key={i}>{digit}</span>
+                    ))}
                 </span>
               ) : (
                 <span className="text-gray-500 flex flex-col items-center">
-                  {"Brak".split("").map((letter, i) => (
+                  {'Brak'.split('').map((letter, i) => (
                     <span key={i}>{letter}</span>
                   ))}
                 </span>
@@ -160,11 +160,13 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               {/* Sekcja osoby z elipsą na długie teksty */}
               <div className="text-gray-700 mb-3 flex items-center">
                 <span className="mr-2">Osoba:</span>
-                <span className="truncate max-w-xs block">{event.who}</span> {/* Elipsa dla długich nazwisk */}
+                <span className="truncate max-w-xs block">{event.who}</span>
+                {' '}
+                {/* Elipsa dla długich nazwisk */}
               </div>
               <div className="text-gray-700 mb-3 flex items-center">
                 <span className="mr-2">Data:</span>
-                {event.date ? formatDate(event.date) : "Brak"}
+                {event.date ? formatDate(event.date) : 'Brak'}
               </div>
               <p className="text-gray-600 leading-relaxed">{event.description}</p>
             </div>
@@ -173,11 +175,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       </ul>
     </div>
   );
-
-
-
-
-
 
   const handleDelete = () => {
     setIsDeleteModalOpen(true);
@@ -188,16 +185,16 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       setIsDeleting(true);
       try {
         const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
-        let response = await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson._id}`, {
+        const response = await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson._id}`, {
           headers: {
-            'Authorization': `Bearer ${token}`, // Dodaj nagłówek autoryzacji
-          }
+            Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+          },
         });
         setIsDeleteModalOpen(false);
         setIsDeleting(false);
         toast.success('Użytkownik został pomyślnie usunięty!');
         refetch();
-        closeSidebar()
+        closeSidebar();
       } catch (error) {
         setIsDeleting(false);
         toast.success('Użytkownik został pomyślnie usunięty!');
@@ -206,7 +203,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   };
 
   const handleDeleteRelationship = () => {
-    alert("Czy na pewno chcesz usunąć relacje?");
+    alert('Czy na pewno chcesz usunąć relacje?');
   };
 
   const handleProfileClick = (id: string) => {
@@ -226,16 +223,18 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               >
                 <FontAwesomeIcon
                   icon={faUser}
-                  className={`text-2xl cursor-pointer ${member.gender === "female"
-                      ? "text-pink-500"
-                      : member.gender === "male"
-                        ? "text-blue-500"
-                        : "text-gray-500"
-                    }`}
+                  className={`text-2xl cursor-pointer ${member.gender === 'female'
+                    ? 'text-pink-500'
+                    : member.gender === 'male'
+                      ? 'text-blue-500'
+                      : 'text-gray-500'
+                  }`}
                   aria-label={`Przejdź do profilu ${member.firstName} ${member.lastName}`}
                 />
                 <span className="text-gray-700 font-medium">
-                  {member.firstName} {member.lastName}
+                  {member.firstName}
+                  {' '}
+                  {member.lastName}
                 </span>
               </li>
             ))}
@@ -245,12 +244,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     </div>
   );
 
-
   const ProfileCard: React.FC<{ person: Person }> = ({ person }) => {
     const birthDate = person.birthDate ? new Date(person.birthDate) : null;
     const deathDate = person.deathDate ? new Date(person.deathDate) : null;
     console.log(person);
-
 
     return (
       <div className="w-full pb-20">
@@ -260,7 +257,9 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           </div>
           <div className="ml-5">
             <h2 className="text-xl font-semibold text-gray-800">
-              {person.firstName} {person.lastName}
+              {person.firstName}
+              {' '}
+              {person.lastName}
             </h2>
           </div>
         </div>
@@ -275,7 +274,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           {deathDate && (
             <p className="flex items-center space-x-2">
               <FontAwesomeIcon icon={faCross} className="text-gray-600" />
-              <span>{formatDate(person.deathDate)} (w wieku {birthDate ? calculateAge(birthDate, deathDate) : 'nieznany'})</span>
+              <span>
+                {formatDate(person.deathDate)}
+                {' '}
+                (w wieku
+                {' '}
+                {birthDate ? calculateAge(birthDate, deathDate) : 'nieznany'}
+                )
+              </span>
             </p>
           )}
         </div>
@@ -327,26 +333,26 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         {/* Stylizowane przyciski "Pokaż fakty" i "Pokaż najbliższą rodzinę" */}
         <div className="mt-10">
           <button
-            className={`w-full py-2 text-white font-semibold bg-gradient-to-r from-blue-500 to-teal-500 rounded-md shadow-md hover:from-teal-500 hover:to-blue-500 transition-all focus:outline-none`}
+            className="w-full py-2 text-white font-semibold bg-gradient-to-r from-blue-500 to-teal-500 rounded-md shadow-md hover:from-teal-500 hover:to-blue-500 transition-all focus:outline-none"
             onClick={handleShowFamily}
           >
             {showFamily ? 'Ukryj najbliższą rodzinę' : 'Pokaż najbliższą rodzinę'}
           </button>
 
           {showFamily && (
-  <div className="mt-4 text-gray-600">
-    {renderFamilyMembers(familyMembers.parents, 'Rodzice')}
-    {renderFamilyMembers(familyMembers.siblings, 'Rodzeństwo')}
-    {renderFamilyMembers(familyMembers.spouses, 'Partnerzy')}
-    {renderFamilyMembers(familyMembers.children, 'Dzieci')}
-  </div>
-)}
+          <div className="mt-4 text-gray-600">
+            {renderFamilyMembers(familyMembers.parents, 'Rodzice')}
+            {renderFamilyMembers(familyMembers.siblings, 'Rodzeństwo')}
+            {renderFamilyMembers(familyMembers.spouses, 'Partnerzy')}
+            {renderFamilyMembers(familyMembers.children, 'Dzieci')}
+          </div>
+          )}
 
         </div>
 
         <div className="mt-6">
           <button
-            className={`w-full py-2 text-white font-semibold bg-gradient-to-r from-purple-500 to-pink-500 rounded-md shadow-md hover:from-pink-500 hover:to-purple-500 transition-all focus:outline-none`}
+            className="w-full py-2 text-white font-semibold bg-gradient-to-r from-purple-500 to-pink-500 rounded-md shadow-md hover:from-pink-500 hover:to-purple-500 transition-all focus:outline-none"
             onClick={() => setShowFacts(!showFacts)}
           >
             {showFacts ? 'Ukryj fakty' : 'Pokaż fakty'}

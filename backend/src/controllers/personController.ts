@@ -113,7 +113,67 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: 'Wystąpił błąd podczas dodawania osoby', error });
   }
 };
+// import { faker } from '@faker-js/faker';
 
+// const createRandomPerson = (gender: 'male' | 'female') => {
+//   const firstName = gender === 'male' ? faker.person.firstName('male') : faker.person.firstName('female');
+//   const lastName = faker.person.lastName();
+//   const birthDate = null;  // Losowa data urodzenia
+//   const status = Math.random() > 0.5 ? 'alive' : 'deceased';  // Losowy status
+//   const genderType = gender;
+
+//   const newPerson = new Person({
+//     gender: genderType,
+//     firstName,
+//     middleName: faker.person.firstName(),  // Losowe drugie imię
+//     lastName,
+//     maidenName: gender === 'female' ? faker.person.lastName() : undefined,  // Losowe nazwisko panieńskie tylko dla kobiet
+//     birthDateType: 'exact',
+//     birthDate,
+//     birthDateFrom: null,
+//     birthDateTo: null,
+//     birthPlace: faker.location.city(),  // Losowe miasto urodzenia
+//     status,
+//     deathDateType: status === 'deceased' ? 'exact' : null,
+//     deathDate: status === 'deceased' ? null : null,
+//     deathDateFrom: null,
+//     deathDateTo: null,
+//     deathPlace: status === 'deceased' ? faker.location.city() : null,
+//     burialPlace: status === 'deceased' ? faker.location.city() : null,
+//     photo: faker.image.avatar(),  // Losowe zdjęcie
+//     parents: [],
+//     siblings: [],
+//     spouses: [],
+//     children: [],
+//   });
+
+//   return newPerson;
+// };
+
+// // Funkcja do dodawania 100 osób do użytkownika
+// const add100PersonsToUser = async (userEmail: string) => {
+//   const persons = [];
+
+//   for (let i = 0; i < 100; i++) {
+//     const gender = i % 2 === 0 ? 'male' : 'female';  // Na przemian mężczyźni i kobiety
+//     const newPerson = createRandomPerson(gender);
+//     persons.push(newPerson);
+//     console.log(`Created person ${i + 1}: ${newPerson.firstName} ${newPerson.lastName}`);
+//     await newPerson.save();
+//   }
+
+//   const updatedUser = await User.findOneAndUpdate(
+//     { email: userEmail },
+//     { $push: { persons: { $each: persons } } },
+//     { new: true, useFindAndModify: false }
+//   );
+
+//   console.log('Updated user:', updatedUser);
+// };
+
+// add100PersonsToUser('arturcynk197@gmail.com')
+//   .then(() => console.log('100 persons added successfully'))
+//   .catch((error) => console.error('Error adding persons:', error));
 
 
 export const updatePerson = async (req: Request, res: Response): Promise<void> => {
@@ -255,16 +315,10 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
     // Save the updated user document
     await loggedInUser.save();
 
-    // Delete the person from the Person collection
-    const deletedPerson = await Person.findByIdAndDelete(personId);
 
-    if (!deletedPerson) {
-      res.status(404).json({ message: 'Osoba nie znaleziona w bazie' });
-      return; // Prevent further execution if person is not found in the collection
-    }
 
     // Return success response
-    res.json({ message: 'Osoba została usunięta', person: deletedPerson });
+    res.status(200).json({ message: 'Osoba została usunięta'});
 
   } catch (error) {
     console.error(error);
@@ -394,7 +448,19 @@ let lastName: string | undefined;
         res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
         return;
       }
-  
+
+      const getPersonsByIds = (ids: mongoose.Types.ObjectId[]) =>
+        loggedInUser.persons.filter((p: IPerson) =>
+          ids.some(id => id.toString() === p._id.toString())
+        );
+      
+      
+        const getPersonsByIdsSpouses = (ids: mongoose.Types.ObjectId[]) =>
+          loggedInUser.persons.filter(p =>
+            ids.some(id => id.toString() === p._id.toString()) // Porównujemy personId z _id osób w loggedInUser.persons
+          );
+        
+       
       // Pobieranie osób powiązanych z zalogowanym użytkownikiem
       const persons = loggedInUser.persons.filter(person => {
         // Jeśli firstName jest "=" to filtruj tylko po lastName
@@ -428,7 +494,8 @@ let lastName: string | undefined;
       
   
       // Paginacja
-      const paginatedPersons = persons.slice((page - 1) * limit, page * limit);
+      let paginatedPersons = persons.slice((page - 1) * limit, page * limit);
+      paginatedPersons = persons;
   
       // Pobieranie całkowitej liczby osób (do wyliczenia ilości stron)
       const totalUsers = persons.length;
@@ -436,18 +503,14 @@ let lastName: string | undefined;
       // Pobieranie pełnych danych dla relacji
       const result = await Promise.all(paginatedPersons.map(async person => {
         // Pobierz dane rodziców, rodzeństwa, małżonków i dzieci
-        const parents = await getPersonData(person.parents);
-        const siblings = await getPersonData(person.siblings);
-        const children = await getPersonData(person.children);
+        const relations = {
+            Rodzice: getPersonsByIds(person.parents),
+            Rodzeństwo: getPersonsByIds(person.siblings),
+            Małżonkowie: getPersonsByIdsSpouses(person.spouses.map(spouse => spouse.personId)), // Mapujemy po personId
+            Dzieci: getPersonsByIds(person.children),
+        };
   
-        // Przetwórz dane małżonków, uwzględniając zarówno ID osoby, jak i datę ślubu
-        const spouses = await Promise.all(person.spouses.map(async spouse => {
-          const spouseData = await getPersonData([spouse.personId]); // Zakładamy, że personId to ObjectId
-          return {
-            ...spouseData[0], // Zwróć dane małżonka
-            weddingDate: spouse.weddingDate // Dodaj datę ślubu
-          };
-        }));
+
   
         // Zwróć sformatowane dane
         return {
@@ -462,14 +525,35 @@ let lastName: string | undefined;
           deathPlace: person.deathPlace,
           burialPlace: person.burialPlace,
           photo: person.photo,
-          parents,
-          siblings,
-          spouses, // Małżonkowie z datą ślubu
-          children
+          Rodzice: relations.Rodzice.map((parent: IPerson) => ({
+                _id: parent._id,
+                firstName: parent.firstName,
+                lastName: parent.lastName,
+                gender: parent.gender,
+              })),
+              Rodzeństwo: relations.Rodzeństwo.map((sibling: IPerson) => ({
+                _id: sibling._id,
+                firstName: sibling.firstName,
+                lastName: sibling.lastName,
+                gender: sibling.gender,
+              })),
+              Małżonkowie: relations.Małżonkowie.map((spouse: IPerson) => ({
+                _id: spouse._id,
+                firstName: spouse.firstName,
+                lastName: spouse.lastName,
+                gender: spouse.gender,
+              })),
+              Dzieci: relations.Dzieci.map((child: IPerson) => ({
+                _id: child._id,
+                firstName: child.firstName,
+                lastName: child.lastName,
+                gender: child.gender,
+              })),
         };
       }));
 
       res.status(200).json({
+        loggedInUser: loggedInUser,
         users: result,
         totalUsers,
         currentPage: page,

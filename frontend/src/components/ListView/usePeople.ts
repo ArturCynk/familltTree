@@ -16,10 +16,12 @@ const usePeople = (letter: string | null, page: number, searchQuery: string | nu
       const query = `?page=${page}&limit=25${letter ? `&letter=${letter}` : ''}${searchQuery !== '' ? `&searchQuery=${searchQuery}` : ''}`;
       const response = await axios.get(`http://localhost:3001/api/person/users${query}`, {
         headers: {
-          'Authorization': `Bearer ${token}` // Dodaj nagłówek autoryzacji
-        }
+          Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+        },
       });
-      
+
+      console.log(response.data);
+
       // Process successful response
       setPeople(response.data.users);
       setTotalUsers(response.data.totalUsers);
@@ -42,7 +44,9 @@ const usePeople = (letter: string | null, page: number, searchQuery: string | nu
     fetchPeople();
   }, [letter, page, searchQuery]); // Dodaj searchQuery do zależności
 
-  return { people, loading, error, totalPages, totalUsers, refetch: fetchPeople };
+  return {
+    people, loading, error, totalPages, totalUsers, refetch: fetchPeople,
+  };
 };
 
 export default usePeople;

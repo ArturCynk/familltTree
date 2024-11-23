@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from "react";
-import LoadingSpinner from "../Loader/LoadingSpinner";
-import ErrorScreen from "../Error/ErrorScreen";
-import RelationModal from "../RelationModal/RelationModal";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import LoadingSpinner from '../Loader/LoadingSpinner';
+import ErrorScreen from '../Error/ErrorScreen';
+import RelationModal from '../RelationModal/RelationModal';
 import EditModal from '../Edit/Edit';
-import SettingsPanel from './SettingsModal'; 
-import Pagination from "./Pagination";
-import Header from "./Header";
-import AlphabetFilter from './AlphabetFilter'; 
-import usePeople from './usePeople'; 
-import {getDisplayName, formatDate } from './PersonUtils';
-import TableRow from "./TableRow";
-import { Person } from './Types'; 
-import ProfileCard from "./ProfileCard";
-import NotAuthenticatedScreen from "../NotAuthenticatedScreen/NotAuthenticatedScreen";
-import LeftHeader from "../LeftHeader/LeftHeader";
-import AddPersonModal from "../Modal/Modal";
-import axios from "axios";
+import SettingsPanel from './SettingsModal';
+import Pagination from './Pagination';
+import Header from './Header';
+import AlphabetFilter from './AlphabetFilter';
+import usePeople from './usePeople';
+import { getDisplayName, formatDate } from './PersonUtils';
+import TableRow from './TableRow';
+import { Person } from './Types';
+import ProfileCard from './ProfileCard';
+import NotAuthenticatedScreen from '../NotAuthenticatedScreen/NotAuthenticatedScreen';
+import LeftHeader from '../LeftHeader/LeftHeader';
+import AddPersonModal from '../Modal/Modal';
 
 const PeopleTable: React.FC = () => {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -33,203 +33,185 @@ const PeopleTable: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
-// Funkcja do otwierania panelu
-const openSidebar = (person: Person) => {
-  setSelectedPerson(person);
-  setIsSidebarOpen(p => !p);
-};
+  // Funkcja do otwierania panelu
+  const openSidebar = (person: Person) => {
+    setSelectedPerson(person);
+    setIsSidebarOpen((p) => !p);
+  };
 
-// Funkcja do zamykania panelu
-const closeSidebar = () => {
-  setIsSidebarOpen(false);
-  setSelectedPerson(null);
-};
+  // Funkcja do zamykania panelu
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+    setSelectedPerson(null);
+  };
 
-
-// Component to render relations for a person
-interface RelationResponse {
-  Rodzice: Array<{ firstName: string, lastName: string }>;
-  Rodzeństwo: Array<{ firstName: string, lastName: string }>;
-  Małżonkowie: Array<{ firstName: string, lastName: string }>;
-  Dzieci: Array<{ firstName: string, lastName: string }>;
-}
-
-// Component to render relations for a person
-const RenderRelations = (person: Person) => {  // Accept `person` directly
-  const [relations, setRelations] = useState<RelationResponse | null>(null);
-
-  useEffect(() => {
-    const fetchRelations = async () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person._id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        setRelations(response.data); // Assuming the data is in response.data
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchRelations();
-  }, [person]);
-
-  if (!relations) return <></>;
+function RenderRelations(person: Person) {
+  if (!person) return null;
 
   return (
     <>
-      {relations.Rodzice && relations.Rodzice.length > 0 && (
-        <span>Rodzice: {relations.Rodzice.map(p => `${p.firstName} ${p.lastName}`).join(', ')}<br /></span>
+      {person.Rodzice && person.Rodzice.length > 0 && (
+        <span>
+          Rodzice: {person.Rodzice.map((p) => `${p.firstName} ${p.lastName}`).join(', ')}
+          <br />
+        </span>
       )}
-      {relations.Rodzeństwo && relations.Rodzeństwo.length > 0 && (
-        <span>Rodzeństwo: {relations.Rodzeństwo.map(s => `${s.firstName} ${s.lastName}`).join(', ')}<br /></span>
+      {person.Rodzeństwo && person.Rodzeństwo.length > 0 && (
+        <span>
+          Rodzeństwo: {person.Rodzeństwo.map((s) => `${s.firstName} ${s.lastName}`).join(', ')}
+          <br />
+        </span>
       )}
-      {relations.Małżonkowie  && relations.Małżonkowie.length > 0 && (
-        <span>Małżonkowie: {relations.Małżonkowie.map(s => `${s.firstName} ${s.lastName}`).join(', ')}<br /></span>
+      {person.Małżonkowie && person.Małżonkowie.length > 0 && (
+        <span>
+          Małżonkowie: {person.Małżonkowie.map((m) => `${m.firstName} ${m.lastName}`).join(', ')}
+          <br />
+        </span>
       )}
-      {relations.Dzieci && relations.Dzieci.length > 0 && (
-        <span>Dzieci: {relations.Dzieci.map(c => `${c.firstName} ${c.lastName}`).join(', ')}<br /></span>
+      {person.Dzieci && person.Dzieci.length > 0 && (
+        <span>
+          Dzieci: {person.Dzieci.map((c) => `${c.firstName} ${c.lastName}`).join(', ')}
+          <br />
+        </span>
       )}
     </>
   );
+}
+
+const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(searchQuery);
+
+const {
+  people, loading, error, totalPages, totalUsers, refetch,
+} = usePeople(selectedLetter, currentPage, debouncedSearchQuery);
+
+// Funkcja do opóźnienia wyszukiwania
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedSearchQuery(searchQuery);
+  }, 3000); // 500ms debouncing
+
+  return () => clearTimeout(timer);
+}, [searchQuery]);
+
+const handlePageChange = (newPage: number) => {
+  if (newPage >= 1 && newPage <= totalPages) {
+    setCurrentPage(newPage);
+  }
 };
 
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(searchQuery);
+const openRelationModal = (person: Person) => {
+  setSelectedPerson(person);
+  setIsRelationModalOpen(true);
+};
 
-  const { people, loading, error, totalPages, totalUsers, refetch } = usePeople(selectedLetter, currentPage, debouncedSearchQuery);
+const openEditModal = (person: Person) => {
+  setSelectedPerson(person);
+  setIsEditModalOpen(true);
+};
 
-  // Funkcja do opóźnienia wyszukiwania
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 3000); // 500ms debouncing
+const closeModals = async () => {
+  setIsRelationModalOpen(false);
+  setIsEditModalOpen(false);
+  setSelectedPerson(null);
+  await refetch();
+};
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+const toggleSettingsPanel = () => {
+  setIsSettingsPanelOpen((prev) => !prev);
+};
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+const toggleAlphabetFilter = () => {
+  setIsAlphabetFilterOpen((prev) => !prev);
+};
+
+const handleColorCodingChange = (enabled: boolean) => {
+  setShowColorCoding(enabled);
+};
+
+const handleMaidenNameChange = (enabled: boolean) => {
+  setShowMaidenName(enabled);
+};
+
+const handleHusbandSurnameChange = (enabled: boolean) => {
+  setShowHusbandSurname(enabled);
+};
+
+const handleRelativesChange = (enabled: boolean) => {
+  setShowRelatives(enabled);
+};
+
+const handleSearchEnter = () => {
+  // Refetch data with the current search query
+  refetch();
+};
+const [isModalOpen, setIsModalOpen] = useState(false);
+const [persons, setPersons] = useState<Person[]>([]);
+const [isLoading, setIsLoading] = useState<boolean>(true); // Dodaj stan do śledzenia ładowania
+const [errors, setError] = useState<string | null>(null);
+const handleModalClose = () => {
+  setIsModalOpen(false);
+  refetch();
+};
+const fetchPersons = async () => {
+  setIsLoading(false); // Rozpocznij ładowanie
+  try {
+    const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+    const response = await axios.get('http://localhost:3001/api/person/count', {
+      headers: {
+        Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+      },
+    });
+    const personsData: Person[] = response.data;
+
+    if (response.data.count === 0) {
+      setIsModalOpen(true);
+    } else {
+      setPersons(personsData);
     }
-  };
-
-  const openRelationModal = (person: Person) => {
-    setSelectedPerson(person);
-    setIsRelationModalOpen(true);
-  };
-
-  const openEditModal = (person: Person) => {
-    setSelectedPerson(person);
-    setIsEditModalOpen(true);
-  };
-
-  const closeModals = async () => {
-    setIsRelationModalOpen(false);
-    setIsEditModalOpen(false);
-    setSelectedPerson(null);
-    await refetch();
-  };
-
-  const toggleSettingsPanel = () => {
-    setIsSettingsPanelOpen(prev => !prev);
-  };
-
-  const toggleAlphabetFilter = () => {
-    setIsAlphabetFilterOpen(prev => !prev);
-  };
-
-  const handleColorCodingChange = (enabled: boolean) => {
-    setShowColorCoding(enabled);
-  };
-
-  const handleMaidenNameChange = (enabled: boolean) => {
-    setShowMaidenName(enabled);
-  };
-
-  const handleHusbandSurnameChange = (enabled: boolean) => {
-    setShowHusbandSurname(enabled);
-  };
-
-  const handleRelativesChange = (enabled: boolean) => {
-    setShowRelatives(enabled);
-  };
-
-  
-  const handleSearchEnter = () => {
-    // Refetch data with the current search query
-    refetch();
-  };  
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [persons, setPersons] = useState<Person[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Dodaj stan do śledzenia ładowania
-  const [errors, setError] = useState<string | null>(null);
-  const handleModalClose = () => {
-    setIsModalOpen(false)
-    refetch()
-  };
-    const fetchPersons = async () => {
-    setIsLoading(false); // Rozpocznij ładowanie
-    try {
-      const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
-      const response = await axios.get('http://localhost:3001/api/person/count', {
-        headers: {
-          'Authorization': `Bearer ${token}` // Dodaj nagłówek autoryzacji
-        }
-      });
-      const personsData: Person[] = response.data;      
-
-      if (response.data.count === 0) {
-        setIsModalOpen(true);
-      } else {
-        setPersons(personsData);
-      }
-    } catch (error) {
-      setError('Błąd podczas pobierania danych użytkowników.');
-      console.error('Error fetching persons:', error);
-    } finally {
-      setIsLoading(false); // Zakończ ładowanie
-    }
-  };
-
-  useEffect(() => {
-    fetchPersons();
-  }, []);
-
-    const handleRefreshData = async () => {
-    setError(null);
-    await fetchPersons();
-  };
-
-   if (error) {
-    return <ErrorScreen message={error} onRetry={handleRefreshData} />;
+  } catch (error) {
+    setError('Błąd podczas pobierania danych użytkowników.');
+    console.error('Error fetching persons:', error);
+  } finally {
+    setIsLoading(false); // Zakończ ładowanie
   }
+};
 
-  if (loading) return <LoadingSpinner />;
-  if (error) {
-    // Handle specific authentication errors
-    if (error === 'Brak dostępu lub nieautoryzowany dostęp') {
-      return <NotAuthenticatedScreen />;
-    }
-    // Handle other types of errors
-    return <ErrorScreen message={error} onRetry={refetch} />;
+useEffect(() => {
+  fetchPersons();
+}, []);
+
+const handleRefreshData = async () => {
+  setError(null);
+  await fetchPersons();
+};
+
+if (error) {
+  return <ErrorScreen message={error} onRetry={handleRefreshData} />;
+}
+
+if (loading) return <LoadingSpinner />;
+if (error) {
+  // Handle specific authentication errors
+  if (error === 'Brak dostępu lub nieautoryzowany dostęp') {
+    return <NotAuthenticatedScreen />;
   }
+  // Handle other types of errors
+  return <ErrorScreen message={error} onRetry={refetch} />;
+}
 
- 
-
-  return (
-    <><LeftHeader />
+return (
+  <>
+    <LeftHeader />
     <div className="p-8 bg-gray-100 min-h-screen flex flex-col items-center">
       <Header
         totalUsers={totalUsers}
         onToggleAlphabetFilter={toggleAlphabetFilter}
-        onToggleSearch={() => setIsSearchOpen(prev => !prev)}
+        onToggleSearch={() => setIsSearchOpen((prev) => !prev)}
         onToggleSettingsPanel={toggleSettingsPanel}
         isSearchOpen={isSearchOpen}
         searchQuery={searchQuery}
         onSearchChange={(e) => setSearchQuery(e.target.value)}
-        onSearchEnter={handleSearchEnter}  // Przekaż funkcję obsługi wyszukiwania
+        onSearchEnter={handleSearchEnter}
       />
 
       {/* Alphabet Filter Panel */}
@@ -249,39 +231,42 @@ const RenderRelations = (person: Person) => {  // Accept `person` directly
               <th className="p-4 text-left font-semibold text-gray-600">Imię i nazwisko</th>
               <th className="p-4 text-left font-semibold text-gray-600">Rok urodzenia</th>
               <th className="p-4 text-left font-semibold text-gray-600">Data śmierci</th>
-              <th className="p-4"></th> {/* Pusty nagłówek dla kolumny akcji */}
+              <th className="p-4" />
+              {' '}
+              {/* Pusty nagłówek dla kolumny akcji */}
             </tr>
           </thead>
           <tbody>
-          {people.map(person => (
-            <TableRow
-  key={person._id}
-  person={person}
-  showColorCoding={showColorCoding}
-  showRelatives={showRelatives}
-  getDisplayName={(p) => getDisplayName(p, showMaidenName, showHusbandSurname)}
-  renderRelations={(p) => <RenderRelations {...p} />} 
-  formatDate={formatDate}
-  onOpenRelationModal={openRelationModal}
-  onOpenEditModal={openEditModal}
-  onClickRow={() => openSidebar(person)}  // Dodaj tę linię
-/>
+            {people.map((person) => (
+              <TableRow
+                key={person._id}
+                person={person}
+                showColorCoding={showColorCoding}
+                showRelatives={showRelatives}
+                getDisplayName={(p) => getDisplayName(p, showMaidenName, showHusbandSurname)}
+                renderRelations={(p) => <RenderRelations {...p} />}
+                formatDate={formatDate}
+                onOpenRelationModal={openRelationModal}
+                onOpenEditModal={openEditModal}
+                onClickRow={() => openSidebar(person)}
+              />
 
-          ))}
+            ))}
           </tbody>
         </table>
       </div>
 
-     {/* Sidebar Panel */}
-        {selectedPerson && (
-          <ProfileCard 
-            isSidebarOpen={isSidebarOpen} 
-            closeSidebar={closeSidebar} 
-            selectedPerson={selectedPerson}
-            onOpenRelationModal={openRelationModal}
-            onOpenEditModal={openEditModal}
-            refetch={refetch} />
-        )}
+      {/* Sidebar Panel */}
+      {selectedPerson && (
+      <ProfileCard
+        isSidebarOpen={isSidebarOpen}
+        closeSidebar={closeSidebar}
+        selectedPerson={selectedPerson}
+        onOpenRelationModal={openRelationModal}
+        onOpenEditModal={openEditModal}
+        refetch={refetch}
+      />
+      )}
 
       {/* Modals */}
       {isRelationModalOpen && selectedPerson && (
@@ -313,20 +298,23 @@ const RenderRelations = (person: Person) => {  // Accept `person` directly
         onRelativesChange={handleRelativesChange}
       />
 
-       {/* Pagination */}
+      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />
 
-      <AddPersonModal isOpen={isModalOpen} onClose={() => {
-        handleModalClose();
-        handleRefreshData();
-      }} />
+      <AddPersonModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          handleModalClose();
+          handleRefreshData();
+        }}
+      />
     </div>
-    </>
-  );
+  </>
+);
 };
 
 export default PeopleTable;

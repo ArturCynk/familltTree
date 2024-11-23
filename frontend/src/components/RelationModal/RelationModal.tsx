@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMale, faFemale, faGenderless, faUserFriends } from '@fortawesome/free-solid-svg-icons';
+import {
+  faMale, faFemale, faGenderless, faUserFriends,
+} from '@fortawesome/free-solid-svg-icons';
 import AddPersonModal from './AddPersonModal';
-import SelectExistingPersonModal from './SelectExistingPersonModal'
+import SelectExistingPersonModal from './SelectExistingPersonModal';
 
 interface RelationModalProps {
   isOpen: boolean;
@@ -12,7 +14,9 @@ interface RelationModalProps {
   id: string;
 }
 
-const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personName, personGender, id }) => {
+const RelationModal: React.FC<RelationModalProps> = ({
+  isOpen, onClose, personName, personGender, id,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isSelectExistingOpen, setIsSelectExistingOpen] = useState<boolean>(false);
   const [selectedRelation, setSelectedRelation] = useState<string>('');
@@ -20,17 +24,13 @@ const RelationModal: React.FC<RelationModalProps> = ({ isOpen, onClose, personNa
 
   const handleButtonClick = (label: string, type: string, isExisting: boolean = false) => {
     setSelectedRelation(label);
-    setRelationType(type); 
+    setRelationType(type);
     if (isExisting) {
       setIsSelectExistingOpen(true); // Open modal for selecting existing person
     } else {
       setIsModalOpen(true); // Open modal for adding a new person
     }
   };
-
-  
-
-
 
   if (!isOpen) return null;
 

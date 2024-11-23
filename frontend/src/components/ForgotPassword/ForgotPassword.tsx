@@ -19,16 +19,15 @@ const ForgotPassword: React.FC = () => {
       setEmailValid(false);
       toast.error('Pole email nie może być puste.');
       return;
-    } else if (!validateEmail(email)) {
+    } if (!validateEmail(email)) {
       setEmailValid(false);
       toast.error('Nieprawidłowy format adresu email.');
       return;
-    } else {
-      setEmailValid(true);
     }
+    setEmailValid(true);
 
     try {
-      let response = await axios.post('http://localhost:3001/api/auth/reset-password', { email });
+      const response = await axios.post('http://localhost:3001/api/auth/reset-password', { email });
       toast.success(response.data.msg);
     } catch (error: any) {
       toast.error(error?.response?.data?.msg);
@@ -64,7 +63,8 @@ const ForgotPassword: React.FC = () => {
           </button>
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
-              Posiadasz już konto?{' '}
+              Posiadasz już konto?
+              {' '}
               <button
                 onClick={goToLogin}
                 className="font-medium text-indigo-600 hover:text-indigo-800"
@@ -75,7 +75,8 @@ const ForgotPassword: React.FC = () => {
           </div>
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Chcesz wrócić na stronę główną?{' '}
+              Chcesz wrócić na stronę główną?
+              {' '}
               <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-300">
                 Wróć na stronę główną
               </Link>

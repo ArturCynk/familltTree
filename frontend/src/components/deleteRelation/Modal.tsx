@@ -1,10 +1,12 @@
 // src/components/Modal.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Person } from '../ListView/Types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMale, faFemale, faGenderless, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import {
+  faMale, faFemale, faGenderless, faTrashAlt,
+} from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
+import { Person } from '../ListView/Types';
 
 interface ModalProps {
   isOpen: boolean;
@@ -23,7 +25,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
     parents: [],
     siblings: [],
     spouses: [],
-    children: []
+    children: [],
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -43,8 +45,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
           const token = localStorage.getItem('authToken'); // Get token from localStorage
           const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person._id}`, {
             headers: {
-              'Authorization': `Bearer ${token}`, // Add authorization header
-            }
+              Authorization: `Bearer ${token}`, // Add authorization header
+            },
           });
           setRelations(response.data);
         } catch (error) {
@@ -70,14 +72,14 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
       try {
         // Użyj personId i selectedId w trasie
         const token = localStorage.getItem('authToken'); // Get token from localStorage
-        let response = await axios.delete(`http://localhost:3001/api/person/relation/${person._id}/${selectedId}`, {
+        const response = await axios.delete(`http://localhost:3001/api/person/relation/${person._id}/${selectedId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`, // Add authorization header
-          }
+            Authorization: `Bearer ${token}`, // Add authorization header
+          },
         });
         // Aktualizuj stan lub wykonaj inne operacje po udanym usunięciu
         setSelectedId(null);
-        toast(response.data.message)
+        toast(response.data.message);
         onClose();
       } catch (error) {
         console.error('Error deleting relation:', error);
@@ -85,7 +87,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
       }
     }
   };
-  
 
   if (!isOpen) return null;
 
@@ -101,7 +102,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
             <div key={relationType}>
               {people.length > 0 ? (
                 <>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2 capitalize">{relationType}:</h3>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2 capitalize">
+                    {relationType}
+                    :
+                  </h3>
                   <ul className="space-y-2">
                     {people.map((p) => (
                       <li
@@ -121,7 +125,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
                           )}
                         </span>
                         <span className={`text-gray-800 ${selectedId === p._id ? 'font-semibold' : ''}`}>
-                          {p.firstName} {p.lastName}
+                          {p.firstName}
+                          {' '}
+                          {p.lastName}
                         </span>
                       </li>
                     ))}
@@ -129,7 +135,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
                 </>
               ) : (
                 <></>
-              )};
+              )}
+              ;
             </div>
           ))}
         </div>

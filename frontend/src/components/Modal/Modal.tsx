@@ -30,13 +30,11 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
   const [photoUrl, setPhotoUrl] = useState<string>(''); // URL zdjęcia
   const [isFileUpload, setIsFileUpload] = useState<boolean>(true); // Określenie, czy użytkownik chce przesłać plik
 
-  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setPhoto(e.target.files[0]); // Zapisz pierwszy wybrany plik
     }
   };
- 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,27 +64,27 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
       deathPlace,
       burialPlace,
       photo,
-      photoUrl
+      photoUrl,
     };
 
     if (photo) {
-      personData.photo = photo
+      personData.photo = photo;
     }
-    console.log(photoUrl)
+    console.log(photoUrl);
     // Jeśli wybrano URL zdjęcia, dodaj go do formData
     if (photoUrl) {
       personData.photoUrl = photoUrl;
     }
 
-    console.log(personData)
+    console.log(personData);
     try {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
-      
+
       await axios.post('http://localhost:3001/api/person/add', personData, {
         headers: {
-          'Authorization': `Bearer ${token}`, // Dodaj token autoryzacji
-          'Content-Type': 'multipart/form-data'
-        }
+          Authorization: `Bearer ${token}`, // Dodaj token autoryzacji
+          'Content-Type': 'multipart/form-data',
+        },
       });
       toast.success('Osoba została pomyślnie dodana!');
       onClose();
@@ -100,7 +98,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-<div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg space-y-8 scroll-m-0 overflow-y-auto max-h-[800px]">
+      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg space-y-8 scroll-m-0 overflow-y-auto max-h-[800px]">
         <h2 className="text-2xl font-bold text-gray-800 text-center">Dodaj pierwszą osobę do drzewa</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Wybór płci */}
@@ -206,68 +204,68 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
             </select>
 
             {(birthDateType !== 'between' && birthDateType !== 'fromTo') && (
-              <div>
-                <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
-                  {birthDateType === 'freeText' ? 'Opis daty urodzenia' : 'Data urodzenia'}
-                </label>
-                <input
-                  id="birthDate"
-                  type="date"
-                  value={birthDate || ''}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
+            <div>
+              <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
+                {birthDateType === 'freeText' ? 'Opis daty urodzenia' : 'Data urodzenia'}
+              </label>
+              <input
+                id="birthDate"
+                type="date"
+                value={birthDate || ''}
+                onChange={(e) => setBirthDate(e.target.value)}
+                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+              />
+            </div>
             )}
 
             {birthDateType === 'between' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="birthDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
-                  <input
-                    id="birthDateFrom"
-                    type="date"
-                    value={birthDateFrom || ''}
-                    onChange={(e) => setBirthDateFrom(e.target.value)}
-                    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="birthDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                  <input
-                    id="birthDateTo"
-                    type="date"
-                    value={birthDateTo || ''}
-                    onChange={(e) => setBirthDateTo(e.target.value)}
-                    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="birthDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
+                <input
+                  id="birthDateFrom"
+                  type="date"
+                  value={birthDateFrom || ''}
+                  onChange={(e) => setBirthDateFrom(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
               </div>
+              <div>
+                <label htmlFor="birthDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
+                <input
+                  id="birthDateTo"
+                  type="date"
+                  value={birthDateTo || ''}
+                  onChange={(e) => setBirthDateTo(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
+            </div>
             )}
 
             {birthDateType === 'fromTo' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="birthDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
-                  <input
-                    id="birthDateFrom"
-                    type="date"
-                    value={birthDateFrom || ''}
-                    onChange={(e) => setBirthDateFrom(e.target.value)}
-                    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="birthDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                  <input
-                    id="birthDateTo"
-                    type="date"
-                    value={birthDateTo || ''}
-                    onChange={(e) => setBirthDateTo(e.target.value)}
-                    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="birthDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
+                <input
+                  id="birthDateFrom"
+                  type="date"
+                  value={birthDateFrom || ''}
+                  onChange={(e) => setBirthDateFrom(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
               </div>
+              <div>
+                <label htmlFor="birthDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
+                <input
+                  id="birthDateTo"
+                  type="date"
+                  value={birthDateTo || ''}
+                  onChange={(e) => setBirthDateTo(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
+            </div>
             )}
             {/* Birth Place */}
             <div>
@@ -282,28 +280,28 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Wybór metody wgrywania zdjęcia */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Wybierz metodę dodania zdjęcia</label>
-            <div className="flex gap-4">
-              <button
-                type="button"
-                className={`px-4 py-2 rounded-md ${isFileUpload ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
-                onClick={() => setIsFileUpload(true)}
-              >
-                Prześlij plik
-              </button>
-              <button
-                type="button"
-                className={`px-4 py-2 rounded-md ${!isFileUpload ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
-                onClick={() => setIsFileUpload(false)}
-              >
-                Podaj URL
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Wybierz metodę dodania zdjęcia</label>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  className={`px-4 py-2 rounded-md ${isFileUpload ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+                  onClick={() => setIsFileUpload(true)}
+                >
+                  Prześlij plik
+                </button>
+                <button
+                  type="button"
+                  className={`px-4 py-2 rounded-md ${!isFileUpload ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+                  onClick={() => setIsFileUpload(false)}
+                >
+                  Podaj URL
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Wybór pliku */}
-          {isFileUpload && (
+            {/* Wybór pliku */}
+            {isFileUpload && (
             <div>
               <label htmlFor="photo" className="block text-sm font-medium text-gray-700 mb-1">Zdjęcie (plik)</label>
               <input
@@ -313,10 +311,10 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                 className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
               />
             </div>
-          )}
+            )}
 
-          {/* Wprowadzenie URL */}
-          {!isFileUpload && (
+            {/* Wprowadzenie URL */}
+            {!isFileUpload && (
             <div>
               <label htmlFor="photoUrl" className="block text-sm font-medium text-gray-700 mb-1">URL zdjęcia</label>
               <input
@@ -327,43 +325,40 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                 className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
               />
             </div>
-          )}
+            )}
 
-          {/* Podgląd zdjęcia (URL lub plik) */}
-      <div className="mt-4">
-        {photoUrl && !photo && (
-          <img src={photoUrl} alt="Podgląd zdjęcia" className="w-32 h-32 object-cover" />
-        )}
-        {photo && (
-          <img src={URL.createObjectURL(photo)} alt="Podgląd zdjęcia" className="w-32 h-32 object-cover" />
-        )}
-      </div>
+            {/* Podgląd zdjęcia (URL lub plik) */}
+            <div className="mt-4">
+              {photoUrl && !photo && (
+              <img src={photoUrl} alt="Podgląd zdjęcia" className="w-32 h-32 object-cover" />
+              )}
+              {photo && (
+              <img src={URL.createObjectURL(photo)} alt="Podgląd zdjęcia" className="w-32 h-32 object-cover" />
+              )}
+            </div>
 
-
-
-          
           </div>
 
           {/* Data śmierci */}
           {status === 'deceased' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Data śmierci</label>
-              <select
-                value={deathDateType}
-                onChange={(e) => setDeathDateType(e.target.value as 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText')}
-                className="form-select w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              >
-                <option value="exact">Dokładnie</option>
-                <option value="before">Przed</option>
-                <option value="after">Po</option>
-                <option value="around">Około</option>
-                <option value="probably">Prawdopodobnie</option>
-                <option value="between">Pomiędzy ... i ...</option>
-                <option value="fromTo">Od ... do ...</option>
-                <option value="freeText">Wolny tekst</option>
-              </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Data śmierci</label>
+            <select
+              value={deathDateType}
+              onChange={(e) => setDeathDateType(e.target.value as 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText')}
+              className="form-select w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+            >
+              <option value="exact">Dokładnie</option>
+              <option value="before">Przed</option>
+              <option value="after">Po</option>
+              <option value="around">Około</option>
+              <option value="probably">Prawdopodobnie</option>
+              <option value="between">Pomiędzy ... i ...</option>
+              <option value="fromTo">Od ... do ...</option>
+              <option value="freeText">Wolny tekst</option>
+            </select>
 
-              <div>
+            <div>
               <label htmlFor="burialPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce Pochuwku</label>
               <input
                 id="burialPlace"
@@ -374,85 +369,83 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
               />
             </div>
 
-              
-
-              {(deathDateType === 'exact') && (
-                <div>
-                  <label htmlFor="deathDate" className="block text-sm font-medium text-gray-700 mb-1">
-                    {deathDateType === 'exact' ? 'Data śmierci' : 'Data śmierci'}
-                  </label>
-                  <input
-                    id="deathDate"
-                    type="date"
-                    value={deathDate || ''}
-                    onChange={(e) => setDeathDate(e.target.value)}
-                    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  />
-                </div>
-              )}
-              <div>
-                {/* Existing death date fields */}
-                <div>
-                  <label htmlFor="deathPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce śmierci</label>
-                  <input
-                    id="deathPlace"
-                    type="text"
-                    value={deathPlace}
-                    onChange={(e) => setDeathPlace(e.target.value)}
-                    className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  />
-                </div>
-              </div>
-              {deathDateType === 'between' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="deathDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
-                    <input
-                      id="deathDateFrom"
-                      type="date"
-                      value={deathDateFrom || ''}
-                      onChange={(e) => setDeathDateFrom(e.target.value)}
-                      className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="deathDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                    <input
-                      id="deathDateTo"
-                      type="date"
-                      value={deathDateTo || ''}
-                      onChange={(e) => setDeathDateTo(e.target.value)}
-                      className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {deathDateType === 'fromTo' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="deathDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
-                    <input
-                      id="deathDateFrom"
-                      type="date"
-                      value={deathDateFrom || ''}
-                      onChange={(e) => setDeathDateFrom(e.target.value)}
-                      className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="deathDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                    <input
-                      id="deathDateTo"
-                      type="date"
-                      value={deathDateTo || ''}
-                      onChange={(e) => setDeathDateTo(e.target.value)}
-                      className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                    />
-                  </div>
-                </div>
-              )}
+            {(deathDateType === 'exact') && (
+            <div>
+              <label htmlFor="deathDate" className="block text-sm font-medium text-gray-700 mb-1">
+                {deathDateType === 'exact' ? 'Data śmierci' : 'Data śmierci'}
+              </label>
+              <input
+                id="deathDate"
+                type="date"
+                value={deathDate || ''}
+                onChange={(e) => setDeathDate(e.target.value)}
+                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+              />
             </div>
+            )}
+            <div>
+              {/* Existing death date fields */}
+              <div>
+                <label htmlFor="deathPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce śmierci</label>
+                <input
+                  id="deathPlace"
+                  type="text"
+                  value={deathPlace}
+                  onChange={(e) => setDeathPlace(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
+            </div>
+            {deathDateType === 'between' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="deathDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
+                <input
+                  id="deathDateFrom"
+                  type="date"
+                  value={deathDateFrom || ''}
+                  onChange={(e) => setDeathDateFrom(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
+              <div>
+                <label htmlFor="deathDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
+                <input
+                  id="deathDateTo"
+                  type="date"
+                  value={deathDateTo || ''}
+                  onChange={(e) => setDeathDateTo(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
+            </div>
+            )}
+
+            {deathDateType === 'fromTo' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="deathDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
+                <input
+                  id="deathDateFrom"
+                  type="date"
+                  value={deathDateFrom || ''}
+                  onChange={(e) => setDeathDateFrom(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
+              <div>
+                <label htmlFor="deathDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
+                <input
+                  id="deathDateTo"
+                  type="date"
+                  value={deathDateTo || ''}
+                  onChange={(e) => setDeathDateTo(e.target.value)}
+                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                />
+              </div>
+            </div>
+            )}
+          </div>
           )}
 
           {/* Status */}
