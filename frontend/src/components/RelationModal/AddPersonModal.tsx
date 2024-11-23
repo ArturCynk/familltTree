@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import MotherRelationForm from './MotherRelationForm';
 
 interface AddPersonModalProps {
   isOpen: boolean;
@@ -34,6 +35,10 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
   const [photo, setPhoto] = useState<File | null>(null); // Typ zmieniony na File
   const [photoUrl, setPhotoUrl] = useState<string>(''); // URL zdjęcia
   const [isFileUpload, setIsFileUpload] = useState<boolean>(true); // Określenie, czy użytkownik chce przesłać plik
+  const [selectedOption, setSelectedOption] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -71,6 +76,8 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
       photo,
       weddingDate,
       photoUrl,
+      selectedIds,
+      selectedOption
     };
 
     if (photo) {
@@ -82,8 +89,15 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
       personData.photoUrl = photoUrl;
     }
 
+    if(relationType === "Mother"){
+      personData.selectedOption = selectedOption;
+      personData.selectedIds = selectedIds
+    }
+
     try {
       const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+      console.log(personData);
+      
       await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', { ...personData, relationType, id }, {
         headers: {
           Authorization: `Bearer ${token}`, // Dodaj token autoryzacji
@@ -471,6 +485,17 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
               )}
             </div>
           )}
+
+{(relationType === "Mother" || relationType === "Father" || relationType === "Partner") && (
+  <MotherRelationForm
+    personId={id}
+    selectedOption={selectedOption}
+    setSelectedOption={setSelectedOption}
+    selectedIds={selectedIds}
+    setSelectedIds={setSelectedIds}
+  />
+)}
+
 
           {/* Przyciski */}
           <div className="flex justify-between">

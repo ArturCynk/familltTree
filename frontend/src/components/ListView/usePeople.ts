@@ -13,7 +13,8 @@ const usePeople = (letter: string | null, page: number, searchQuery: string | nu
     setLoading(true);
     const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
     try {
-      const query = `?page=${page}&limit=25${letter ? `&letter=${letter}` : ''}${searchQuery !== '' ? `&searchQuery=${searchQuery}` : ''}`;
+      // const query = `?page=${page}&limit=25${letter ? `&letter=${letter}` : ''}${searchQuery !== '' ? `&searchQuery=${searchQuery}` : ''}`;
+      const query = '';
       const response = await axios.get(`http://localhost:3001/api/person/users${query}`, {
         headers: {
           Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
