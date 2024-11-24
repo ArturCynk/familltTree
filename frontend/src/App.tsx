@@ -15,6 +15,7 @@ import ForgotPassword from './components/ForgotPassword/ForgotPassword';
 import ChangePassword from './components/ChangePassword/ChangePassword';
 import LeftHeader from './components/LeftHeader/LeftHeader';
 import HomePage from './components/HomePage/HomePage';
+import FamilyView from './components/FamilyView/FamilyView';
 
 interface Person {
   _id: string;
@@ -62,8 +63,8 @@ const App: React.FC = () => {
     <div>
       <Router>
         <Routes>
-          {/* <Route path="/family-view" element={<FamilyView />} />
-        <Route path="/ancestry-view" element={<AncestryView />} />
+          <Route path="/family-view" element={<FamilyView />} />
+         {/*<Route path="/ancestry-view" element={<AncestryView />} />
         <Route path="/fan-view" element={<FanView />} /> */}
           <Route path="/list-view" element={<ListView />} />
           <Route path="/" element={<HomePage />} />

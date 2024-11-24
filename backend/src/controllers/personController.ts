@@ -496,7 +496,7 @@ let lastName: string | undefined;
   
       // Paginacja
       let paginatedPersons = persons.slice((page - 1) * limit, page * limit);
-      paginatedPersons = persons;
+      // paginatedPersons = persons;
   
       // Pobieranie całkowitej liczby osób (do wyliczenia ilości stron)
       const totalUsers = persons.length;
@@ -705,80 +705,6 @@ let lastName: string | undefined;
             children: []
         });
 
-
-
-        // // Find the existing person from the logged-in user's persons list
-        // if (relationType && id) {
-          
-        //   const existingPerson = loggedInUser.persons.find((person: IPerson) => person._id.toString() === id);
-
-        //   if (existingPerson) {
-        //         switch (relationType) {
-        //             case 'Father':
-        //             case 'Mother':
-        //                 newPerson.children.push(existingPerson._id); // Add the parent to the new person
-        //                 existingPerson.parents.push(newPerson._id); // Add the child to the existing person
-        //                 break;
-        //             case 'Sibling':
-        //                 if (!existingPerson.siblings.includes(newPerson._id)) {
-        //                     existingPerson.siblings.push(newPerson._id);
-        //                 }
-
-        //                 // Update siblings among existing siblings
-        //                 for (const siblingId of existingPerson.siblings) {
-        //                     if (siblingId.toString() !== newPerson._id.toString()) {
-        //                         const sibling = loggedInUser.persons.find((person: IPerson) => person._id === siblingId) 
-
-        //                         if (sibling) {
-        //                           console.log(sibling?.firstName + sibling?.lastName);
-        //                             sibling.siblings.push(newPerson._id);
-        //                         }
-        //                     }
-        //                 }
-
-        //                 // Set siblings for the newly added person
-        //                 newPerson.siblings = [...existingPerson.siblings.filter(
-        //                     (siblingId: any) => siblingId.toString() !== newPerson._id.toString()
-        //                 )];
-        //                 newPerson.siblings.push(existingPerson._id);
-        //                 break;
-        //             case 'Daughter':
-        //             case 'Son':
-        //               newPerson.parents.push(existingPerson._id); // Add the child to the new person
-        //                 existingPerson.children.push(newPerson._id); // Add the parent to the existing person
-        //                 break;
-        //             case 'Partner':
-        //               newPerson.spouses.push({
-        //                 personId: existingPerson._id,
-        //                 weddingDate: weddingDate
-        //               }); // Add the partner to the new person
-        //                 existingPerson.spouses.push({
-        //                   personId: newPerson._id,
-        //                   weddingDate: weddingDate
-        //                 }); 
-        //                 break;
-        //             default:
-        //                 res.status(400).json({ message: 'Nieznany typ relacji.' });
-        //                 return;
-        //         }
-
-        //                // Save the new person to the database
-        // const savedPerson = newPerson
-
-        // // Add the new person to the logged-in user's persons list
-        // loggedInUser.persons.push(savedPerson);
-        // await loggedInUser.save();
-        //         existingPerson.save();
-        //         loggedInUser.save()
-
-        //         res.status(201).json({ message: 'Osoba została dodana z relacjami.', person: savedPerson });
-        //     } else {
-        //         res.status(404).json({ message: `Osoba o ID ${id} nie została znaleziona wśród osób użytkownika.` });
-        //     }
-        // } else {
-        //     res.status(400).json({ message: 'Niepoprawny typ relacji lub brak ID osoby do powiązania.' });
-        // }
-
                 // Find the existing person from the logged-in user's persons list
                 if (relationType && id) {
           
@@ -800,11 +726,6 @@ let lastName: string | undefined;
                                 });
                                 await loggedInUser.save();
                               }
-
-                              if(selectedOption === "no"){
-                               
-                              }
-
                               if(selectedOption === "some"){
                                 selectedIds.forEach((id: string) => {
                                   const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === id.toString());
@@ -890,22 +811,14 @@ let lastName: string | undefined;
                                     const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === children.toString());
                                     let person = loggedInUser.persons[personIndex];
   
-                                    if (person) {
-                                      console.log(true);
-                                      console.log(person.firstName + " " + person.lastName);
-                                      console.log(newPerson.firstName + " " + newPerson.lastName);
-                                      
-                                      
+                                    if (person) {                                      
                                       person.parents.push(newPerson._id);
                                       newPerson.children.push(person._id)
                                     } 
                                   });
                                   await loggedInUser.save();
                                 }
-  
-                                if(selectedOption === "no"){
-                                 
-                                }
+
   
                                 if(selectedOption === "some"){
                                   selectedIds.forEach((id: string) => {

@@ -11,11 +11,10 @@ const ActivateAccount: React.FC = () => {
   useEffect(() => {
     const activateAccount = async () => {
       try {
-        // Wyślij token do serwera w celu aktywacji konta
         const response = await axios.post(`http://localhost:3001/api/auth/activate/${token}`);
         toast.success(response.data.message);
         setTimeout(() => {
-          window.location.href = '/login'; // Przekierowanie do strony logowania
+          window.location.href = '/login'; 
         }, 3000);
       } catch (err: any) {
         setError('Wystąpił błąd podczas aktywacji konta. Upewnij się, że link jest poprawny.');

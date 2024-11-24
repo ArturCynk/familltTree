@@ -189,7 +189,7 @@ if (error) {
   return <ErrorScreen message={error} onRetry={handleRefreshData} />;
 }
 
-if (loading) return <LoadingSpinner />;
+
 if (error) {
   // Handle specific authentication errors
   if (error === 'Brak dostępu lub nieautoryzowany dostęp') {
@@ -222,6 +222,12 @@ return (
           </div>
         </div>
       )}
+            {/* Pagination */}
+            <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
 
       {/* Table */}
       <div className="w-full max-w-4xl bg-white rounded-lg shadow">
@@ -254,6 +260,8 @@ return (
             ))}
           </tbody>
         </table>
+        {loading && <LoadingSpinner />}
+
       </div>
 
       {/* Sidebar Panel */}

@@ -12,13 +12,20 @@ declare global {
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Token w nagłówku Authorization
+  const token = authHeader && authHeader.split(' ')[1];
 
-  if (token == null) return res.status(401).json({ msg: 'Brak tokenu' });
+  if (!token) {
+    res.status(401).json({ msg: 'Brak tokenu' });
+    return;
+  }
 
   jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
-    if (err) return res.status(403).json({ msg: 'Token jest nieprawidłowy' });
-        
+    if (err) {
+      res.status(403).json({ msg: 'Token jest nieprawidłowy' });
+      return;
+    }
+
+    req.user = decoded as UserDocument;
     next();
   });
 };

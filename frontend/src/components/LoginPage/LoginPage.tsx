@@ -4,8 +4,8 @@ import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('jan.cynk1970@gmail.com');
+  const [password, setPassword] = useState('Janek1970.');
   const [emailValid, setEmailValid] = useState(true);
   const [passwordValid, setPasswordValid] = useState(true);
 
