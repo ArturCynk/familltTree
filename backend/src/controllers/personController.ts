@@ -492,6 +492,24 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       let paginatedPersons = persons.slice((page - 1) * limit, page * limit);
       paginatedPersons = persons;
 
+      // paginatedPersons.forEach((p) => {
+      //   if (p._id.toString() === "673ceb0663b7c5c1f91635e9") {
+      //     p.spouses.push({
+      //       personId: new mongoose.Types.ObjectId("673ceaba63b7c5c1f9162ca0"), // Konwersja stringa na ObjectId
+      //       weddingDate: new Date(Date.UTC(2000, 10, 2, 1, 3, 2)), // Listopad = 10
+      //     });
+      //   }
+      //   if (p._id.toString() === "673ceaba63b7c5c1f9162ca0") {
+      //     p.spouses.push({
+      //       personId: new mongoose.Types.ObjectId("673ceb0663b7c5c1f91635e9"), // Konwersja stringa na ObjectId
+      //       weddingDate: new Date(Date.UTC(2000, 10, 2, 1, 3, 2)), // Listopad = 10
+      //     });
+      //   }
+      // });
+
+      
+      // await loggedInUser.save();
+      // console.log(1);
       
   
       const totalUsers = persons.length;
@@ -506,8 +524,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         };
   
 
-  
-       
+
 
         // Zwróć sformatowane dane
         return {

@@ -17,9 +17,7 @@ interface NamedNode {
   id: string;
 }
 
-function isNamedNode(node: any): node is NamedNode {
-  return node && typeof node.id === 'string';
-}
+
 export const FamilyNode = React.memo(
   function FamilyNode({ node, isRoot, isHover, onClick, onSubClick, style }: FamilyNodeProps) {
     const clickHandler = useCallback(() => onClick(node.id), [onClick, node.id]);

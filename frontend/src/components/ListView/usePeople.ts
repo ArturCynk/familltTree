@@ -22,9 +22,7 @@ const usePeople = (letter: string | null, page: number, searchQuery: string | nu
         },
       });
 
-      console.log(response.data);
-
-      // Process successful response
+      
       setPeople(response.data.users);
       setTotalUsers(response.data.totalUsers);
       setTotalPages(response.data.totalPages);
