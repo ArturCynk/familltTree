@@ -134,11 +134,11 @@ const MotherRelationForm: React.FC<MotherRelationFormProps> = ({
                   <ul className="space-y-2">
                     {people.map((p) => (
                       <li
-                        key={p._id}
+                        key={p.id}
                         className={`flex items-center p-2 rounded-lg border cursor-pointer ${
-                          selectedIds.includes(p._id) ? "bg-gray-200" : "hover:bg-gray-100"
+                          selectedIds.includes(p.id) ? "bg-gray-200" : "hover:bg-gray-100"
                         }`}
-                        onClick={() => handleSelect(p._id)}
+                        onClick={() => handleSelect(p.id)}
                       >
                         <span className="mr-3 text-lg">
                           {p.gender === "male" ? (
@@ -151,7 +151,7 @@ const MotherRelationForm: React.FC<MotherRelationFormProps> = ({
                         </span>
                         <span
                           className={`text-gray-800 ${
-                            selectedIds.includes(p._id) ? "font-semibold" : ""
+                            selectedIds.includes(p.id) ? "font-semibold" : ""
                           }`}
                         >
                           {p.firstName} {p.lastName}

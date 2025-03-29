@@ -69,11 +69,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   };
 
   const handleShowFamily = async () => {
-    if (!selectedPerson || !selectedPerson._id) return;
+    if (!selectedPerson || !selectedPerson.id) return;
 
     try {
       const token = localStorage.getItem('authToken'); // Get token from localStorage
-      const response = await axios.get(`http://localhost:3001/api/person/users/relation/${selectedPerson._id}`, {
+      const response = await axios.get(`http://localhost:3001/api/person/users/relation/${selectedPerson.id}`, {
         headers: {
           Authorization: `Bearer ${token}`, // Add authorization header
         },
@@ -108,10 +108,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
   useEffect(() => {
     const fetchFacts = async () => {
-      if (selectedPerson && selectedPerson._id) {
+      if (selectedPerson && selectedPerson.id) {
         try {
           const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
-          const response = await axios.get(`http://localhost:3001/api/person/users/fact/${selectedPerson._id}`, {
+          const response = await axios.get(`http://localhost:3001/api/person/users/fact/${selectedPerson.id}`, {
             headers: {
               Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
             },
@@ -181,11 +181,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   };
 
   const confirmDelete = async () => {
-    if (selectedPerson && selectedPerson._id) {
+    if (selectedPerson && selectedPerson.id) {
       setIsDeleting(true);
       try {
         const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
-        const response = await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson._id}`, {
+        const response = await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson.id}`, {
           headers: {
             Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
           },
@@ -289,21 +289,21 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         <div className="grid grid-cols-3 gap-4 mt-8">
           <button
             className="flex flex-col items-center text-gray-500 hover:text-blue-600 transition-all"
-            onClick={() => person._id && handleProfileClick(person._id)}
+            onClick={() => person.id && handleProfileClick(person.id)}
           >
             <FontAwesomeIcon icon={faUser} className="text-2xl mb-2" />
             <span className="text-xs font-semibold">Profil</span>
           </button>
           <button
             className="flex flex-col items-center text-gray-500 hover:text-green-600 transition-all"
-            onClick={() => person._id && onOpenEditModal(person)} // Open Edit Modal
+            onClick={() => person.id && onOpenEditModal(person)} // Open Edit Modal
           >
             <FontAwesomeIcon icon={faPen} className="text-2xl mb-2" />
             <span className="text-xs font-semibold">Edytuj</span>
           </button>
           <button
             className="flex flex-col items-center text-gray-500 hover:text-purple-600 transition-all"
-            onClick={() => person._id && onOpenRelationModal(person)} // Open Add Modal
+            onClick={() => person.id && onOpenRelationModal(person)} // Open Add Modal
           >
             <FontAwesomeIcon icon={faPlus} className="text-2xl mb-2" />
             <span className="text-xs font-semibold">Dodaj</span>

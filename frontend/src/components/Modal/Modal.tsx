@@ -26,9 +26,9 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
   const [deathDateTo, setDeathDateTo] = useState<string>('');
   const [deathPlace, setDeathPlace] = useState<string>('');
   const [burialPlace, setBurialPlace] = useState<string>('');
-  const [photo, setPhoto] = useState<File | null>(null); // Typ zmieniony na File
+  const [photo, setPhoto] = useState<File | null>(null); 
   const [photoUrl, setPhotoUrl] = useState<string>(''); // URL zdjęcia
-  const [isFileUpload, setIsFileUpload] = useState<boolean>(true); // Określenie, czy użytkownik chce przesłać plik
+  const [isFileUpload, setIsFileUpload] = useState<boolean>(true); 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -39,7 +39,6 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Walidacja - sprawdź, czy wymagane pola są wypełnione
     if (!firstName || !lastName) {
       toast.error('Imię i nazwisko są wymagane.');
       return;
@@ -71,18 +70,17 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
       personData.photo = photo;
     }
     console.log(photoUrl);
-    // Jeśli wybrano URL zdjęcia, dodaj go do formData
     if (photoUrl) {
       personData.photoUrl = photoUrl;
     }
 
     console.log(personData);
     try {
-      const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+      const token = localStorage.getItem('authToken'); 
 
       await axios.post('http://localhost:3001/api/person/add', personData, {
         headers: {
-          Authorization: `Bearer ${token}`, // Dodaj token autoryzacji
+          Authorization: `Bearer ${token}`, 
           'Content-Type': 'multipart/form-data',
         },
       });

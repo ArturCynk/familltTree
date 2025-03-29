@@ -1,5 +1,5 @@
 export interface Person {
-    _id: string;
+    id: string;
     firstName: string;
     lastName: string;
     maidenName?: string;
@@ -7,12 +7,12 @@ export interface Person {
     deathDate?: string;
     location?: string;
     gender: 'male' | 'female' | 'not-binary';
-    parents: { _id: string; firstName?: string; lastName?: string }[];
-    siblings: { _id: string; firstName?: string; lastName?: string }[];
-    spouses: { _id: string; firstName?: string; lastName?: string }[];
-    children: { _id: string; firstName?: string; lastName?: string }[];
-    Dzieci: { _id: string; firstName?: string; lastName?: string }[];
-    Rodzeństwo: { _id: string; firstName?: string; lastName?: string }[];
-    Małżonkowie: { _id: string; firstName?: string; lastName?: string }[];
-    Rodzice: { _id: string; firstName?: string; lastName?: string }[];
+    parents: { id: string; firstName?: string; lastName?: string }[];
+    siblings: { id: string; firstName?: string; lastName?: string }[];
+    spouses: { id: string; firstName?: string; lastName?: string }[];
+    children: { id: string; firstName?: string; lastName?: string }[];
+    Dzieci: { id: string; firstName?: string; lastName?: string }[];
+    Rodzeństwo: { id: string; firstName?: string; lastName?: string }[];
+    Małżonkowie: { id: string; firstName?: string; lastName?: string }[];
+    Rodzice: { id: string; firstName?: string; lastName?: string }[];
   }

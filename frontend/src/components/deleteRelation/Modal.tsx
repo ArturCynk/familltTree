@@ -43,7 +43,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
       const fetchRelations = async () => {
         try {
           const token = localStorage.getItem('authToken'); // Get token from localStorage
-          const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person._id}`, {
+          const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person.id}`, {
             headers: {
               Authorization: `Bearer ${token}`, // Add authorization header
             },
@@ -60,7 +60,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose, person._id]);
+  }, [isOpen, onClose, person.id]);
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
@@ -72,7 +72,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
       try {
         // Użyj personId i selectedId w trasie
         const token = localStorage.getItem('authToken'); // Get token from localStorage
-        const response = await axios.delete(`http://localhost:3001/api/person/relation/${person._id}/${selectedId}`, {
+        const response = await axios.delete(`http://localhost:3001/api/person/relation/${person.id}/${selectedId}`, {
           headers: {
             Authorization: `Bearer ${token}`, // Add authorization header
           },
@@ -109,11 +109,11 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
                   <ul className="space-y-2">
                     {people.map((p) => (
                       <li
-                        key={p._id}
+                        key={p.id}
                         className={`flex items-center p-2 rounded-lg border cursor-pointer ${
-                          selectedId === p._id ? 'bg-gray-200' : 'hover:bg-gray-100'
+                          selectedId === p.id ? 'bg-gray-200' : 'hover:bg-gray-100'
                         }`}
-                        onClick={() => handleSelect(p._id)}
+                        onClick={() => handleSelect(p.id)}
                       >
                         <span className="mr-3 text-lg">
                           {p.gender === 'male' ? (
@@ -124,7 +124,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
                             <FontAwesomeIcon icon={faGenderless} className="text-gray-500" />
                           )}
                         </span>
-                        <span className={`text-gray-800 ${selectedId === p._id ? 'font-semibold' : ''}`}>
+                        <span className={`text-gray-800 ${selectedId === p.id ? 'font-semibold' : ''}`}>
                           {p.firstName}
                           {' '}
                           {p.lastName}

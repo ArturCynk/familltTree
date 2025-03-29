@@ -26,6 +26,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
 
     req.user = decoded as UserDocument;
+    console.log('====================================');
+    console.log(req.user);
+    console.log('====================================');
     next();
   });
 };

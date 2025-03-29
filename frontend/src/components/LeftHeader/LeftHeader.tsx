@@ -23,7 +23,7 @@ const LeftHeader: React.FC = () => {
   };
 
   return (
-    <header className="relative">
+    <header className="relative z-40">
       <div className="fixed top-0 left-0 h-full bg-white shadow-lg w-16 flex flex-col items-center">
         <div className="flex flex-col items-center mt-8 space-y-4">
           <button

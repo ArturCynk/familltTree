@@ -397,6 +397,9 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       const token = authHeader && authHeader.split(' ')[1]; // Token w nagłówku Authorization
   
       if (!token) {
+        console.log('====================================');
+        console.log(token);
+        console.log('====================================');
         res.status(401).json({ msg: 'Brak tokenu' });
         return;
       }
@@ -419,7 +422,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       // Budowanie zapytania
       let query: any = {};
       let firstName: string | undefined;
-let lastName: string | undefined;
+      let lastName: string | undefined;
   
       if (searchQuery) {
         [firstName, lastName] = searchQuery.split(' ');
@@ -462,47 +465,38 @@ let lastName: string | undefined;
           );
         
        
-      // Pobieranie osób powiązanych z zalogowanym użytkownikiem
       const persons = loggedInUser.persons.filter(person => {
-        // Jeśli firstName jest "=" to filtruj tylko po lastName
         if (firstName === "=") {
           if (lastName && person.lastName.toLowerCase().includes(lastName.toLowerCase())) {
             return true;
           }
-          // Jeśli firstName == "=" i nie ma lastName, zwróć osoby pasujące tylko po lastName
           return !lastName;
         }
       
-        // Jeśli firstName jest inne niż "=", filtruj po firstName i lastName
         if (firstName) {
           if (person.firstName.toLowerCase().includes(firstName.toLowerCase())) {
             if (lastName && person.lastName.toLowerCase().includes(lastName.toLowerCase())) {
               return true;
             }
-            // Jeśli nie ma lastName, to wystarczy, że firstName pasuje
             return !lastName;
           }
         }
       
-        // Jeśli zarówno firstName, jak i lastName są undefined, zwróć wszystkie osoby
         if (firstName === undefined && lastName === undefined) {
           return true;
         }
-      
-        // Jeśli żadne z warunków nie są spełnione, zwróć false
         return false;
       });
       
   
-      // Paginacja
       let paginatedPersons = persons.slice((page - 1) * limit, page * limit);
-      // paginatedPersons = persons;
+      paginatedPersons = persons;
+
+      
   
-      // Pobieranie całkowitej liczby osób (do wyliczenia ilości stron)
       const totalUsers = persons.length;
   
-      // Pobieranie pełnych danych dla relacji
-      const result = await Promise.all(paginatedPersons.map(async person => {
+      const result = await Promise.all(paginatedPersons.map(async (person,i) => {
         // Pobierz dane rodziców, rodzeństwa, małżonków i dzieci
         const relations = {
             Rodzice: getPersonsByIds(person.parents),
@@ -513,9 +507,11 @@ let lastName: string | undefined;
   
 
   
+       
+
         // Zwróć sformatowane dane
         return {
-          _id: person._id.toString(),
+          id: person._id.toString(),
           firstName: person.firstName,
           lastName: person.lastName,
           maidenName: person.maidenName,
@@ -526,40 +522,45 @@ let lastName: string | undefined;
           deathPlace: person.deathPlace,
           burialPlace: person.burialPlace,
           photo: person.photo,
-          Rodzice: relations.Rodzice.map((parent: IPerson) => ({
-                _id: parent._id,
+          parents: relations.Rodzice.map((parent: IPerson) => ({
+                id: parent._id,
                 firstName: parent.firstName,
                 lastName: parent.lastName,
                 gender: parent.gender,
+                type: 'blood'
               })),
-              Rodzeństwo: relations.Rodzeństwo.map((sibling: IPerson) => ({
-                _id: sibling._id,
+              siblings: relations.Rodzeństwo.map((sibling: IPerson) => ({
+                id: sibling._id,
                 firstName: sibling.firstName,
                 lastName: sibling.lastName,
                 gender: sibling.gender,
+                type: 'blood'
               })),
-              Małżonkowie: relations.Małżonkowie.map((spouse: IPerson) => ({
-                _id: spouse._id,
+              spouses: relations.Małżonkowie.map((spouse: IPerson) => ({
+                id: spouse._id,
                 firstName: spouse.firstName,
                 lastName: spouse.lastName,
                 gender: spouse.gender,
+                type: 'married'
               })),
-              Dzieci: relations.Dzieci.map((child: IPerson) => ({
-                _id: child._id,
+              children: relations.Dzieci.map((child: IPerson) => ({
+                id: child._id,
                 firstName: child.firstName,
                 lastName: child.lastName,
                 gender: child.gender,
+                type: 'blood'
               })),
         };
       }));
 
       res.status(200).json({
+        // result
         loggedInUser: loggedInUser,
         users: result,
         totalUsers,
         currentPage: page,
         totalPages: Math.ceil(totalUsers / limit)
-      });
+    });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });

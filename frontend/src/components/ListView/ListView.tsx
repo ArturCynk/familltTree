@@ -50,27 +50,27 @@ function RenderRelations(person: Person) {
 
   return (
     <>
-      {person.Rodzice && person.Rodzice.length > 0 && (
+      {person.parents && person.parents.length > 0 && (
         <span>
-          Rodzice: {person.Rodzice.map((p) => `${p.firstName} ${p.lastName}`).join(', ')}
+          Rodzice: {person.parents.map((p) => `${p.firstName} ${p.lastName}`).join(', ')}
           <br />
         </span>
       )}
-      {person.Rodzeństwo && person.Rodzeństwo.length > 0 && (
+      {person.siblings && person.siblings.length > 0 && (
         <span>
-          Rodzeństwo: {person.Rodzeństwo.map((s) => `${s.firstName} ${s.lastName}`).join(', ')}
+          Rodzeństwo: {person.siblings.map((s) => `${s.firstName} ${s.lastName}`).join(', ')}
           <br />
         </span>
       )}
-      {person.Małżonkowie && person.Małżonkowie.length > 0 && (
+      {person.spouses && person.spouses.length > 0 && (
         <span>
-          Małżonkowie: {person.Małżonkowie.map((m) => `${m.firstName} ${m.lastName}`).join(', ')}
+          Małżonkowie: {person.spouses.map((m) => `${m.firstName} ${m.lastName}`).join(', ')}
           <br />
         </span>
       )}
-      {person.Dzieci && person.Dzieci.length > 0 && (
+      {person.children && person.children.length > 0 && (
         <span>
-          Dzieci: {person.Dzieci.map((c) => `${c.firstName} ${c.lastName}`).join(', ')}
+          Dzieci: {person.children.map((c) => `${c.firstName} ${c.lastName}`).join(', ')}
           <br />
         </span>
       )}
@@ -245,7 +245,7 @@ return (
           <tbody>
             {people.map((person) => (
               <TableRow
-                key={person._id}
+                key={person.id}
                 person={person}
                 showColorCoding={showColorCoding}
                 showRelatives={showRelatives}
@@ -282,13 +282,13 @@ return (
           isOpen={isRelationModalOpen}
           onClose={closeModals}
           personGender={selectedPerson.gender}
-          id={selectedPerson._id}
+          id={selectedPerson.id}
           personName={`${selectedPerson.firstName} ${selectedPerson.lastName}`}
         />
       )}
       {isEditModalOpen && selectedPerson && (
         <EditModal
-          id={selectedPerson._id}
+          id={selectedPerson.id}
           onClose={closeModals}
         />
       )}

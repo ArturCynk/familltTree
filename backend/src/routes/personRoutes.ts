@@ -32,7 +32,7 @@ router.delete('/delete/:id', authenticateToken, deletePerson)
 
 router.get('/count', authenticateToken, getPersonCount);
 
-router.get('/users',authenticateToken, getAllUsers);
+router.get('/users', getAllUsers);
 
 router.get('/users/:id', authenticateToken, getUser)
 

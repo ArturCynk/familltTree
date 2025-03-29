@@ -9,12 +9,7 @@ const LogoutButton: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Usuwanie tokenu z localStorage
     localStorage.removeItem('authToken');
-
-    // Dodaj dodatkowe operacje, jeśli są wymagane, np. wywołanie API do wylogowania
-
-    // Przekierowanie na stronę logowania
     navigate('/');
   };
 

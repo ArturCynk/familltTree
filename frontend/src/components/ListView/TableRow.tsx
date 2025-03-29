@@ -4,7 +4,7 @@ import { faPen, faPlus, faUnlink } from '@fortawesome/free-solid-svg-icons';
 import Modal from '../deleteRelation/Modal'; // Upewnij się, że ścieżka jest poprawna
 
 interface Person {
-  _id: string;
+  id: string;
   firstName: string;
   lastName: string;
   maidenName?: string;
@@ -13,14 +13,14 @@ interface Person {
   birthPlace?: string;
   deathPlace?: string;
   gender: 'male' | 'female' | 'not-binary';
-  parents: { _id: string; firstName?: string; lastName?: string }[];
-  siblings: { _id: string; firstName?: string; lastName?: string }[];
-  spouses: { _id: string; firstName?: string; lastName?: string }[];
-  children: { _id: string; firstName?: string; lastName?: string }[];
-  Dzieci: { _id: string; firstName?: string; lastName?: string }[];
-  Rodzeństwo: { _id: string; firstName?: string; lastName?: string }[];
-  Małżonkowie: { _id: string; firstName?: string; lastName?: string }[];
-  Rodzice: { _id: string; firstName?: string; lastName?: string }[];
+  parents: { id: string; firstName?: string; lastName?: string }[];
+  siblings: { id: string; firstName?: string; lastName?: string }[];
+  spouses: { id: string; firstName?: string; lastName?: string }[];
+  children: { id: string; firstName?: string; lastName?: string }[];
+  Dzieci: { id: string; firstName?: string; lastName?: string }[];
+  Rodzeństwo: { id: string; firstName?: string; lastName?: string }[];
+  Małżonkowie: { id: string; firstName?: string; lastName?: string }[];
+  Rodzice: { id: string; firstName?: string; lastName?: string }[];
 }
 
 interface TableRowProps {
@@ -62,7 +62,7 @@ const TableRow: React.FC<TableRowProps> = ({
   return (
     <>
       <tr
-        key={person._id}
+        key={person.id}
         className={`relative group border-b transition duration-300 ease-in-out hover:bg-gray-200 ${showColorCoding ? getColorByGender(person.gender) : ''}`}
         onClick={onClickRow}
       >
@@ -128,11 +128,11 @@ const TableRow: React.FC<TableRowProps> = ({
 const getColorByGender = (gender: 'male' | 'female' | 'not-binary') => {
   switch (gender) {
     case 'male':
-      return 'bg-blue-100'; // Jasnoniebieski dla mężczyzn
+      return 'bg-blue-100'; 
     case 'female':
-      return 'bg-pink-100'; // Jasnoróżowy dla kobiet
+      return 'bg-pink-100'; 
     default:
-      return 'bg-gray-100'; // Domyślny kolor dla innych opcji
+      return 'bg-gray-100'; 
   }
 };
 
