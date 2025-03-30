@@ -7,11 +7,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { Person } from '../ListView/Types';
-
+import type { Node, ExtNode } from 'relatives-tree/lib/types';
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  person: Person;
+  person: string;
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
@@ -31,19 +31,19 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      if (modalRef.current && event.target instanceof Node && !modalRef.current.contains(event.target)) {
         onClose();
       }
     };
-
+  
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-
+  
       // Fetch relations when modal is opened
       const fetchRelations = async () => {
         try {
           const token = localStorage.getItem('authToken'); // Get token from localStorage
-          const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person.id}`, {
+          const response = await axios.get(`http://localhost:3001/api/person/users/relation/${person}`, {
             headers: {
               Authorization: `Bearer ${token}`, // Add authorization header
             },
@@ -53,14 +53,15 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
           console.error('Error fetching relations:', error);
         }
       };
-
+  
       fetchRelations();
     }
-
+  
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose, person.id]);
+  }, [isOpen, onClose, person]);
+  
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
@@ -72,7 +73,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
       try {
         // Użyj personId i selectedId w trasie
         const token = localStorage.getItem('authToken'); // Get token from localStorage
-        const response = await axios.delete(`http://localhost:3001/api/person/relation/${person.id}/${selectedId}`, {
+        const response = await axios.delete(`http://localhost:3001/api/person/relation/${person}/${selectedId}`, {
           headers: {
             Authorization: `Bearer ${token}`, // Add authorization header
           },
@@ -107,30 +108,32 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
                     :
                   </h3>
                   <ul className="space-y-2">
-                    {people.map((p) => (
-                      <li
-                        key={p.id}
-                        className={`flex items-center p-2 rounded-lg border cursor-pointer ${
-                          selectedId === p.id ? 'bg-gray-200' : 'hover:bg-gray-100'
-                        }`}
-                        onClick={() => handleSelect(p.id)}
-                      >
-                        <span className="mr-3 text-lg">
-                          {p.gender === 'male' ? (
-                            <FontAwesomeIcon icon={faMale} className="text-blue-500" />
-                          ) : p.gender === 'female' ? (
-                            <FontAwesomeIcon icon={faFemale} className="text-pink-500" />
-                          ) : (
-                            <FontAwesomeIcon icon={faGenderless} className="text-gray-500" />
-                          )}
-                        </span>
-                        <span className={`text-gray-800 ${selectedId === p.id ? 'font-semibold' : ''}`}>
-                          {p.firstName}
-                          {' '}
-                          {p.lastName}
-                        </span>
-                      </li>
-                    ))}
+                  {people.map((p) => {
+  console.log(p); // Logowanie do konsoli
+  return (
+    <li
+      key={p.id}
+      className={`flex items-center p-2 rounded-lg border cursor-pointer ${
+        selectedId === p.id ? 'bg-gray-200' : 'hover:bg-gray-100'
+      }`}
+      onClick={() => handleSelect(p.id)}
+    >
+      <span className="mr-3 text-lg">
+        {p.gender === 'male' ? (
+          <FontAwesomeIcon icon={faMale} className="text-blue-500" />
+        ) : p.gender === 'female' ? (
+          <FontAwesomeIcon icon={faFemale} className="text-pink-500" />
+        ) : (
+          <FontAwesomeIcon icon={faGenderless} className="text-gray-500" />
+        )}
+      </span>
+      <span className={`text-gray-800 ${selectedId === p.id ? 'font-semibold' : ''}`}>
+        {p.firstName} {p.lastName}
+      </span>
+    </li>
+  );
+})}
+
                   </ul>
                 </>
               ) : (

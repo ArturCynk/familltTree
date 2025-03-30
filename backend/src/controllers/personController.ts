@@ -1111,25 +1111,25 @@ export const getRelations = async (req: Request, res: Response) => {
     // Return the relations
     res.json({
       Rodzice: relations.Rodzice.map((parent: IPerson) => ({
-        _id: parent._id,
+        id: parent._id,
         firstName: parent.firstName,
         lastName: parent.lastName,
         gender: parent.gender,
       })),
       Rodzeństwo: relations.Rodzeństwo.map((sibling: IPerson) => ({
-        _id: sibling._id,
+        id: sibling._id,
         firstName: sibling.firstName,
         lastName: sibling.lastName,
         gender: sibling.gender,
       })),
       Małżonkowie: relations.Małżonkowie.map((spouse: IPerson) => ({
-        _id: spouse._id,
+        id: spouse._id,
         firstName: spouse.firstName,
         lastName: spouse.lastName,
         gender: spouse.gender,
       })),
       Dzieci: relations.Dzieci.map((child: IPerson) => ({
-        _id: child._id,
+        id: child._id,
         firstName: child.firstName,
         lastName: child.lastName,
         gender: child.gender,

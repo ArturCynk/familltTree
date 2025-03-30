@@ -141,7 +141,6 @@ const handleRelativesChange = (enabled: boolean) => {
 };
 
 const handleSearchEnter = () => {
-  // Refetch data with the current search query
   refetch();
 };
 const [isModalOpen, setIsModalOpen] = useState(false);

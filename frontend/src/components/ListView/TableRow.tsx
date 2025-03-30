@@ -118,7 +118,7 @@ const TableRow: React.FC<TableRowProps> = ({
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        person={selectedPerson}
+        person={selectedPerson.id}
       />
       )}
     </>

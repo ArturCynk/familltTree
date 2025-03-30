@@ -325,7 +325,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             >
               <FontAwesomeIcon icon={faUnlink} className="text-2xl mb-2" />
               <span className="text-xs font-semibold">Usuń relacje</span>
-              {isRemoveRelationModalOpen && <Modal onClose={closeRemoveRelationModal} isOpen={isRemoveRelationModalOpen} person={person} />}
+              {isRemoveRelationModalOpen && <Modal onClose={closeRemoveRelationModal} isOpen={isRemoveRelationModalOpen} person={person.id} />}
             </button>
           </div>
         </div>

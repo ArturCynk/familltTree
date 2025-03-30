@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import type { ExtNode } from 'relatives-tree/lib/types';
 import css from './FamilyNode.module.css';
 
+
 interface FamilyNodeProps {
   node: ExtNode;
   isRoot: boolean;
@@ -50,6 +51,7 @@ export const FamilyNode = React.memo(
             onClick={clickSubHandler}
           />
         )}
+
       </div>
     );
   }
