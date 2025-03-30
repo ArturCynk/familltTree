@@ -44,6 +44,7 @@ const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boole
    const closeModals = async () => {
     setIsRelationModalOpen(false);
     setIsEditModalOpen(false);
+    setIsModalDeleteRelationOpen(false)
     // setSelectedPerson(null);
     await fetchFamilyData(); // Pobierz nowe dane
   };

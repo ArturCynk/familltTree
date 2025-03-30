@@ -87,6 +87,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
       } catch (error) {
         console.error('Error deleting relation:', error);
         // Opcjonalnie wyświetl komunikat o błędzie
+      }finally {
+        onClose();
       }
     }
   };
