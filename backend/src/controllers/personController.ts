@@ -1144,66 +1144,97 @@ export const deleteRelationship = async (req: Request, res: Response) => {
   const { personId, relationId } = req.params;
 
   try {
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-      if (!token) {
-          return res.status(401).json({ msg: 'Brak tokenu' });
+    if (!token) {
+      return res.status(401).json({ msg: 'Brak tokenu' });
+    }
+
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    const user = decoded as UserDocument;
+
+    if (!user) {
+      return res.status(401).json({ msg: 'Token jest nieprawidłowy' });
+    }
+
+    // Fetch the logged-in user and populate their persons field
+    const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+
+    if (!loggedInUser) {
+      return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
+    }
+
+    // Find the person from whom we are removing the relation
+    const person = loggedInUser.persons.find(p => p._id.toString() === personId);
+    if (!person) {
+      return res.status(404).json({ message: 'Person not found' });
+    }
+
+    // Typy relacji do usunięcia
+    const relationTypes: (keyof IPerson)[] = ['parents', 'siblings', 'spouses', 'children'];
+
+    // Usunięcie relacji z obiektu person
+    for (const type of relationTypes) {
+      const relations = person[type] as any[];
+
+      let index = -1;
+      if (type === 'spouses') {
+        // Dla spouses porównujemy właściwość _id, jeśli element jest obiektem
+        index = relations.findIndex(rel => {
+          if (typeof rel === 'object' && rel !== null && '_id' in rel) {
+            return rel.personId.toString() === relationId;
+          }
+          return rel.toString() === relationId;
+        });
+      } else {
+        // Dla pozostałych typów porównujemy elementy jako stringi
+        index = relations.findIndex(rel => rel.toString() === relationId);
       }
 
-      // Verify the token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      const user = decoded as UserDocument;
-
-      if (!user) {
-          return res.status(401).json({ msg: 'Token jest nieprawidłowy' });
+      if (index > -1) {
+        relations.splice(index, 1);
+        await person.save();
+        break;
       }
+    }
 
-      // Fetch the logged-in user and populate their persons field
-      const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
-
-      if (!loggedInUser) {
-          return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
-      }
-
-      // Find the person from whom we are removing the relation
-      const person = loggedInUser.persons.find(p => p._id.toString() === personId);
-      if (!person) {
-          return res.status(404).json({ message: 'Person not found' });
-      }
-
-      // Remove the relation from the person's relations array
-      const relationTypes: (keyof IPerson)[] = ['parents', 'siblings', 'spouses', 'children'];
+    // Usunięcie osoby z relacji powiązanego obiektu (relatedPerson)
+    const relatedPerson = loggedInUser.persons.find(p => p._id.toString() === relationId);
+    if (relatedPerson) {
       for (const type of relationTypes) {
-          const relations = person[type] as mongoose.Types.ObjectId[];
-          const index = relations.indexOf(relationId as unknown as mongoose.Types.ObjectId);
-          if (index > -1) {
-              relations.splice(index, 1);
-              await person.save();
-              break;
-          }
-      }
+        const relations = relatedPerson[type] as any[];
 
-      // Remove the person from the relations of the related person
-      const relatedPerson = loggedInUser.persons.find(p => p._id.toString() === relationId);
-      if (relatedPerson) {
-          for (const type of relationTypes) {
-              const relations = relatedPerson[type] as mongoose.Types.ObjectId[];
-              const index = relations.indexOf(personId as unknown as mongoose.Types.ObjectId);
-              if (index > -1) {
-                  relations.splice(index, 1);
-                  await relatedPerson.save();
-                  break;
-              }
-          }
-      }
+        let index = -1;
+        if (type === 'spouses') {
+          index = relations.findIndex(rel => {
+            if (typeof rel === 'object' && rel !== null && '_id' in rel) {
+              return rel.personId.toString() === personId;
+            }
+            return rel.toString() === personId;
+          });
+        } else {
+          index = relations.findIndex(rel => rel.toString() === personId);
+        }
 
-      res.status(200).json({ message: 'Nastąpiło usunięcie relacji' });
+        if (index > -1) {
+          relations.splice(index, 1);
+          await relatedPerson.save();
+          break;
+        }
+      }
+    }
+
+    await loggedInUser.save();
+
+    res.status(200).json({ message: 'Nastąpiło usunięcie relacji' });
   } catch (error) {
-      console.error('Error removing relation:', error);
-      res.status(500).json({ message: 'Internal server error' });
+    console.error('Error removing relation:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 export const getPersonsWithoutRelation = async (req: Request, res: Response) => {

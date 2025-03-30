@@ -73,6 +73,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
       try {
         // Użyj personId i selectedId w trasie
         const token = localStorage.getItem('authToken'); // Get token from localStorage
+        console.log(person, selectedId);
+        
         const response = await axios.delete(`http://localhost:3001/api/person/relation/${person}/${selectedId}`, {
           headers: {
             Authorization: `Bearer ${token}`, // Add authorization header
