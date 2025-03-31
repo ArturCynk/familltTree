@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faBirthdayCake, faCross,
+  faUser, faPen, faPlus, faTrash, faUnlink, faTimes, 
+  faBirthdayCake, faCross, faUsers, faInfoCircle
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -9,6 +10,7 @@ import { toast } from 'react-toastify';
 import { Person } from './Types';
 import { formatDate } from './PersonUtils';
 import Modal from '../deleteRelation/Modal';
+import LoadingSpinner from '../Loader/LoadingSpinner';
 
 const calculateAge = (birthDate: Date, deathDate: Date): number => {
   const birthYear = birthDate.getFullYear();
@@ -26,10 +28,11 @@ const calculateAge = (birthDate: Date, deathDate: Date): number => {
 };
 
 interface FamilyMember {
-  _id: string;
+  id: string;
   firstName?: string;
   lastName?: string;
   gender?: 'male' | 'female' | 'not-binary';
+  photo?: string;
 }
 
 interface ProfileSidebarProps {
@@ -42,11 +45,52 @@ interface ProfileSidebarProps {
 }
 
 interface IEvent {
-  type: 'Narodziny' | 'Śmierć' | 'Ślub'; // Event type
-  who: string; // Description of the person(s) involved
-  date: string; // Date of the event
-  description: string; // Description of the event
+  type: 'Narodziny' | 'Śmierć' | 'Ślub';
+  who: string;
+  date: string;
+  description: string;
 }
+
+export const renderFamilyMembers = (members: FamilyMember[], label: string) => {
+  if (members.length === 0) return null;
+  
+  return (
+    <div className="mt-3">
+      <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+        <FontAwesomeIcon icon={faUsers} className="text-gray-500" />
+        {label}
+      </h4>
+      <ul className="space-y-2">
+        {members.map((member) => (
+          <li
+            key={member.id}
+            className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            {member.photo ? (
+              <img 
+                src={member.photo.includes('uploads/') 
+                  ? `http://localhost:3001/${member.photo}` 
+                  : member.photo}
+                alt={`${member.firstName} ${member.lastName}`}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${
+                member.gender === 'female' ? 'bg-pink-400' : 
+                member.gender === 'male' ? 'bg-blue-400' : 'bg-gray-400'
+              }`}>
+                {member.firstName?.charAt(0) || '?'}
+              </div>
+            )}
+            <span className="text-sm font-medium text-gray-700">
+              {member.firstName} {member.lastName}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   isSidebarOpen,
@@ -54,44 +98,34 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   selectedPerson,
   onOpenRelationModal,
   onOpenEditModal,
-  refetch,
+  refetch ,
 }) => {
   const navigate = useNavigate();
   const [showFamily, setShowFamily] = useState(false);
   const [showFacts, setShowFacts] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Modal for deletion confirmation
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [facts, setFacts] = useState<IEvent[]>([]);
   const [isRemoveRelationModalOpen, setIsRemoveRelationModalOpen] = useState(false);
+  const [isLoadingFamily, setIsLoadingFamily] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState({
+    parents: selectedPerson?.parents || [] as FamilyMember[],
+    siblings: selectedPerson?.siblings || [] as FamilyMember[],
+    spouses: selectedPerson?.spouses || [] as FamilyMember[],
+    children: selectedPerson?.children || [] as FamilyMember[],
+  });
 
+  useEffect(() => {
+    setFamilyMembers({
+      parents: selectedPerson?.parents || [],
+      siblings: selectedPerson?.siblings || [],
+      spouses: selectedPerson?.spouses || [],
+      children: selectedPerson?.children || [],
+    })
+  },[selectedPerson])
+  
   const handleRemoveRelation = () => {
     setIsRemoveRelationModalOpen(true);
-  };
-
-  const handleShowFamily = async () => {
-    if (!selectedPerson || !selectedPerson.id) return;
-
-    try {
-      const token = localStorage.getItem('authToken'); // Get token from localStorage
-      const response = await axios.get(`http://localhost:3001/api/person/users/relation/${selectedPerson.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // Add authorization header
-        },
-      });
-
-      // Set family members state
-      setFamilyMembers({
-        parents: response.data.Rodzice || [],
-        siblings: response.data.Rodzeństwo || [],
-        spouses: response.data.Małżonkowie || [],
-        children: response.data.Dzieci || [],
-      });
-
-      setShowFamily(!showFamily);
-    } catch (error) {
-      console.error('Error fetching family members:', error);
-      toast.error('Błąd podczas pobierania danych rodziny.');
-    }
   };
 
   const closeRemoveRelationModal = () => {
@@ -99,21 +133,20 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     refetch();
   };
 
-  const [familyMembers, setFamilyMembers] = useState({
-    parents: [] as FamilyMember[],
-    siblings: [] as FamilyMember[],
-    spouses: [] as FamilyMember[],
-    children: [] as FamilyMember[],
-  });
+  console.log(selectedPerson?.parents);
+  
+  const handleShowFamily = async () => {
+    setShowFamily(!showFamily);
+  };
 
   useEffect(() => {
     const fetchFacts = async () => {
       if (selectedPerson && selectedPerson.id) {
         try {
-          const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
+          const token = localStorage.getItem('authToken');
           const response = await axios.get(`http://localhost:3001/api/person/users/fact/${selectedPerson.id}`, {
             headers: {
-              Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+              Authorization: `Bearer ${token}`,
             },
           });
           setFacts(response.data);
@@ -126,53 +159,38 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     fetchFacts();
   }, [selectedPerson]);
 
-  // Other functions...
-
   const renderFacts = (events: IEvent[]) => (
-    <div className="mt-8 text-gray-900">
-      <ul className="space-y-8">
-        {events.map((event, index) => (
-          <li
-            key={index}
-            className="p-8 bg-white shadow-lg rounded-xl border border-gray-200 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 grid grid-cols-5 gap-6"
-          >
-            {/* Lewa część: Rok (cyfry lub "Brak" pod sobą) */}
-            <div className="col-span-1 flex items-center justify-center">
-              {event.date ? (
-                <span className="text-gray-900 flex flex-col items-center">
-                  {new Date(event.date).getFullYear().toString().split('')
-                    .map((digit, i) => (
-                      <span key={i}>{digit}</span>
-                    ))}
-                </span>
-              ) : (
-                <span className="text-gray-500 flex flex-col items-center">
-                  {'Brak'.split('').map((letter, i) => (
-                    <span key={i}>{letter}</span>
-                  ))}
-                </span>
+    <div className="mt-4 space-y-3">
+      {events.map((event, index) => (
+        <div
+          key={index}
+          className="p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all"
+        >
+          <div className="flex items-start gap-4">
+            <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+              <FontAwesomeIcon 
+                icon={event.type === 'Narodziny' ? faBirthdayCake : 
+                     event.type === 'Śmierć' ? faCross : faUsers} 
+                size="lg"
+              />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-gray-800">{event.type}</h4>
+              <p className="text-sm text-gray-600 mt-1">
+                <span className="font-medium">Osoba:</span> {event.who || 'Brak danych'}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Data:</span> {event.date ? formatDate(event.date) : 'Brak danych'}
+              </p>
+              {event.description && (
+                <p className="text-sm text-gray-600 mt-2">
+                  <span className="font-medium">Opis:</span> {event.description}
+                </p>
               )}
             </div>
-
-            {/* Prawa część: Typ, Osoba, Data */}
-            <div className="col-span-4">
-              <h4 className="mb-4">{event.type}</h4>
-              {/* Sekcja osoby z elipsą na długie teksty */}
-              <div className="text-gray-700 mb-3 flex items-center">
-                <span className="mr-2">Osoba:</span>
-                <span className="truncate max-w-xs block">{event.who}</span>
-                {' '}
-                {/* Elipsa dla długich nazwisk */}
-              </div>
-              <div className="text-gray-700 mb-3 flex items-center">
-                <span className="mr-2">Data:</span>
-                {event.date ? formatDate(event.date) : 'Brak'}
-              </div>
-              <p className="text-gray-600 leading-relaxed">{event.description}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+          </div>
+        </div>
+      ))}
     </div>
   );
 
@@ -184,180 +202,181 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     if (selectedPerson && selectedPerson.id) {
       setIsDeleting(true);
       try {
-        const token = localStorage.getItem('authToken'); // Pobierz token z localStorage
-        const response = await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson.id}`, {
+        const token = localStorage.getItem('authToken');
+        await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson.id}`, {
           headers: {
-            Authorization: `Bearer ${token}`, // Dodaj nagłówek autoryzacji
+            Authorization: `Bearer ${token}`,
           },
         });
-        setIsDeleteModalOpen(false);
-        setIsDeleting(false);
-        toast.success('Użytkownik został pomyślnie usunięty!');
+        toast.success('Osoba została pomyślnie usunięta!');
         refetch();
         closeSidebar();
       } catch (error) {
+        toast.error('Wystąpił błąd podczas usuwania osoby.');
+      } finally {
         setIsDeleting(false);
-        toast.success('Użytkownik został pomyślnie usunięty!');
+        setIsDeleteModalOpen(false);
       }
     }
   };
 
-  const handleDeleteRelationship = () => {
-    alert('Czy na pewno chcesz usunąć relacje?');
-  };
-
   const handleProfileClick = (id: string) => {
     navigate(`/profile/${id}`);
+    closeSidebar();
   };
 
-  const renderFamilyMembers = (members: FamilyMember[], label: string) => (
-    <div className="mt-4">
-      {members.length > 0 ? (
-        <>
-          <h4 className="text-lg font-semibold text-gray-800 mb-2">{label}</h4>
-          <ul className="space-y-2">
-            {members.map((member) => (
-              <li
-                key={member._id}
-                className="flex items-center space-x-3 p-2 bg-gray-100 rounded-md shadow-sm hover:bg-gray-200 transition-colors"
-              >
-                <FontAwesomeIcon
-                  icon={faUser}
-                  className={`text-2xl cursor-pointer ${member.gender === 'female'
-                    ? 'text-pink-500'
-                    : member.gender === 'male'
-                      ? 'text-blue-500'
-                      : 'text-gray-500'
-                  }`}
-                  aria-label={`Przejdź do profilu ${member.firstName} ${member.lastName}`}
-                />
-                <span className="text-gray-700 font-medium">
-                  {member.firstName}
-                  {' '}
-                  {member.lastName}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-    </div>
-  );
+  
 
   const ProfileCard: React.FC<{ person: Person }> = ({ person }) => {
     const birthDate = person.birthDate ? new Date(person.birthDate) : null;
     const deathDate = person.deathDate ? new Date(person.deathDate) : null;
-    console.log(person);
 
     return (
-      <div className="w-full pb-20">
-        <div className="flex items-center mb-6">
-          <div className="h-16 w-16 bg-gradient-to-br from-teal-500 to-blue-500 text-white rounded-full flex items-center justify-center text-3xl font-bold shadow-md">
-            {person.firstName ? person.firstName.charAt(0) : '?'}
-          </div>
-          <div className="ml-5">
-            <h2 className="text-xl font-semibold text-gray-800">
-              {person.firstName}
-              {' '}
-              {person.lastName}
+      <div className="w-full pb-6">
+        {/* Profile Header */}
+        <div className="flex items-center gap-4 mb-6">
+          
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-blue-500 text-white flex items-center justify-center text-2xl font-bold shadow-md">
+              {person.firstName?.charAt(0) || '?'}
+            </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">
+              {person.firstName} {person.lastName}
             </h2>
+            <p className="text-sm text-gray-500">
+              {person.gender === 'female' ? 'Kobieta' : 
+               person.gender === 'male' ? 'Mężczyzna' : 'Niebinarna'}
+            </p>
           </div>
         </div>
 
-        <div className="text-sm text-gray-600 mb-4 space-y-2">
-          {birthDate && (
-            <p className="flex items-center space-x-2">
-              <FontAwesomeIcon icon={faBirthdayCake} className="text-teal-600" />
-              <span>{formatDate(person.birthDate)}</span>
-            </p>
-          )}
-          {deathDate && (
-            <p className="flex items-center space-x-2">
-              <FontAwesomeIcon icon={faCross} className="text-gray-600" />
-              <span>
-                {formatDate(person.deathDate)}
-                {' '}
-                (w wieku
-                {' '}
-                {birthDate ? calculateAge(birthDate, deathDate) : 'nieznany'}
-                )
-              </span>
-            </p>
-          )}
+        {/* Vital Dates */}
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="space-y-3">
+            {birthDate && (
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+                  <FontAwesomeIcon icon={faBirthdayCake} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Urodzony/a</p>
+                  <p className="text-gray-800">{formatDate(person.birthDate)}</p>
+                </div>
+              </div>
+            )}
+            {deathDate && (
+              <div className="flex items-center gap-3">
+                <div className="bg-gray-100 p-2 rounded-lg text-gray-600">
+                  <FontAwesomeIcon icon={faCross} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Zmarł/a</p>
+                  <p className="text-gray-800">
+                    {formatDate(person.deathDate)} (w wieku {birthDate ? calculateAge(birthDate, deathDate) : '?'})
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-8">
+        {/* Action Buttons */}
+        <div className="grid grid-cols-4 gap-2 mb-6">
           <button
-            className="flex flex-col items-center text-gray-500 hover:text-blue-600 transition-all"
             onClick={() => person.id && handleProfileClick(person.id)}
+            className="flex flex-col items-center p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            title="Profil"
           >
-            <FontAwesomeIcon icon={faUser} className="text-2xl mb-2" />
-            <span className="text-xs font-semibold">Profil</span>
+            <FontAwesomeIcon icon={faUser} className="text-gray-600 mb-1" />
+            <span className="text-xs text-gray-600">Profil</span>
           </button>
           <button
-            className="flex flex-col items-center text-gray-500 hover:text-green-600 transition-all"
-            onClick={() => person.id && onOpenEditModal(person)} // Open Edit Modal
+            onClick={() => person.id && onOpenEditModal(person)}
+            className="flex flex-col items-center p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            title="Edytuj"
           >
-            <FontAwesomeIcon icon={faPen} className="text-2xl mb-2" />
-            <span className="text-xs font-semibold">Edytuj</span>
+            <FontAwesomeIcon icon={faPen} className="text-gray-600 mb-1" />
+            <span className="text-xs text-gray-600">Edytuj</span>
           </button>
           <button
-            className="flex flex-col items-center text-gray-500 hover:text-purple-600 transition-all"
-            onClick={() => person.id && onOpenRelationModal(person)} // Open Add Modal
+            onClick={() => person.id && onOpenRelationModal(person)}
+            className="flex flex-col items-center p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            title="Dodaj"
           >
-            <FontAwesomeIcon icon={faPlus} className="text-2xl mb-2" />
-            <span className="text-xs font-semibold">Dodaj</span>
+            <FontAwesomeIcon icon={faPlus} className="text-gray-600 mb-1" />
+            <span className="text-xs text-gray-600">Dodaj</span>
           </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mt-4">
           <button
-            className="flex flex-col items-center text-gray-500 hover:text-red-600 transition-all"
             onClick={handleDelete}
+            className="flex flex-col items-center p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            title="Usuń"
           >
-            <FontAwesomeIcon icon={faTrash} className="text-2xl mb-2" />
-            <span className="text-xs font-semibold">Usuń</span>
+            <FontAwesomeIcon icon={faTrash} className="text-gray-600 mb-1" />
+            <span className="text-xs text-gray-600">Usuń</span>
           </button>
-          <div className="flex flex-col gap-4 mt-6">
-            <button
-              className="flex flex-col items-center text-gray-500 hover:text-yellow-600 transition-all"
-              onClick={handleRemoveRelation}
-            >
-              <FontAwesomeIcon icon={faUnlink} className="text-2xl mb-2" />
-              <span className="text-xs font-semibold">Usuń relacje</span>
-              {isRemoveRelationModalOpen && <Modal onClose={closeRemoveRelationModal} isOpen={isRemoveRelationModalOpen} person={person.id} />}
-            </button>
-          </div>
         </div>
 
-        {/* Stylizowane przyciski "Pokaż fakty" i "Pokaż najbliższą rodzinę" */}
-        <div className="mt-10">
+        {/* Family Section */}
+        <div className="mb-6">
           <button
-            className="w-full py-2 text-white font-semibold bg-gradient-to-r from-blue-500 to-teal-500 rounded-md shadow-md hover:from-teal-500 hover:to-blue-500 transition-all focus:outline-none"
             onClick={handleShowFamily}
+            className={`w-full py-2 px-4 flex items-center justify-between rounded-lg border transition-colors ${
+              showFamily 
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            {showFamily ? 'Ukryj najbliższą rodzinę' : 'Pokaż najbliższą rodzinę'}
+            <span className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faUsers} />
+              Najbliższa rodzina
+            </span>
+            <span>{showFamily ? '▲' : '▼'}</span>
           </button>
-
+          
           {showFamily && (
-          <div className="mt-4 text-gray-600">
-            {renderFamilyMembers(familyMembers.parents, 'Rodzice')}
-            {renderFamilyMembers(familyMembers.siblings, 'Rodzeństwo')}
-            {renderFamilyMembers(familyMembers.spouses, 'Partnerzy')}
-            {renderFamilyMembers(familyMembers.children, 'Dzieci')}
-          </div>
+            <div className="mt-3 space-y-4">
+              {isLoadingFamily ? (
+                <div className="flex justify-center py-4">
+                  <LoadingSpinner  />
+                </div>
+              ) : (
+                <>
+                  {renderFamilyMembers(familyMembers.parents, 'Rodzice')}
+                  {renderFamilyMembers(familyMembers.siblings, 'Rodzeństwo')}
+                  {renderFamilyMembers(familyMembers.spouses, 'Partnerzy')}
+                  {renderFamilyMembers(familyMembers.children, 'Dzieci')}
+                </>
+              )}
+            </div>
           )}
-
         </div>
 
-        <div className="mt-6">
+        {/* Facts Section */}
+        <div>
           <button
-            className="w-full py-2 text-white font-semibold bg-gradient-to-r from-purple-500 to-pink-500 rounded-md shadow-md hover:from-pink-500 hover:to-purple-500 transition-all focus:outline-none"
             onClick={() => setShowFacts(!showFacts)}
+            className={`w-full py-2 px-4 flex items-center justify-between rounded-lg border transition-colors ${
+              showFacts 
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            {showFacts ? 'Ukryj fakty' : 'Pokaż fakty'}
+            <span className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faInfoCircle} />
+              Fakty i wydarzenia
+            </span>
+            <span>{showFacts ? '▲' : '▼'}</span>
           </button>
-          {showFacts && renderFacts(facts)}
+          
+          {showFacts && (
+            <div className="mt-3">
+              {facts.length > 0 ? (
+                renderFacts(facts)
+              ) : (
+                <p className="text-sm text-gray-500 mt-2 text-center">Brak dostępnych faktów</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -365,41 +384,63 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
   return (
     <>
-      {isSidebarOpen && selectedPerson && (
-        <div className="fixed top-16 left-0 w-80 h-full bg-white shadow-lg z-50 p-6 overflow-auto">
+      {/* Sidebar */}
+      <div className={`fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform transition-all duration-300 ease-in-out ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="relative h-full overflow-y-auto p-6">
           <button
-            className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
             onClick={closeSidebar}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
           >
-            <FontAwesomeIcon icon={faTimes} size="2x" />
+            <FontAwesomeIcon icon={faTimes} size="lg" />
           </button>
 
-          <ProfileCard person={selectedPerson} />
-
-          {/* Delete Confirmation Modal */}
-          {isDeleteModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">Czy na pewno chcesz usunąć osobę?</h3>
-                <div className="flex justify-end space-x-4">
-                  <button
-                    className="px-4 py-2 bg-red-600 text-white font-semibold rounded-md shadow-sm hover:bg-red-700 focus:outline-none"
-                    onClick={confirmDelete}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? 'Usuwanie...' : 'Usuń'}
-                  </button>
-                  <button
-                    className="px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-md shadow-sm hover:bg-gray-400 focus:outline-none"
-                    onClick={() => setIsDeleteModalOpen(false)}
-                  >
-                    Anuluj
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {selectedPerson && <ProfileCard person={selectedPerson} />}
         </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Potwierdzenie usunięcia</h3>
+            <p className="text-gray-600 mb-6">Czy na pewno chcesz usunąć tę osobę? Tej akcji nie można cofnąć.</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className={`px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-rose-600 text-white font-medium hover:from-red-700 hover:to-rose-700 transition-colors flex items-center gap-2 ${
+                  isDeleting ? 'opacity-75 cursor-not-allowed' : ''
+                }`}
+              >
+                {isDeleting ? (
+                  <LoadingSpinner  />
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faTrash} />
+                    Usuń
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Relation Modal */}
+      {isRemoveRelationModalOpen && selectedPerson && (
+        <Modal 
+          onClose={closeRemoveRelationModal} 
+          isOpen={isRemoveRelationModalOpen} 
+          person={selectedPerson.id} 
+        />
       )}
     </>
   );

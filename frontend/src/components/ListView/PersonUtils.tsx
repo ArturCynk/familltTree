@@ -1,4 +1,3 @@
-// PersonUtils.tsx
 import { Person } from './Types';
 
 export const getDisplayName = (person: Person, showMaidenName: boolean, showHusbandSurname: boolean) => {

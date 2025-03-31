@@ -6,7 +6,6 @@ import multer from 'multer';
 import path from 'path';
 import personRoutes from './src/routes/personRoutes'; // Importowanie trasy
 import authRoutes from './src/routes/authRoutes'
-
 import connectDB from './src/config/database';
 
 dotenv.config();

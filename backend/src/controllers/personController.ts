@@ -490,7 +490,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       
   
       let paginatedPersons = persons.slice((page - 1) * limit, page * limit);
-      paginatedPersons = persons;
+      // paginatedPersons = persons;
 
       // paginatedPersons.forEach((p) => {
       //   if (p._id.toString() === "673ceb0663b7c5c1f91635e9") {
@@ -572,7 +572,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
 
       res.status(200).json({
         // result
-        loggedInUser: loggedInUser,
+        // loggedInUser: loggedInUser,
         users: result,
         totalUsers,
         currentPage: page,
@@ -583,6 +583,131 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });
     }
   };
+
+  export const getAllUserss = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Sprawdzenie obecności tokena w nagłówku Authorization
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1]; // Token w nagłówku Authorization
+  
+      if (!token) {
+        console.log('====================================');
+        console.log(token);
+        console.log('====================================');
+        res.status(401).json({ msg: 'Brak tokenu' });
+        return;
+      }
+  
+      // Weryfikacja tokena
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+      const user = decoded as { email: string }; // Zakładam, że użytkownik ma email w tokenie
+  
+      if (!user) {
+        res.status(401).json({ msg: 'Token jest nieprawidłowy' });
+        return;
+      }
+  
+     
+  
+      // Pobieranie użytkownika, a następnie jego osoby
+      const loggedInUser = await User.findOne({ email: user.email }) .populate({
+        path: 'persons'
+      }).exec();
+
+      if (!loggedInUser) {
+        res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
+        return;
+      }
+
+      const getPersonsByIds = (ids: mongoose.Types.ObjectId[]) =>
+        loggedInUser.persons.filter((p: IPerson) =>
+          ids.some(id => id.toString() === p._id.toString())
+        );
+      
+      
+        const getPersonsByIdsSpouses = (ids: mongoose.Types.ObjectId[]) =>
+          loggedInUser.persons.filter(p =>
+            ids.some(id => id.toString() === p._id.toString()) // Porównujemy personId z _id osób w loggedInUser.persons
+          );
+        
+       
+      
+      
+  
+      let paginatedPersons = loggedInUser.persons;
+
+  
+      const totalUsers = paginatedPersons.length;
+  
+      const result = await Promise.all(paginatedPersons.map(async (person,i) => {
+        // Pobierz dane rodziców, rodzeństwa, małżonków i dzieci
+        const relations = {
+            Rodzice: getPersonsByIds(person.parents),
+            Rodzeństwo: getPersonsByIds(person.siblings),
+            Małżonkowie: getPersonsByIdsSpouses(person.spouses.map(spouse => spouse.personId)), // Mapujemy po personId
+            Dzieci: getPersonsByIds(person.children),
+        };
+  
+
+
+
+        // Zwróć sformatowane dane
+        return {
+          id: person._id.toString(),
+          firstName: person.firstName,
+          lastName: person.lastName,
+          maidenName: person.maidenName,
+          birthDate: person.birthDate,
+          deathDate: person.deathDate,
+          gender: person.gender,
+          birthPlace: person.birthPlace,
+          deathPlace: person.deathPlace,
+          burialPlace: person.burialPlace,
+          photo: person.photo,
+          status: person.status,
+          parents: relations.Rodzice.map((parent: IPerson) => ({
+                id: parent._id,
+                firstName: parent.firstName,
+                lastName: parent.lastName,
+                gender: parent.gender,
+                type: 'blood'
+              })),
+              siblings: relations.Rodzeństwo.map((sibling: IPerson) => ({
+                id: sibling._id,
+                firstName: sibling.firstName,
+                lastName: sibling.lastName,
+                gender: sibling.gender,
+                type: 'blood'
+              })),
+              spouses: relations.Małżonkowie.map((spouse: IPerson) => ({
+                id: spouse._id,
+                firstName: spouse.firstName,
+                lastName: spouse.lastName,
+                gender: spouse.gender,
+                type: 'married'
+              })),
+              children: relations.Dzieci.map((child: IPerson) => ({
+                id: child._id,
+                firstName: child.firstName,
+                lastName: child.lastName,
+                gender: child.gender,
+                type: 'blood'
+              })),
+        };
+      }));
+
+      res.status(200).json({
+        // result
+        // loggedInUser: loggedInUser,
+        users: result,
+        totalUsers,
+    });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });
+    }
+  };
+  
   
 
   export const getUser = async (req: Request, res: Response): Promise<void> => {

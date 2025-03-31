@@ -10,7 +10,7 @@ interface NodeProps {
 
 const Node: React.FC<NodeProps> = ({ name, gender, x, y, onClick }) => {
   return (
-    <g transform={`translate(${x}, ${y})`} onClick={onClick}>
+    <g transform={`translate(${x+20}, ${y+20})`} onClick={onClick}>
       <rect
         width={60}
         height={40}

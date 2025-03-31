@@ -199,72 +199,110 @@ if (error) {
 }
 
 return (
-  <>
+  <div className="flex min-h-screen bg-gray-50">
     <LeftHeader />
-    <div className="p-8 bg-gray-100 min-h-screen flex flex-col items-center">
-      <Header
-        totalUsers={totalUsers}
-        onToggleAlphabetFilter={toggleAlphabetFilter}
-        onToggleSearch={() => setIsSearchOpen((prev) => !prev)}
-        onToggleSettingsPanel={toggleSettingsPanel}
-        isSearchOpen={isSearchOpen}
-        searchQuery={searchQuery}
-        onSearchChange={(e) => setSearchQuery(e.target.value)}
-        onSearchEnter={handleSearchEnter}
-      />
-
-      {/* Alphabet Filter Panel */}
-      {isAlphabetFilterOpen && (
-        <div className="mb-2">
-          <div className=" p-6 max-w- w-full">
-            <AlphabetFilter selectedLetter={selectedLetter} onSelectLetter={setSelectedLetter} />
-          </div>
+    
+    {/* Główna zawartość */}
+    <div className="flex-1 p-4 md:p-8">
+      {/* Kontener z efektem szkła */}
+      <div className="max-w-7xl mx-auto bg-white/90 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-gray-200">
+        {/* Nagłówek z gradientem */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 text-white">
+          <Header
+            totalUsers={totalUsers}
+            onToggleAlphabetFilter={toggleAlphabetFilter}
+            onToggleSearch={() => setIsSearchOpen((prev) => !prev)}
+            onToggleSettingsPanel={toggleSettingsPanel}
+            isSearchOpen={isSearchOpen}
+            searchQuery={searchQuery}
+            onSearchChange={(e) => setSearchQuery(e.target.value)}
+            onSearchEnter={handleSearchEnter}
+          />
         </div>
-      )}
-            {/* Pagination */}
-            <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
 
-      {/* Table */}
-      <div className="w-full max-w-4xl bg-white rounded-lg shadow">
-        <table className="min-w-full text-sm">
-          <thead className="sticky top-16 z-3 bg-white shadow">
-            <tr>
-              <th className="p-4 text-left font-semibold text-gray-600">Imię i nazwisko</th>
-              <th className="p-4 text-left font-semibold text-gray-600">Rok urodzenia</th>
-              <th className="p-4 text-left font-semibold text-gray-600">Data śmierci</th>
-              <th className="p-4" />
-              {' '}
-              {/* Pusty nagłówek dla kolumny akcji */}
-            </tr>
-          </thead>
-          <tbody>
-            {people.map((person) => (
-              <TableRow
-                key={person.id}
-                person={person}
-                showColorCoding={showColorCoding}
-                showRelatives={showRelatives}
-                getDisplayName={(p) => getDisplayName(p, showMaidenName, showHusbandSurname)}
-                renderRelations={(p) => <RenderRelations {...p} />}
-                formatDate={formatDate}
-                onOpenRelationModal={openRelationModal}
-                onOpenEditModal={openEditModal}
-                onClickRow={() => openSidebar(person)}
+        {/* Panel wyszukiwania i filtrów */}
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          {isAlphabetFilterOpen && (
+            <div className="mb-4">
+              <AlphabetFilter 
+                selectedLetter={selectedLetter} 
+                onSelectLetter={(letter) => {
+                  setSelectedLetter(letter);
+                  setCurrentPage(1);
+                }} 
               />
+            </div>
+          )}
+          
+          {/* Paginacja górna */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            className="mb-4"
+          />
+        </div>
 
-            ))}
-          </tbody>
-        </table>
-        {loading && <LoadingSpinner />}
+        {/* Tabela */}
+        <div className="relative overflow-x-auto">
+          <table className="w-full text-sm text-left text-gray-700">
+            <thead className="sticky top-0 text-xs text-gray-700 uppercase bg-gray-100/95 backdrop-blur-sm z-10">
+              <tr>
+                <th scope="col" className="px-6 py-3 font-medium">Imię i nazwisko</th>
+                <th scope="col" className="px-6 py-3 font-medium">Data urodzenia</th>
+                <th scope="col" className="px-6 py-3 font-medium">Data śmierci</th>
+                <th scope="col" className="px-6 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {people.map((person) => (
+                <TableRow
+                  key={person.id}
+                  person={person}
+                  showColorCoding={showColorCoding}
+                  showRelatives={showRelatives}
+                  getDisplayName={(p) => getDisplayName(p, showMaidenName, showHusbandSurname)}
+                  renderRelations={(p) => <RenderRelations {...p} />}
+                  formatDate={formatDate}
+                  onOpenRelationModal={openRelationModal}
+                  onOpenEditModal={openEditModal}
+                  onClickRow={() => openSidebar(person)}
+                />
+              ))}
+            </tbody>
+          </table>
 
+          {loading && (
+            <div className="flex justify-center items-center p-8">
+              <LoadingSpinner />
+            </div>
+          )}
+
+          {!loading && people.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <div className="mx-auto w-16 h-16 mb-4 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              Brak osób spełniających kryteria wyszukiwania
+            </div>
+          )}
+        </div>
+
+        {/* Paginacja dolna */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
       </div>
+    </div>
 
-      {/* Sidebar Panel */}
-      {selectedPerson && (
+    {/* Sidebar Panel */}
+    {selectedPerson && (
       <ProfileCard
         isSidebarOpen={isSidebarOpen}
         closeSidebar={closeSidebar}
@@ -273,54 +311,47 @@ return (
         onOpenEditModal={openEditModal}
         refetch={refetch}
       />
-      )}
+    )}
 
-      {/* Modals */}
-      {isRelationModalOpen && selectedPerson && (
-        <RelationModal
-          isOpen={isRelationModalOpen}
-          onClose={closeModals}
-          personGender={selectedPerson.gender}
-          id={selectedPerson.id}
-          personName={`${selectedPerson.firstName} ${selectedPerson.lastName}`}
-        />
-      )}
-      {isEditModalOpen && selectedPerson && (
-        <EditModal
-          id={selectedPerson.id}
-          onClose={closeModals}
-        />
-      )}
-      {/* Panel ustawień */}
-      <SettingsPanel
-        isOpen={isSettingsPanelOpen}
-        onClose={toggleSettingsPanel}
-        showColorCoding={showColorCoding}
-        onColorCodingChange={handleColorCodingChange}
-        showMaidenName={showMaidenName}
-        onMaidenNameChange={handleMaidenNameChange}
-        showHusbandSurname={showHusbandSurname}
-        onHusbandSurnameChange={handleHusbandSurnameChange}
-        showRelatives={showRelatives}
-        onRelativesChange={handleRelativesChange}
+    {/* Modale */}
+    {isRelationModalOpen && selectedPerson && (
+      <RelationModal
+        isOpen={isRelationModalOpen}
+        onClose={closeModals}
+        personGender={selectedPerson.gender}
+        id={selectedPerson.id}
+        personName={`${selectedPerson.firstName} ${selectedPerson.lastName}`}
       />
+    )}
 
-      {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
+    {isEditModalOpen && selectedPerson && (
+      <EditModal
+        id={selectedPerson.id}
+        onClose={closeModals}
       />
+    )}
 
-      <AddPersonModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          handleModalClose();
-          handleRefreshData();
-        }}
-      />
-    </div>
-  </>
+    <SettingsPanel
+      isOpen={isSettingsPanelOpen}
+      onClose={toggleSettingsPanel}
+      showColorCoding={showColorCoding}
+      onColorCodingChange={handleColorCodingChange}
+      showMaidenName={showMaidenName}
+      onMaidenNameChange={handleMaidenNameChange}
+      showHusbandSurname={showHusbandSurname}
+      onHusbandSurnameChange={handleHusbandSurnameChange}
+      showRelatives={showRelatives}
+      onRelativesChange={handleRelativesChange}
+    />
+
+    <AddPersonModal
+      isOpen={isModalOpen}
+      onClose={() => {
+        handleModalClose();
+        handleRefreshData();
+      }}
+    />
+  </div>
 );
 };
 

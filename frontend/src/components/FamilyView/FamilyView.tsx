@@ -1,34 +1,47 @@
-import React from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import LeftHeader from '../LeftHeader/LeftHeader';
-import './FamilyView.css';
-
-import { useMemo, useState, useCallback, useEffect } from 'react';
-import type { Node, ExtNode } from 'relatives-tree/lib/types';
 import ReactFamilyTree from 'react-family-tree';
 import axios from 'axios';
-import { PinchZoomPan } from './PinchZoomPan/PinchZoomPan';
-import { FamilyNode } from './FamilyNode/FamilyNode';
-import { NodeDetails } from './NodeDetails/NodeDetails';
+import { PinchZoomPan } from './PinchZoomPan';
+import { FamilyNode } from './FamilyNode';
+import { NodeDetails } from './NodeDetails';
 import LoadingSpinner from './../Loader/LoadingSpinner';
-import type { CSSProperties } from 'react';
-import EditModal from '../Edit/Edit'
+import EditModal from '../Edit/Edit';
 import RelationModal from '../RelationModal/RelationModal';
 import Modal from '../deleteRelation/Modal';
+import type { Node, ExtNode } from 'relatives-tree/lib/types';
+import type { CSSProperties } from 'react';
+import NotAuthenticatedScreen from '../NotAuthenticatedScreen/NotAuthenticatedScreen';
+import { SearchControlPanel } from './SearchControlPanel';
+
 interface FamilyData {
   nodes: Node[];
   rootId: string;
 }
 
-const NODE_WIDTH = 70;
-const NODE_HEIGHT = 80;
+interface DisplayOptions {
+  showGenderIcon: boolean;
+  showShortId: boolean;
+  showFullName: boolean;
+  showBirthDate: boolean;
+  showDeathDate: boolean;
+  showDeceasedRibbon: boolean;
+}
 
-export function getNodeStyle({ left, top }: Readonly<ExtNode>): CSSProperties {
+const NODE_WIDTH = 130;
+const NODE_HEIGHT = 130;
+
+const getNodeStyle = ({ left, top }: Readonly<ExtNode>): CSSProperties => {
+  const x = left || 0;
+  const y = top || 0;
+
   return {
     width: NODE_WIDTH,
     height: NODE_HEIGHT,
-    transform: `translate(${left * (NODE_WIDTH / 2)}px, ${top * (NODE_HEIGHT / 2)}px)`,
+    transform: `translate(${x * (NODE_WIDTH / 2)}px, ${y * (NODE_HEIGHT / 2)}px)`,
+    transition: 'transform 0.3s ease-out', // Dodana płynna animacja
   };
-}
+};
 
 const FamilyView: React.FC = () => {
   const [familyData, setFamilyData] = useState<FamilyData | null>(null);
@@ -38,16 +51,18 @@ const FamilyView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [previousRoot, setPreviousRoot] = useState<string | null>(null);
-   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-const [isRelationModalOpen, setIsRelationModalOpen] = useState<boolean>(false);
-const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boolean>(false);
-   const closeModals = async () => {
-    setIsRelationModalOpen(false);
-    setIsEditModalOpen(false);
-    setIsModalDeleteRelationOpen(false)
-    // setSelectedPerson(null);
-    await fetchFamilyData(); // Pobierz nowe dane
-  };
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [isRelationModalOpen, setIsRelationModalOpen] = useState<boolean>(false);
+  const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boolean>(false);
+  const [recentRoots, setRecentRoots] = useState<{ id: string; name: string }[]>([]);
+  const [displayOptions, setDisplayOptions] = useState<DisplayOptions>({
+    showGenderIcon: true,
+    showShortId: false,
+    showFullName: true,
+    showBirthDate: true,
+    showDeathDate: true,
+    showDeceasedRibbon: true
+  });
   const fetchFamilyData = async () => {
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -55,16 +70,16 @@ const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boole
       setLoading(false);
       return;
     }
-  
+
     try {
-      const response = await axios.get('http://localhost:3001/api/person/users', {
+      const response = await axios.get('http://localhost:3001/api/person/userss', {
         headers: { Authorization: `Bearer ${token}` }
       });
-  
+      
       if (response.data?.users?.length) {
         setFamilyData({
           nodes: response.data.users,
-          rootId: response.data.users[0].id
+          rootId: response.data.users[0].id,
         });
       } else {
         setError('No family data found in response.');
@@ -79,12 +94,10 @@ const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boole
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchFamilyData();
   }, []);
-  
-  const [recentRoots, setRecentRoots] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     const storedRoots = localStorage.getItem('recentRoots');
@@ -112,8 +125,6 @@ const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boole
   };
 
   const goToPreviousRoot = () => {
-    console.log('1');
-    
     if (previousRoot && familyData) {
       setFamilyData({ ...familyData, rootId: previousRoot });
       setPreviousRoot(null);
@@ -132,14 +143,16 @@ const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boole
     return familyData.nodes.find(node => node.id === selectId) || null;
   }, [familyData, selectId]);
 
-  if (loading) return <LoadingSpinner />;
-  if (error) return <div><h3>Error</h3><p>{error}</p><button onClick={() => window.location.reload()}>Retry</button></div>;
-  if (!familyData) return <div><p>No family data available</p></div>;
+  const closeModals = async () => {
+    setIsRelationModalOpen(false);
+    setIsEditModalOpen(false);
+    setIsModalDeleteRelationOpen(false);
+    await fetchFamilyData();
+  };
 
   const handleEdit = () => {
     setIsEditModalOpen(true);
   };
-
 
   const handleRelationModal = () => {
     setIsRelationModalOpen(true);
@@ -148,79 +161,131 @@ const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boole
   const handleOpenDeleteModal = () => {
     setIsModalDeleteRelationOpen(true);
   };
-  
-  return (
-    <>
-      <div className="relative">
-        <LeftHeader />
-        <div className="flex flex-col h-screen w-screen m-0 p-0">
-          <div className="flex-1 relative w-full h-full overflow-hidden">
-            <div className="flex flex-column h-full ml-24">
-            <div className="absolute bottom-0 right-0 bg-white shadow-md p-2 rounded-lg w-64 z-10">
-            <label htmlFor="rootSearch">Znajdz osobe</label>
-            <input
-              id="rootSearch"
-              type="text"
-              className="w-full p-1 border rounded mt-1"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <label htmlFor="rootSelector" className="mt-2 block">Wybierz osobę</label>
-            <select id="rootSelector" className="w-full p-1 border rounded mt-1" onChange={handleRootChange} value={familyData.rootId}>
-              {filteredNodes.map(person => (
-                <option key={person.id} value={person.id}>{person.firstName} {person.lastName}</option>
-              ))}
-            </select>
-            <label htmlFor="recentRootSelector" className="mt-2 block">5 ostatnich wyszukiwanych</label>
-            <select id="recentRootSelector" className="w-full p-1 border rounded mt-1" onChange={handleRootChange} value={familyData.rootId}>
-              {recentRoots.map(root => (
-                <option key={root.id} value={root.id}>{root.name}</option>
-              ))}
-            </select>
-            <button className="mt-2 w-full bg-blue-500 text-white p-1 rounded" onClick={goToPreviousRoot} disabled={!previousRoot}>Powrot do ostaniego</button>
-          </div>
-              <PinchZoomPan min={0.5} max={2.5} captureWheel className="flex-1 h-full">
-                <ReactFamilyTree
-                  nodes={familyData.nodes}
-                  rootId={familyData.rootId}
-                  width={NODE_WIDTH}
-                  height={NODE_HEIGHT}
-                  renderNode={(node: Readonly<ExtNode>) => (
-                    <FamilyNode
-                      key={node.id}
-                      node={node}
-                      isRoot={node.id === familyData.rootId}
-                      isHover={node.id === hoverId}
-                      onClick={setSelectId}
-                      onSubClick={(id: string) => setFamilyData(prev => prev ? { ...prev, rootId: id } : prev)}
-                      style={getNodeStyle(node)}
-                    />
-                  )}
-                />
-              </PinchZoomPan>
-              {selectedNode && (
-                <div className="absolute top-0 right-0 m-4 w-96 bg-white shadow-lg rounded-lg p-4 z-10">
-                  <NodeDetails
-  node={selectedNode}
-  onSelect={setSelectId}
-  onHover={setHoverId}
-  onClear={() => setHoverId(null)}
-  onEdit={handleEdit}
-  onRelationModal={handleRelationModal}
-  handleOpenDeleteModal={handleOpenDeleteModal} // Poprawiona nazwa
-/>
 
-                </div>
-              )}
-                    {isEditModalOpen && selectedNode && (
-        <EditModal
-          id={selectedNode.id}
-          onClose={closeModals}
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex flex-col items-center">
+        <LoadingSpinner />
+        <p className="mt-4 text-gray-600 font-medium">Loading family tree...</p>
+      </div>
+    </div>
+  );
+
+  if (error) {
+    if (error === 'Authentication required. Please login.') {
+      return <NotAuthenticatedScreen />;
+    }
+    return (
+      <div className="flex flex-col items-center justify-center h-screen p-4 bg-gray-50">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-gray-100">
+          <div className="text-red-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Error Loading Data</h3>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!familyData) return (
+    <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full border border-gray-100">
+        <div className="text-gray-400 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-medium text-gray-700 mb-2">No Family Data</h3>
+        <p className="text-gray-500 mb-4">We couldn't find any family data to display.</p>
+        <button 
+          onClick={fetchFamilyData}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+        >
+          Refresh
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative bg-gray-50 min-h-screen">
+      <LeftHeader />
+      
+      <div className="flex flex-col h-[calc(100vh-64px)]">
+        <div className="flex-1 relative overflow-hidden">
+          <SearchControlPanel
+            familyData={familyData}
+            filteredNodes={filteredNodes}
+            recentRoots={recentRoots}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            handleRootChange={handleRootChange}
+            goToPreviousRoot={goToPreviousRoot}
+            previousRoot={previousRoot}
+            displayOptions={displayOptions}
+            setDisplayOptions={setDisplayOptions}
+          />
+
+          <PinchZoomPan 
+            min={0.5} 
+            max={2.5} 
+            captureWheel 
+            className="w-full h-full bg-white"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100">
+              <ReactFamilyTree
+                nodes={familyData.nodes}
+                rootId={familyData.rootId}
+                width={NODE_WIDTH}
+                height={NODE_HEIGHT}
+                renderNode={(node: Readonly<ExtNode>) => (
+                  <FamilyNode
+                    key={node.id}
+                    node={node}
+                    isRoot={node.id === familyData.rootId}
+                    isHover={node.id === hoverId}
+                    onClick={setSelectId}
+                    onSubClick={(id: string) => setFamilyData(prev => prev ? { ...prev, rootId: id } : prev)}
+                    style={getNodeStyle(node)}
+                    displayOptions={displayOptions}
+                  />
+                )}
+              />
+            </div>
+          </PinchZoomPan>
+
+          {selectedNode && (
+            <div className="absolute top-6 right-6 animate-fade-in">
+              <NodeDetails
+                node={selectedNode}
+                onSelect={setSelectId}
+                onHover={setHoverId}
+                onClear={() => setHoverId(null)}
+                onEdit={handleEdit}
+                onRelationModal={handleRelationModal}
+                handleOpenDeleteModal={handleOpenDeleteModal}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isEditModalOpen && selectedNode && (
+        <EditModal 
+          id={selectedNode.id} 
+          onClose={closeModals} 
         />
       )}
-
-      {/* Modals */}
+      
       {isRelationModalOpen && selectedNode && (
         <RelationModal
           isOpen={isRelationModalOpen}
@@ -230,16 +295,15 @@ const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boole
           personName={`${selectedNode.firstName} ${selectedNode.lastName}`}
         />
       )}
-
-{isRelationDeleteModalOpen && selectedNode && (
-  <Modal onClose={closeModals} isOpen={isRelationDeleteModalOpen} person={selectedNode.id} />
-)}
-
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+      
+      {isRelationDeleteModalOpen && selectedNode && (
+        <Modal 
+          onClose={closeModals} 
+          isOpen={isRelationDeleteModalOpen} 
+          person={selectedNode.id}
+        />
+      )}
+    </div>
   );
 };
 

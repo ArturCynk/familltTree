@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-
+import '../RelationModal/app.css'
 interface AddPersonModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -95,398 +95,427 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg space-y-8 scroll-m-0 overflow-y-auto max-h-[800px]">
-        <h2 className="text-2xl font-bold text-gray-800 text-center">Dodaj pierwszą osobę do drzewa</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Wybór płci */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Płeć</label>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="male"
-                  checked={gender === 'male'}
-                  onChange={() => setGender('male')}
-                  className="form-radio text-blue-500 focus:ring-blue-400"
-                />
-                Mężczyzna
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="female"
-                  checked={gender === 'female'}
-                  onChange={() => setGender('female')}
-                  className="form-radio text-pink-500 focus:ring-pink-400"
-                />
-                Kobieta
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="non-binary"
-                  checked={gender === 'non-binary'}
-                  onChange={() => setGender('non-binary')}
-                  className="form-radio text-gray-500 focus:ring-gray-400"
-                />
-                Niebinarny
-              </label>
-            </div>
-          </div>
-
-          {/* Imiona i nazwiska */}
-          <div className="grid grid-cols-2 gap-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md transition-all duration-300"
+    >
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 overflow-hidden max-h-[95vh] transform transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] scale-95 opacity-0 animate-modalEnter">
+        {/* Premium Header */}
+        <div className="relative bg-gradient-to-r from-indigo-700 to-purple-800 px-8 py-6">
+          <div className="absolute inset-0 bg-noise opacity-10"></div>
+          <div className="relative flex justify-between items-center">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">Pierwsze Imię</label>
-              <input
-                id="firstName"
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
+              <p className="text-indigo-100 text-sm mt-1">Dodaj nową osobę do drzewa genealogicznego</p>
             </div>
-            <div>
-              <label htmlFor="middleName" className="block text-sm font-medium text-gray-700 mb-1">Drugie Imię</label>
-              <input
-                id="middleName"
-                type="text"
-                value={middleName}
-                onChange={(e) => setMiddleName(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Nazwisko</label>
-              <input
-                id="lastName"
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-            <div>
-              <label htmlFor="maidenName" className="block text-sm font-medium text-gray-700 mb-1">Nazwisko panieńskie</label>
-              <input
-                id="maidenName"
-                type="text"
-                value={maidenName}
-                onChange={(e) => setMaidenName(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-          </div>
-
-          {/* Data urodzenia */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Data urodzenia</label>
-            <select
-              value={birthDateType}
-              onChange={(e) => setBirthDateType(e.target.value as 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText')}
-              className="form-select w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+            <button 
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-white/10 transition-colors duration-200"
+              aria-label="Zamknij"
             >
-              <option value="exact">Dokładnie</option>
-              <option value="before">Przed</option>
-              <option value="after">Po</option>
-              <option value="around">Około</option>
-              <option value="probably">Prawdopodobnie</option>
-              <option value="between">Pomiędzy ... i ...</option>
-              <option value="fromTo">Od ... do ...</option>
-              <option value="freeText">Wolny tekst</option>
-            </select>
-
-            {(birthDateType !== 'between' && birthDateType !== 'fromTo') && (
-            <div>
-              <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
-                {birthDateType === 'freeText' ? 'Opis daty urodzenia' : 'Data urodzenia'}
-              </label>
-              <input
-                id="birthDate"
-                type="date"
-                value={birthDate || ''}
-                onChange={(e) => setBirthDate(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-            )}
-
-            {birthDateType === 'between' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="birthDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
-                <input
-                  id="birthDateFrom"
-                  type="date"
-                  value={birthDateFrom || ''}
-                  onChange={(e) => setBirthDateFrom(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-              <div>
-                <label htmlFor="birthDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                <input
-                  id="birthDateTo"
-                  type="date"
-                  value={birthDateTo || ''}
-                  onChange={(e) => setBirthDateTo(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-            </div>
-            )}
-
-            {birthDateType === 'fromTo' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="birthDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
-                <input
-                  id="birthDateFrom"
-                  type="date"
-                  value={birthDateFrom || ''}
-                  onChange={(e) => setBirthDateFrom(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-              <div>
-                <label htmlFor="birthDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                <input
-                  id="birthDateTo"
-                  type="date"
-                  value={birthDateTo || ''}
-                  onChange={(e) => setBirthDateTo(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-            </div>
-            )}
-            {/* Birth Place */}
-            <div>
-              <label htmlFor="birthPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce urodzenia</label>
-              <input
-                id="birthPlace"
-                type="text"
-                value={birthPlace}
-                onChange={(e) => setBirthPlace(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-
-            {/* Wybór metody wgrywania zdjęcia */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Wybierz metodę dodania zdjęcia</label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  className={`px-4 py-2 rounded-md ${isFileUpload ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
-                  onClick={() => setIsFileUpload(true)}
-                >
-                  Prześlij plik
-                </button>
-                <button
-                  type="button"
-                  className={`px-4 py-2 rounded-md ${!isFileUpload ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
-                  onClick={() => setIsFileUpload(false)}
-                >
-                  Podaj URL
-                </button>
-              </div>
-            </div>
-
-            {/* Wybór pliku */}
-            {isFileUpload && (
-            <div>
-              <label htmlFor="photo" className="block text-sm font-medium text-gray-700 mb-1">Zdjęcie (plik)</label>
-              <input
-                id="photo"
-                type="file"
-                onChange={handleFileChange}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-            )}
-
-            {/* Wprowadzenie URL */}
-            {!isFileUpload && (
-            <div>
-              <label htmlFor="photoUrl" className="block text-sm font-medium text-gray-700 mb-1">URL zdjęcia</label>
-              <input
-                id="photoUrl"
-                type="url"
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-            )}
-
-            {/* Podgląd zdjęcia (URL lub plik) */}
-            <div className="mt-4">
-              {photoUrl && !photo && (
-              <img src={photoUrl} alt="Podgląd zdjęcia" className="w-32 h-32 object-cover" />
-              )}
-              {photo && (
-              <img src={URL.createObjectURL(photo)} alt="Podgląd zdjęcia" className="w-32 h-32 object-cover" />
-              )}
-            </div>
-
-          </div>
-
-          {/* Data śmierci */}
-          {status === 'deceased' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Data śmierci</label>
-            <select
-              value={deathDateType}
-              onChange={(e) => setDeathDateType(e.target.value as 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText')}
-              className="form-select w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-            >
-              <option value="exact">Dokładnie</option>
-              <option value="before">Przed</option>
-              <option value="after">Po</option>
-              <option value="around">Około</option>
-              <option value="probably">Prawdopodobnie</option>
-              <option value="between">Pomiędzy ... i ...</option>
-              <option value="fromTo">Od ... do ...</option>
-              <option value="freeText">Wolny tekst</option>
-            </select>
-
-            <div>
-              <label htmlFor="burialPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce Pochuwku</label>
-              <input
-                id="burialPlace"
-                type="text"
-                value={burialPlace}
-                onChange={(e) => setBurialPlace(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-
-            {(deathDateType === 'exact') && (
-            <div>
-              <label htmlFor="deathDate" className="block text-sm font-medium text-gray-700 mb-1">
-                {deathDateType === 'exact' ? 'Data śmierci' : 'Data śmierci'}
-              </label>
-              <input
-                id="deathDate"
-                type="date"
-                value={deathDate || ''}
-                onChange={(e) => setDeathDate(e.target.value)}
-                className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-              />
-            </div>
-            )}
-            <div>
-              {/* Existing death date fields */}
-              <div>
-                <label htmlFor="deathPlace" className="block text-sm font-medium text-gray-700 mb-1">Miejsce śmierci</label>
-                <input
-                  id="deathPlace"
-                  type="text"
-                  value={deathPlace}
-                  onChange={(e) => setDeathPlace(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-            </div>
-            {deathDateType === 'between' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="deathDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
-                <input
-                  id="deathDateFrom"
-                  type="date"
-                  value={deathDateFrom || ''}
-                  onChange={(e) => setDeathDateFrom(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-              <div>
-                <label htmlFor="deathDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                <input
-                  id="deathDateTo"
-                  type="date"
-                  value={deathDateTo || ''}
-                  onChange={(e) => setDeathDateTo(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-            </div>
-            )}
-
-            {deathDateType === 'fromTo' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="deathDateFrom" className="block text-sm font-medium text-gray-700 mb-1">Od</label>
-                <input
-                  id="deathDateFrom"
-                  type="date"
-                  value={deathDateFrom || ''}
-                  onChange={(e) => setDeathDateFrom(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-              <div>
-                <label htmlFor="deathDateTo" className="block text-sm font-medium text-gray-700 mb-1">Do</label>
-                <input
-                  id="deathDateTo"
-                  type="date"
-                  value={deathDateTo || ''}
-                  onChange={(e) => setDeathDateTo(e.target.value)}
-                  className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                />
-              </div>
-            </div>
-            )}
-          </div>
-          )}
-
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="status"
-                  value="alive"
-                  checked={status === 'alive'}
-                  onChange={() => setStatus('alive')}
-                  className="form-radio text-green-500 focus:ring-green-400"
-                />
-                Żyjący
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="status"
-                  value="deceased"
-                  checked={status === 'deceased'}
-                  onChange={() => setStatus('deceased')}
-                  className="form-radio text-red-500 focus:ring-red-400"
-                />
-                Zmarły
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-4">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-            >
-              Dodaj
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white/90 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
-        </form>
+        </div>
+
+        {/* Form Container */}
+        <div className="p-8 overflow-y-auto max-h-[calc(95vh-72px)]">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Gender Section */}
+            <div className="space-y-4">
+              <SectionTitle title="Płeć" />
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { value: 'male', label: 'Mężczyzna', icon: '♂', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+                  { value: 'female', label: 'Kobieta', icon: '♀', color: 'bg-pink-100 text-pink-800 border-pink-200' },
+                  { value: 'non-binary', label: 'Niebinarny', icon: '⚧', color: 'bg-purple-100 text-purple-800 border-purple-200' }
+                ].map((option) => (
+                  <label key={option.value} className={`flex-1 min-w-[120px]`}>
+                    <input
+                      type="radio"
+                      name="gender"
+                      value={option.value}
+                      checked={gender === option.value}
+                      onChange={() => setGender(option.value as any)}
+                      className="hidden peer"
+                    />
+                    <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-200 peer-checked:scale-[0.98] ${option.color}`}>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-lg font-medium">{option.icon}</span>
+                        <span className="font-medium">{option.label}</span>
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Names Section */}
+            <div className="space-y-4">
+              <SectionTitle title="Dane osobowe" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {[
+                  { id: 'firstName', label: 'Pierwsze imię', value: firstName, setter: setFirstName },
+                  { id: 'middleName', label: 'Drugie imię', value: middleName, setter: setMiddleName },
+                  { id: 'lastName', label: 'Nazwisko', value: lastName, setter: setLastName },
+                  { id: 'maidenName', label: 'Nazwisko panieńskie', value: maidenName, setter: setMaidenName }
+                ].map((field) => (
+                  <div key={field.id} className="space-y-1">
+                    <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
+                      {field.label}
+                    </label>
+                    <div className="relative">
+                      <input
+                        id={field.id}
+                        type="text"
+                        value={field.value}
+                        onChange={(e) => field.setter(e.target.value)}
+                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Birth Section */}
+            <div className="space-y-4">
+              <SectionTitle title="Data urodzenia" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Typ daty</label>
+                  <div className="relative">
+                    <select
+                      value={birthDateType}
+                      onChange={(e) => setBirthDateType(e.target.value as typeof birthDateType)}
+                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white/90 hover:bg-white"
+                    >
+                      {['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo', 'freeText'].map((type) => (
+                        <option key={type} value={type}>
+                          {{
+                            exact: 'Dokładna data',
+                            before: 'Przed datą',
+                            after: 'Po dacie',
+                            around: 'Około',
+                            probably: 'Prawdopodobnie',
+                            between: 'Pomiędzy datami',
+                            fromTo: 'Od - do',
+                            freeText: 'Dowolny opis'
+                          }[type]}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {(birthDateType !== 'between' && birthDateType !== 'fromTo') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {birthDateType === 'freeText' ? 'Opis daty' : 'Data'}
+                    </label>
+                    {birthDateType === 'freeText' ? (
+                      <input
+                        type="text"
+                        value={birthDate}
+                        onChange={(e) => setBirthDate(e.target.value)}
+                        placeholder="np. 'zima 1945'"
+                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                      />
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={birthDate}
+                          onChange={(e) => setBirthDate(e.target.value)}
+                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white/90 hover:bg-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {birthDateType === 'between' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Data początkowa</label>
+                      <input
+                        type="text"
+                        value={birthDateFrom}
+                        onChange={(e) => setBirthDateFrom(e.target.value)}
+                        placeholder="np. 1920"
+                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Data końcowa</label>
+                      <input
+                        type="text"
+                        value={birthDateTo}
+                        onChange={(e) => setBirthDateTo(e.target.value)}
+                        placeholder="np. 1925"
+                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Miejsce urodzenia</label>
+                <input
+                  type="text"
+                  value={birthPlace}
+                  onChange={(e) => setBirthPlace(e.target.value)}
+                  placeholder="np. Warszawa, Polska"
+                  className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                />
+              </div>
+            </div>
+
+            {/* Photo Section */}
+            <div className="space-y-4">
+              <SectionTitle title="Zdjęcie profilowe" />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsFileUpload(true)}
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${isFileUpload 
+                    ? 'bg-indigo-600 text-white shadow-md hover:bg-indigo-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Prześlij plik
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFileUpload(false)}
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${!isFileUpload 
+                    ? 'bg-indigo-600 text-white shadow-md hover:bg-indigo-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Podaj URL
+                  </div>
+                </button>
+              </div>
+
+              {isFileUpload ? (
+                <div className="mt-2">
+                  <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="mb-2 text-sm text-gray-500 mt-3"><span className="font-semibold">Kliknij aby wybrać plik</span></p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF (MAX. 5MB)</p>
+                    </div>
+                    <input 
+                      id="photo" 
+                      type="file" 
+                      onChange={handleFileChange} 
+                      className="hidden" 
+                      accept="image/*"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <input
+                    type="url"
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="https://example.com/photo.jpg"
+                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Status Section */}
+            <div className="space-y-4">
+              <SectionTitle title="Status osoby" />
+              <div className="flex flex-wrap gap-3">
+                <label className="flex-1 min-w-[120px]">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="alive"
+                    checked={status === 'alive'}
+                    onChange={() => setStatus('alive')}
+                    className="hidden peer"
+                  />
+                  <div className="w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:ring-2 peer-checked:ring-green-100 peer-checked:bg-green-50 bg-white">
+                    <div className="flex items-center justify-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                      </svg>
+                    </span>
+                      <span className="font-medium">Żyjący</span>
+                    </div>
+                  </div>
+                </label>
+                <label className="flex-1 min-w-[120px]">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="deceased"
+                    checked={status === 'deceased'}
+                    onChange={() => setStatus('deceased')}
+                    className="hidden peer"
+                  />
+                  <div className="w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-100 peer-checked:bg-red-50 bg-white">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white shadow-md">
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          className="h-3.5 w-3.5" 
+                          viewBox="0 0 384 512"
+                          fill="currentColor"
+                        >
+                          <path d="M320 128c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V32c0-17.7-14.3-32-32-32s-32 14.3-32 32V64H64C46.3 64 32 78.3 32 96s14.3 32 32 32H192V480c0 17.7 14.3 32 32 32s32-14.3 32-32V128h64z"/>
+                        </svg>
+                      </span>
+                      <span className="font-medium">Zmarły</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Death Section (conditional) */}
+            {status === 'deceased' && (
+              <div className="space-y-4 p-5 bg-gray-50 rounded-xl border border-gray-200">
+                <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Informacje o śmierci
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Typ daty</label>
+                    <select
+                      value={deathDateType}
+                      onChange={(e) => setDeathDateType(e.target.value as typeof deathDateType)}
+                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white"
+                    >
+                      {['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo', 'freeText'].map((type) => (
+                        <option key={type} value={type}>
+                          {{
+                            exact: 'Dokładna data',
+                            before: 'Przed datą',
+                            after: 'Po dacie',
+                            around: 'Około',
+                            probably: 'Prawdopodobnie',
+                            between: 'Pomiędzy datami',
+                            fromTo: 'Od - do',
+                            freeText: 'Dowolny opis'
+                          }[type]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {deathDateType === 'exact' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Data śmierci</label>
+                      <input
+                        type="date"
+                        value={deathDate}
+                        onChange={(e) => setDeathDate(e.target.value)}
+                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white"
+                      />
+                    </div>
+                  )}
+
+                  {deathDateType === 'between' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Data początkowa</label>
+                        <input
+                          type="text"
+                          value={deathDateFrom}
+                          onChange={(e) => setDeathDateFrom(e.target.value)}
+                          placeholder="np. 1990"
+                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Data końcowa</label>
+                        <input
+                          type="text"
+                          value={deathDateTo}
+                          onChange={(e) => setDeathDateTo(e.target.value)}
+                          placeholder="np. 1995"
+                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Miejsce pochówku</label>
+                  <input
+                    type="text"
+                    value={burialPlace}
+                    onChange={(e) => setBurialPlace(e.target.value)}
+                    placeholder="np. Cmentarz Powązkowski, Warszawa"
+                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                  />
+                </div>
+              </div>
+            )}
+
+            
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+              >
+                Anuluj
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-md hover:shadow-lg flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Dodaj osobę
+              </button>
+            </div>
+            <div className="h-2"></div> 
+          </form>
+        </div>
       </div>
     </div>
   );
 };
+
+// Helper component for section titles
+const SectionTitle = ({ title }: { title: string }) => (
+  <h3 className="text-base font-semibold text-gray-900 flex items-center">
+    <span className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>
+    {title}
+  </h3>
+);
 
 export default AddPersonModal;

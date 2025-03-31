@@ -6,6 +6,7 @@ export interface Person {
     birthDate?: string;
     deathDate?: string;
     location?: string;
+    burialPlaces?: string;
     gender: 'male' | 'female' | 'not-binary';
     parents: { id: string; firstName?: string; lastName?: string }[];
     siblings: { id: string; firstName?: string; lastName?: string }[];

@@ -1,8 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import classNames from 'classnames';
 import { create } from 'pinch-zoom-pan';
-
-import css from './PinchZoomPan.module.css';
 
 interface PinchZoomPanProps {
   min?: number;
@@ -25,9 +22,13 @@ export const PinchZoomPan = React.memo(
     }, [min, max, captureWheel]);
 
     return (
-      <div ref={root} className={classNames(className, css.root)} style={style}>
-        <div className={css.point}>
-          <div className={css.canvas}>
+      <div 
+        ref={root} 
+        className={`relative transform translate-z-0 overflow-hidden ${className}`} 
+        style={style}
+      >
+        <div className="absolute w-0 h-0 transform translate-x-0 translate-y-0 scale-100 origin-center will-change-transform">
+          <div className="absolute transform -translate-x-1/2 -translate-y-1/2">
             {children}
           </div>
         </div>
