@@ -1,7 +1,6 @@
 import React, { memo, useCallback } from 'react';
 import classNames from 'classnames';
 import type { Node } from 'relatives-tree/lib/types';
-
 import {
   faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faBirthdayCake, faCross,
 } from '@fortawesome/free-solid-svg-icons';
@@ -32,7 +31,8 @@ export const NodeDetails = memo(
 
     return (
       <div className={classNames(
-        "bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden",
+        "bg-white dark:bg-gray-800 rounded-xl shadow-xl",
+        "border border-gray-200 dark:border-gray-700 overflow-hidden",
         "w-80 max-h-[90vh] flex flex-col",
         className
       )}>
@@ -50,22 +50,21 @@ export const NodeDetails = memo(
         </div>
 
         {/* Content */}
-        <div className="p-4 flex-1 overflow-y-auto">
+        <div className="p-4 flex-1 overflow-y-auto dark:bg-gray-700/50">
           <div className="space-y-4">
-          {renderFamilyMembers([...node.parents], 'Rodzice')}
-{renderFamilyMembers([...node.siblings], 'Rodzeństwo')}
-{renderFamilyMembers([...node.spouses], 'Partnerzy')}
-{renderFamilyMembers([...node.children], 'Dzieci')}
-
+            {renderFamilyMembers([...node.parents], 'Rodzice')}
+            {renderFamilyMembers([...node.siblings], 'Rodzeństwo')}
+            {renderFamilyMembers([...node.spouses], 'Partnerzy')}
+            {renderFamilyMembers([...node.children], 'Dzieci')}
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="border-t border-gray-200 p-3 bg-gray-50">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800">
           <div className="flex justify-around">
             <button
               onClick={() => props.onEdit()}
-              className="flex flex-col items-center text-blue-600 hover:text-blue-800 transition-colors"
+              className="flex flex-col items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
               title="Edytuj"
             >
               <FontAwesomeIcon icon={faPen} className="text-xl mb-1" />
@@ -74,7 +73,7 @@ export const NodeDetails = memo(
 
             <button
               onClick={() => props.onRelationModal()}
-              className="flex flex-col items-center text-green-600 hover:text-green-800 transition-colors"
+              className="flex flex-col items-center text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors"
               title="Dodaj relację"
             >
               <FontAwesomeIcon icon={faPlus} className="text-xl mb-1" />
@@ -86,7 +85,7 @@ export const NodeDetails = memo(
                 e.stopPropagation();
                 props.handleOpenDeleteModal();
               }}
-              className="flex flex-col items-center text-red-600 hover:text-red-800 transition-colors"
+              className="flex flex-col items-center text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
               title="Usuń relację"
             >
               <FontAwesomeIcon icon={faUnlink} className="text-xl mb-1" />

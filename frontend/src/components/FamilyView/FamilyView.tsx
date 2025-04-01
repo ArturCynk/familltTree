@@ -14,6 +14,7 @@ import type { CSSProperties } from 'react';
 import NotAuthenticatedScreen from '../NotAuthenticatedScreen/NotAuthenticatedScreen';
 import { SearchControlPanel } from './SearchControlPanel';
 
+
 interface FamilyData {
   nodes: Node[];
   rootId: string;
@@ -26,6 +27,7 @@ interface DisplayOptions {
   showBirthDate: boolean;
   showDeathDate: boolean;
   showDeceasedRibbon: boolean;
+  showGenderColors: boolean;
 }
 
 const NODE_WIDTH = 130;
@@ -39,7 +41,7 @@ const getNodeStyle = ({ left, top }: Readonly<ExtNode>): CSSProperties => {
     width: NODE_WIDTH,
     height: NODE_HEIGHT,
     transform: `translate(${x * (NODE_WIDTH / 2)}px, ${y * (NODE_HEIGHT / 2)}px)`,
-    transition: 'transform 0.3s ease-out', // Dodana płynna animacja
+    transition: 'transform 0.3s ease-out',
   };
 };
 
@@ -61,9 +63,11 @@ const FamilyView: React.FC = () => {
     showFullName: true,
     showBirthDate: true,
     showDeathDate: true,
-    showDeceasedRibbon: true
+    showDeceasedRibbon: true,
+    showGenderColors: false,
   });
-  const fetchFamilyData = async () => {
+
+  const fetchFamilyData = useCallback(async () => {
     const token = localStorage.getItem('authToken');
     if (!token) {
       setError('Authentication required. Please login.');
@@ -93,11 +97,11 @@ const FamilyView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchFamilyData();
-  }, []);
+  }, [fetchFamilyData]);
 
   useEffect(() => {
     const storedRoots = localStorage.getItem('recentRoots');
@@ -124,12 +128,12 @@ const FamilyView: React.FC = () => {
     }
   };
 
-  const goToPreviousRoot = () => {
+  const goToPreviousRoot = useCallback(() => {
     if (previousRoot && familyData) {
       setFamilyData({ ...familyData, rootId: previousRoot });
       setPreviousRoot(null);
     }
-  };
+  }, [previousRoot, familyData]);
 
   const filteredNodes = useMemo(() => {
     if (!familyData) return [];
@@ -143,30 +147,30 @@ const FamilyView: React.FC = () => {
     return familyData.nodes.find(node => node.id === selectId) || null;
   }, [familyData, selectId]);
 
-  const closeModals = async () => {
+  const closeModals = useCallback(async () => {
     setIsRelationModalOpen(false);
     setIsEditModalOpen(false);
     setIsModalDeleteRelationOpen(false);
     await fetchFamilyData();
-  };
+  }, [fetchFamilyData]);
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     setIsEditModalOpen(true);
-  };
+  }, []);
 
-  const handleRelationModal = () => {
+  const handleRelationModal = useCallback(() => {
     setIsRelationModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenDeleteModal = () => {
+  const handleOpenDeleteModal = useCallback(() => {
     setIsModalDeleteRelationOpen(true);
-  };
+  }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen bg-gray-50">
+    <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
       <div className="flex flex-col items-center">
         <LoadingSpinner />
-        <p className="mt-4 text-gray-600 font-medium">Loading family tree...</p>
+        <p className="mt-4 text-gray-600 dark:text-gray-300 font-medium">Loading family tree...</p>
       </div>
     </div>
   );
@@ -176,18 +180,18 @@ const FamilyView: React.FC = () => {
       return <NotAuthenticatedScreen />;
     }
     return (
-      <div className="flex flex-col items-center justify-center h-screen p-4 bg-gray-50">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-gray-100">
-          <div className="text-red-500 mb-4">
+      <div className="flex flex-col items-center justify-center h-screen p-4 bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-gray-100 dark:border-gray-700">
+          <div className="text-red-500 dark:text-red-400 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-800 mb-2">Error Loading Data</h3>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Error Loading Data</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="px-6 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-800 transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
           >
             Try Again
           </button>
@@ -197,18 +201,18 @@ const FamilyView: React.FC = () => {
   }
   
   if (!familyData) return (
-    <div className="flex items-center justify-center h-screen bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full border border-gray-100">
-        <div className="text-gray-400 mb-4">
+    <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md text-center max-w-md w-full border border-gray-100 dark:border-gray-700">
+        <div className="text-gray-400 dark:text-gray-500 mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
         </div>
-        <h3 className="text-xl font-medium text-gray-700 mb-2">No Family Data</h3>
-        <p className="text-gray-500 mb-4">We couldn't find any family data to display.</p>
+        <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">No Family Data</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">We couldn't find any family data to display.</p>
         <button 
           onClick={fetchFamilyData}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           Refresh
         </button>
@@ -217,10 +221,10 @@ const FamilyView: React.FC = () => {
   );
 
   return (
-    <div className="relative bg-gray-50 min-h-screen">
+    <div className="relative bg-gray-50 dark:bg-gray-900 min-h-screen">
       <LeftHeader />
       
-      <div className="flex flex-col h-[calc(100vh-64px)]">
+      <div className="flex flex-col h-[calc(100vh)]">
         <div className="flex-1 relative overflow-hidden">
           <SearchControlPanel
             familyData={familyData}
@@ -239,9 +243,9 @@ const FamilyView: React.FC = () => {
             min={0.5} 
             max={2.5} 
             captureWheel 
-            className="w-full h-full bg-white"
+            className="w-full h-full bg-white dark:bg-gray-800"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
               <ReactFamilyTree
                 nodes={familyData.nodes}
                 rootId={familyData.rootId}
@@ -300,11 +304,11 @@ const FamilyView: React.FC = () => {
         <Modal 
           onClose={closeModals} 
           isOpen={isRelationDeleteModalOpen} 
-          person={selectedNode.id}
+          person={selectedNode}
         />
       )}
     </div>
   );
 };
 
-export default FamilyView;
+export default React.memo(FamilyView);

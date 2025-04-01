@@ -113,17 +113,17 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 text-white/90 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
       onClick={handleClose}
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 overflow-hidden max-h-[95vh] transform transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] scale-95 opacity-0 animate-modalEnter">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-3xl mx-4 overflow-hidden max-h-[95vh] transform transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] scale-95 opacity-0 animate-modalEnter">
         {/* Premium Header */}
         <div className="relative bg-gradient-to-r from-indigo-700 to-purple-800 px-8 py-6">
           <div className="absolute inset-0 bg-noise opacity-10"></div>
           <div className="relative flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-white tracking-tight">{relationLabel}</h2>
-              <p className="text-indigo-100 text-sm mt-1">Dodaj nową osobę do drzewa genealogicznego</p>
+              <p className="text-indigo-100 dark:text-indigo-200 text-sm mt-1">Dodaj nową osobę do drzewa genealogicznego</p>
             </div>
             <button 
               onClick={onClose}
@@ -145,9 +145,12 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
               <SectionTitle title="Płeć" />
               <div className="flex flex-wrap gap-3">
                 {[
-                  { value: 'male', label: 'Mężczyzna', icon: '♂', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-                  { value: 'female', label: 'Kobieta', icon: '♀', color: 'bg-pink-100 text-pink-800 border-pink-200' },
-                  { value: 'non-binary', label: 'Niebinarny', icon: '⚧', color: 'bg-purple-100 text-purple-800 border-purple-200' }
+                  { value: 'male', label: 'Mężczyzna', icon: '♂', 
+                    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700' },
+                  { value: 'female', label: 'Kobieta', icon: '♀', 
+                    color: 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200 border-pink-200 dark:border-pink-700' },
+                  { value: 'non-binary', label: 'Niebinarny', icon: '⚧', 
+                    color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700' }
                 ].map((option) => (
                   <label key={option.value} className={`flex-1 min-w-[120px]`}>
                     <input
@@ -158,7 +161,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                       onChange={() => setGender(option.value as any)}
                       className="hidden peer"
                     />
-                    <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-200 peer-checked:scale-[0.98] ${option.color}`}>
+                    <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-indigo-500 dark:peer-checked:border-indigo-400 peer-checked:ring-2 peer-checked:ring-indigo-200 dark:peer-checked:ring-indigo-900/50 peer-checked:scale-[0.98] ${option.color}`}>
                       <div className="flex items-center justify-center gap-2">
                         <span className="text-lg font-medium">{option.icon}</span>
                         <span className="font-medium">{option.label}</span>
@@ -180,7 +183,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                   { id: 'maidenName', label: 'Nazwisko panieńskie', value: maidenName, setter: setMaidenName }
                 ].map((field) => (
                   <div key={field.id} className="space-y-1">
-                    <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
+                    <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       {field.label}
                     </label>
                     <div className="relative">
@@ -189,7 +192,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                         type="text"
                         value={field.value}
                         onChange={(e) => field.setter(e.target.value)}
-                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                       />
                     </div>
                   </div>
@@ -202,15 +205,15 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
               <SectionTitle title="Data urodzenia" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Typ daty</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ daty</label>
                   <div className="relative">
                     <select
                       value={birthDateType}
                       onChange={(e) => setBirthDateType(e.target.value as typeof birthDateType)}
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white/90 hover:bg-white"
+                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                     >
                       {['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo', 'freeText'].map((type) => (
-                        <option key={type} value={type}>
+                        <option key={type} value={type} className="bg-white dark:bg-gray-700">
                           {{
                             exact: 'Dokładna data',
                             before: 'Przed datą',
@@ -225,7 +228,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -234,7 +237,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
 
                 {(birthDateType !== 'between' && birthDateType !== 'fromTo') && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {birthDateType === 'freeText' ? 'Opis daty' : 'Data'}
                     </label>
                     {birthDateType === 'freeText' ? (
@@ -243,7 +246,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                         value={birthDate}
                         onChange={(e) => setBirthDate(e.target.value)}
                         placeholder="np. 'zima 1945'"
-                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                       />
                     ) : (
                       <div className="relative">
@@ -251,7 +254,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                           type="date"
                           value={birthDate}
                           onChange={(e) => setBirthDate(e.target.value)}
-                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white/90 hover:bg-white"
+                          className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                         />
                       </div>
                     )}
@@ -261,23 +264,23 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                 {birthDateType === 'between' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Data początkowa</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data początkowa</label>
                       <input
                         type="text"
                         value={birthDateFrom}
                         onChange={(e) => setBirthDateFrom(e.target.value)}
                         placeholder="np. 1920"
-                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Data końcowa</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data końcowa</label>
                       <input
                         type="text"
                         value={birthDateTo}
                         onChange={(e) => setBirthDateTo(e.target.value)}
                         placeholder="np. 1925"
-                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                       />
                     </div>
                   </>
@@ -285,13 +288,13 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Miejsce urodzenia</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Miejsce urodzenia</label>
                 <input
                   type="text"
                   value={birthPlace}
                   onChange={(e) => setBirthPlace(e.target.value)}
                   placeholder="np. Warszawa, Polska"
-                  className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                  className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                 />
               </div>
             </div>
@@ -303,9 +306,11 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsFileUpload(true)}
-                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${isFileUpload 
-                    ? 'bg-indigo-600 text-white shadow-md hover:bg-indigo-700' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${
+                    isFileUpload 
+                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-800' 
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -317,9 +322,11 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsFileUpload(false)}
-                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${!isFileUpload 
-                    ? 'bg-indigo-600 text-white shadow-md hover:bg-indigo-700' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${
+                    !isFileUpload 
+                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-800' 
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -332,13 +339,13 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
 
               {isFileUpload ? (
                 <div className="mt-2">
-                  <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all">
+                  <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-all">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <p className="mb-2 text-sm text-gray-500 mt-3"><span className="font-semibold">Kliknij aby wybrać plik</span></p>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF (MAX. 5MB)</p>
+                      <p className="mb-2 text-sm text-gray-500 dark:text-gray-400 mt-3"><span className="font-semibold">Kliknij aby wybrać plik</span></p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (MAX. 5MB)</p>
                     </div>
                     <input 
                       id="photo" 
@@ -356,7 +363,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                     value={photoUrl}
                     onChange={(e) => setPhotoUrl(e.target.value)}
                     placeholder="https://example.com/photo.jpg"
-                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                    className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                   />
                 </div>
               )}
@@ -375,13 +382,13 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                     onChange={() => setStatus('alive')}
                     className="hidden peer"
                   />
-                  <div className="w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:ring-2 peer-checked:ring-green-100 peer-checked:bg-green-50 bg-white">
+                  <div className="w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 dark:peer-checked:border-green-400 peer-checked:ring-2 peer-checked:ring-green-100 dark:peer-checked:ring-green-900/50 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 bg-white dark:bg-gray-700">
                     <div className="flex items-center justify-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                      </svg>
-                    </span>
+                      <span className="w-6 h-6 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                        </svg>
+                      </span>
                       <span className="font-medium">Żyjący</span>
                     </div>
                   </div>
@@ -395,9 +402,9 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                     onChange={() => setStatus('deceased')}
                     className="hidden peer"
                   />
-                  <div className="w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-100 peer-checked:bg-red-50 bg-white">
+                  <div className="w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-red-500 dark:peer-checked:border-red-400 peer-checked:ring-2 peer-checked:ring-red-100 dark:peer-checked:ring-red-900/50 peer-checked:bg-red-50 dark:peer-checked:bg-red-900/20 bg-white dark:bg-gray-700">
                     <div className="flex items-center justify-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white shadow-md">
+                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 flex items-center justify-center text-white shadow-md">
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
                           className="h-3.5 w-3.5" 
@@ -416,9 +423,9 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
 
             {/* Death Section (conditional) */}
             {status === 'deceased' && (
-              <div className="space-y-4 p-5 bg-gray-50 rounded-xl border border-gray-200">
-                <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="space-y-4 p-5 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
+                <h3 className="text-lg font-medium text-gray-800 dark:text-white flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Informacje o śmierci
@@ -426,14 +433,14 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Typ daty</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ daty</label>
                     <select
                       value={deathDateType}
                       onChange={(e) => setDeathDateType(e.target.value as typeof deathDateType)}
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white"
+                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white dark:bg-gray-700"
                     >
                       {['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo', 'freeText'].map((type) => (
-                        <option key={type} value={type}>
+                        <option key={type} value={type} className="bg-white dark:bg-gray-700">
                           {{
                             exact: 'Dokładna data',
                             before: 'Przed datą',
@@ -451,12 +458,12 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
 
                   {deathDateType === 'exact' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Data śmierci</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data śmierci</label>
                       <input
                         type="date"
                         value={deathDate}
                         onChange={(e) => setDeathDate(e.target.value)}
-                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white"
+                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white dark:bg-gray-700"
                       />
                     </div>
                   )}
@@ -464,23 +471,23 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                   {deathDateType === 'between' && (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data początkowa</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data początkowa</label>
                         <input
                           type="text"
                           value={deathDateFrom}
                           onChange={(e) => setDeathDateFrom(e.target.value)}
                           placeholder="np. 1990"
-                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                          className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data końcowa</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data końcowa</label>
                         <input
                           type="text"
                           value={deathDateTo}
                           onChange={(e) => setDeathDateTo(e.target.value)}
                           placeholder="np. 1995"
-                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                          className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700"
                         />
                       </div>
                     </>
@@ -488,13 +495,13 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Miejsce pochówku</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Miejsce pochówku</label>
                   <input
                     type="text"
                     value={burialPlace}
                     onChange={(e) => setBurialPlace(e.target.value)}
                     placeholder="np. Cmentarz Powązkowski, Warszawa"
-                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                    className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700"
                   />
                 </div>
               </div>
@@ -503,8 +510,8 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
             {/* Wedding Date (conditional) */}
             {relationType === 'Partner' && (
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-pink-500 dark:text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Data ślubu
@@ -513,7 +520,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                   type="date"
                   value={weddingDate}
                   onChange={(e) => setWeddingDate(e.target.value)}
-                  className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white"
+                  className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white dark:bg-gray-700"
                 />
               </div>
             )}
@@ -530,17 +537,17 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+                className="px-6 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 dark:focus:ring-gray-600"
               >
                 Anuluj
               </button>
               <button
                 type="submit"
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-md hover:shadow-lg flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 text-white font-medium hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-800 dark:hover:to-purple-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-600 shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -556,10 +563,10 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
   );
 };
 
-// Helper component for section titles
+// Helper component for section titles with dark mode
 const SectionTitle = ({ title }: { title: string }) => (
-  <h3 className="text-base font-semibold text-gray-900 flex items-center">
-    <span className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>
+  <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center">
+    <span className="w-3 h-3 bg-indigo-500 dark:bg-indigo-400 rounded-full mr-2"></span>
     {title}
   </h3>
 );

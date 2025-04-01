@@ -82,10 +82,11 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={handleFirstPage}
         disabled={currentPage === 1}
-        className={`p-2 rounded-lg ${currentPage === 1 
-          ? 'text-gray-400 cursor-not-allowed' 
-          : 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
-        } transition-colors`}
+        className={`p-2 rounded-lg transition-colors ${
+          currentPage === 1
+            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
+        }`}
         aria-label="Pierwsza strona"
       >
         <FontAwesomeIcon icon={faAngleDoubleLeft} />
@@ -95,10 +96,11 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={handlePreviousPage}
         disabled={currentPage === 1}
-        className={`p-2 rounded-lg ${currentPage === 1 
-          ? 'text-gray-400 cursor-not-allowed' 
-          : 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
-        } transition-colors`}
+        className={`p-2 rounded-lg transition-colors ${
+          currentPage === 1
+            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
+        }`}
         aria-label="Poprzednia strona"
       >
         <FontAwesomeIcon icon={faChevronLeft} />
@@ -111,17 +113,17 @@ const Pagination: React.FC<PaginationProps> = ({
             <button
               key={index}
               onClick={() => onPageChange(page)}
-              className={`w-10 h-10 flex items-center justify-center rounded-lg ${
+              className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
                 currentPage === page
-                  ? 'bg-indigo-600 text-white font-medium'
-                  : 'text-gray-700 hover:bg-gray-100'
-              } transition-colors`}
+                  ? 'bg-indigo-600 dark:bg-indigo-700 text-white font-medium'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
               aria-label={`Strona ${page}`}
             >
               {page}
             </button>
           ) : (
-            <span key={index} className="px-2 text-gray-500">...</span>
+            <span key={index} className="px-2 text-gray-500 dark:text-gray-400">...</span>
           )
         ))}
       </div>
@@ -130,10 +132,11 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={handleNextPage}
         disabled={currentPage === totalPages}
-        className={`p-2 rounded-lg ${currentPage === totalPages 
-          ? 'text-gray-400 cursor-not-allowed' 
-          : 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
-        } transition-colors`}
+        className={`p-2 rounded-lg transition-colors ${
+          currentPage === totalPages
+            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
+        }`}
         aria-label="Następna strona"
       >
         <FontAwesomeIcon icon={faChevronRight} />
@@ -143,10 +146,11 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={handleLastPage}
         disabled={currentPage === totalPages}
-        className={`p-2 rounded-lg ${currentPage === totalPages 
-          ? 'text-gray-400 cursor-not-allowed' 
-          : 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
-        } transition-colors`}
+        className={`p-2 rounded-lg transition-colors ${
+          currentPage === totalPages
+            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
+        }`}
         aria-label="Ostatnia strona"
       >
         <FontAwesomeIcon icon={faAngleDoubleRight} />

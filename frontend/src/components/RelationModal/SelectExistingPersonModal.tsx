@@ -91,11 +91,11 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 bg-black/50 dark:bg-black/70"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] transform transition-all duration-300"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-gray-900/50 w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] transform transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -118,12 +118,12 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-72px)]">
           {loading && (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 dark:border-indigo-400"></div>
             </div>
           )}
           
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 flex items-center">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-300 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
@@ -140,55 +140,57 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
                   placeholder="Wyszukaj osobę..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white"
+                  className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 absolute right-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 dark:text-gray-500 absolute right-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
 
               {/* Persons List */}
-              <div className="border rounded-lg overflow-hidden">
-                <ul className="divide-y divide-gray-200">
+              <div className="border rounded-lg overflow-hidden border-gray-200 dark:border-gray-700">
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredPersons.map((person) => (
                     <li
                       key={person._id}
                       className={`flex items-center p-4 cursor-pointer transition-colors ${
                         selectedPerson === person._id 
-                          ? 'bg-indigo-50 border-l-4 border-indigo-500' 
-                          : 'hover:bg-gray-50'
+                          ? 'bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-indigo-500' 
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                       onClick={() => handlePersonSelect(person._id)}
                     >
                       <span className="mr-4">
                         {person.gender === 'male' ? (
-                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                             <FontAwesomeIcon icon={faMale} />
                           </div>
                         ) : person.gender === 'female' ? (
-                          <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600">
+                          <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 dark:text-pink-400">
                             <FontAwesomeIcon icon={faFemale} />
                           </div>
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                          <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
                             <FontAwesomeIcon icon={faGenderless} />
                           </div>
                         )}
                       </span>
                       <div className="flex-1">
                         <h3 className={`text-base font-medium ${
-                          selectedPerson === person._id ? 'text-indigo-700' : 'text-gray-800'
+                          selectedPerson === person._id 
+                            ? 'text-indigo-700 dark:text-indigo-300' 
+                            : 'text-gray-800 dark:text-gray-200'
                         }`}>
                           {person.firstName} {person.lastName}
                         </h3>
                         {person.birthDate && (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             {new Date(person.birthDate).toLocaleDateString()}
                           </p>
                         )}
                       </div>
                       {selectedPerson === person._id && (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500 dark:text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -200,12 +202,12 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
               {/* Relation Type Selector */}
               {selectedPerson && (
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Typ relacji</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Typ relacji</label>
                   <div className="relative">
                     <select
                       value={selectedRelationType}
                       onChange={(e) => setSelectedRelationType(e.target.value)}
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white"
+                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
                       <option value="">Wybierz typ relacji</option>
                       {relationshipTypes.map((type) => (
@@ -213,7 +215,7 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -224,11 +226,11 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 mt-6">
+          <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              className="px-6 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Anuluj
             </button>
@@ -238,8 +240,8 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
               disabled={!selectedPerson || !selectedRelationType}
               className={`px-6 py-2 rounded-lg font-medium transition-colors ${
                 selectedPerson && selectedRelationType
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-indigo-600 dark:bg-indigo-700 text-white hover:bg-indigo-700 dark:hover:bg-indigo-800'
+                  : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               }`}
             >
               Zapisz

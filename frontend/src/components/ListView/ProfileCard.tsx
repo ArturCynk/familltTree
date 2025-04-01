@@ -56,15 +56,15 @@ export const renderFamilyMembers = (members: FamilyMember[], label: string) => {
   
   return (
     <div className="mt-3">
-      <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-        <FontAwesomeIcon icon={faUsers} className="text-gray-500" />
+      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+        <FontAwesomeIcon icon={faUsers} className="text-gray-500 dark:text-gray-400" />
         {label}
       </h4>
       <ul className="space-y-2">
         {members.map((member) => (
           <li
             key={member.id}
-            className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+            className="flex items-center gap-3 p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
           >
             {member.photo ? (
               <img 
@@ -76,13 +76,13 @@ export const renderFamilyMembers = (members: FamilyMember[], label: string) => {
               />
             ) : (
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${
-                member.gender === 'female' ? 'bg-pink-400' : 
-                member.gender === 'male' ? 'bg-blue-400' : 'bg-gray-400'
+                member.gender === 'female' ? 'bg-pink-400 dark:bg-pink-500' : 
+                member.gender === 'male' ? 'bg-blue-400 dark:bg-blue-500' : 'bg-gray-400 dark:bg-gray-500'
               }`}>
                 {member.firstName?.charAt(0) || '?'}
               </div>
             )}
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
               {member.firstName} {member.lastName}
             </span>
           </li>
@@ -98,7 +98,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   selectedPerson,
   onOpenRelationModal,
   onOpenEditModal,
-  refetch ,
+  refetch,
 }) => {
   const navigate = useNavigate();
   const [showFamily, setShowFamily] = useState(false);
@@ -132,8 +132,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     setIsRemoveRelationModalOpen(false);
     refetch();
   };
-
-  console.log(selectedPerson?.parents);
   
   const handleShowFamily = async () => {
     setShowFamily(!showFamily);
@@ -164,10 +162,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       {events.map((event, index) => (
         <div
           key={index}
-          className="p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all"
+          className="p-4 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-all"
         >
           <div className="flex items-start gap-4">
-            <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+            <div className="bg-indigo-100 dark:bg-indigo-900/50 p-2 rounded-lg text-indigo-600 dark:text-indigo-300">
               <FontAwesomeIcon 
                 icon={event.type === 'Narodziny' ? faBirthdayCake : 
                      event.type === 'Śmierć' ? faCross : faUsers} 
@@ -175,15 +173,15 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               />
             </div>
             <div className="flex-1">
-              <h4 className="font-medium text-gray-800">{event.type}</h4>
-              <p className="text-sm text-gray-600 mt-1">
+              <h4 className="font-medium text-gray-800 dark:text-white">{event.type}</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                 <span className="font-medium">Osoba:</span> {event.who || 'Brak danych'}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-medium">Data:</span> {event.date ? formatDate(event.date) : 'Brak danych'}
               </p>
               {event.description && (
-                <p className="text-sm text-gray-600 mt-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                   <span className="font-medium">Opis:</span> {event.description}
                 </p>
               )}
@@ -225,8 +223,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     closeSidebar();
   };
 
-  
-
   const ProfileCard: React.FC<{ person: Person }> = ({ person }) => {
     const birthDate = person.birthDate ? new Date(person.birthDate) : null;
     const deathDate = person.deathDate ? new Date(person.deathDate) : null;
@@ -235,15 +231,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       <div className="w-full pb-6">
         {/* Profile Header */}
         <div className="flex items-center gap-4 mb-6">
-          
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-blue-500 text-white flex items-center justify-center text-2xl font-bold shadow-md">
-              {person.firstName?.charAt(0) || '?'}
-            </div>
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-blue-500 text-white flex items-center justify-center text-2xl font-bold shadow-md">
+            {person.firstName?.charAt(0) || '?'}
+          </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-800">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
               {person.firstName} {person.lastName}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {person.gender === 'female' ? 'Kobieta' : 
                person.gender === 'male' ? 'Mężczyzna' : 'Niebinarna'}
             </p>
@@ -251,27 +246,27 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         </div>
 
         {/* Vital Dates */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
           <div className="space-y-3">
             {birthDate && (
               <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-300">
                   <FontAwesomeIcon icon={faBirthdayCake} />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Urodzony/a</p>
-                  <p className="text-gray-800">{formatDate(person.birthDate)}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Urodzony/a</p>
+                  <p className="text-gray-800 dark:text-white">{formatDate(person.birthDate)}</p>
                 </div>
               </div>
             )}
             {deathDate && (
               <div className="flex items-center gap-3">
-                <div className="bg-gray-100 p-2 rounded-lg text-gray-600">
+                <div className="bg-gray-100 dark:bg-gray-600 p-2 rounded-lg text-gray-600 dark:text-gray-300">
                   <FontAwesomeIcon icon={faCross} />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Zmarł/a</p>
-                  <p className="text-gray-800">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Zmarł/a</p>
+                  <p className="text-gray-800 dark:text-white">
                     {formatDate(person.deathDate)} (w wieku {birthDate ? calculateAge(birthDate, deathDate) : '?'})
                   </p>
                 </div>
@@ -284,35 +279,35 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         <div className="grid grid-cols-4 gap-2 mb-6">
           <button
             onClick={() => person.id && handleProfileClick(person.id)}
-            className="flex flex-col items-center p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="flex flex-col items-center p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             title="Profil"
           >
-            <FontAwesomeIcon icon={faUser} className="text-gray-600 mb-1" />
-            <span className="text-xs text-gray-600">Profil</span>
+            <FontAwesomeIcon icon={faUser} className="text-gray-600 dark:text-gray-300 mb-1" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">Profil</span>
           </button>
           <button
             onClick={() => person.id && onOpenEditModal(person)}
-            className="flex flex-col items-center p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="flex flex-col items-center p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             title="Edytuj"
           >
-            <FontAwesomeIcon icon={faPen} className="text-gray-600 mb-1" />
-            <span className="text-xs text-gray-600">Edytuj</span>
+            <FontAwesomeIcon icon={faPen} className="text-gray-600 dark:text-gray-300 mb-1" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">Edytuj</span>
           </button>
           <button
             onClick={() => person.id && onOpenRelationModal(person)}
-            className="flex flex-col items-center p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="flex flex-col items-center p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             title="Dodaj"
           >
-            <FontAwesomeIcon icon={faPlus} className="text-gray-600 mb-1" />
-            <span className="text-xs text-gray-600">Dodaj</span>
+            <FontAwesomeIcon icon={faPlus} className="text-gray-600 dark:text-gray-300 mb-1" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">Dodaj</span>
           </button>
           <button
             onClick={handleDelete}
-            className="flex flex-col items-center p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="flex flex-col items-center p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             title="Usuń"
           >
-            <FontAwesomeIcon icon={faTrash} className="text-gray-600 mb-1" />
-            <span className="text-xs text-gray-600">Usuń</span>
+            <FontAwesomeIcon icon={faTrash} className="text-gray-600 dark:text-gray-300 mb-1" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">Usuń</span>
           </button>
         </div>
 
@@ -322,8 +317,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             onClick={handleShowFamily}
             className={`w-full py-2 px-4 flex items-center justify-between rounded-lg border transition-colors ${
               showFamily 
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300' 
+                : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -337,7 +332,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             <div className="mt-3 space-y-4">
               {isLoadingFamily ? (
                 <div className="flex justify-center py-4">
-                  <LoadingSpinner  />
+                  <LoadingSpinner />
                 </div>
               ) : (
                 <>
@@ -357,8 +352,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             onClick={() => setShowFacts(!showFacts)}
             className={`w-full py-2 px-4 flex items-center justify-between rounded-lg border transition-colors ${
               showFacts 
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300' 
+                : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -373,7 +368,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               {facts.length > 0 ? (
                 renderFacts(facts)
               ) : (
-                <p className="text-sm text-gray-500 mt-2 text-center">Brak dostępnych faktów</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">Brak dostępnych faktów</p>
               )}
             </div>
           )}
@@ -385,13 +380,13 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   return (
     <>
       {/* Sidebar */}
-      <div className={`fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform transition-all duration-300 ease-in-out ${
+      <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl z-50 transform transition-all duration-300 ease-in-out ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="relative h-full overflow-y-auto p-6">
           <button
             onClick={closeSidebar}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300 transition-colors"
           >
             <FontAwesomeIcon icon={faTimes} size="lg" />
           </button>
@@ -402,14 +397,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Potwierdzenie usunięcia</h3>
-            <p className="text-gray-600 mb-6">Czy na pewno chcesz usunąć tę osobę? Tej akcji nie można cofnąć.</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Potwierdzenie usunięcia</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">Czy na pewno chcesz usunąć tę osobę? Tej akcji nie można cofnąć.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Anuluj
               </button>
@@ -421,7 +416,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 }`}
               >
                 {isDeleting ? (
-                  <LoadingSpinner  />
+                  <LoadingSpinner />
                 ) : (
                   <>
                     <FontAwesomeIcon icon={faTrash} />
@@ -439,7 +434,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         <Modal 
           onClose={closeRemoveRelationModal} 
           isOpen={isRemoveRelationModalOpen} 
-          person={selectedPerson.id} 
+          person={selectedPerson} 
         />
       )}
     </>

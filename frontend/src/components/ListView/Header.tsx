@@ -1,9 +1,9 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faFilter, 
-  faSearch, 
-  faCog, 
+import {
+  faFilter,
+  faSearch,
+  faCog,
   faUsers,
   faSlidersH,
   faUserPlus,
@@ -11,8 +11,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 interface HeaderProps {
-  totalUsers: string;
-  onToggleAlphabetFilter: () => void;
+  totalUsers: number;
+  currentPage: number;
+  itemsPerPage: number;
   onToggleSearch: () => void;
   onToggleSettingsPanel: () => void;
   isSearchOpen: boolean;
@@ -23,7 +24,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({
   totalUsers,
-  onToggleAlphabetFilter,
+  currentPage,
+  itemsPerPage,
   onToggleSearch,
   onToggleSettingsPanel,
   isSearchOpen,
@@ -37,32 +39,43 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  // Obliczanie zakresu wyświetlanych rekordów
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalUsers);
+
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full max-w-6xl mb-6 gap-4 px-4">
       {/* Left Section - Users Info */}
-      <div className="flex items-center gap-3 bg-indigo-50 px-4 py-3 rounded-lg border border-indigo-100">
-        <FontAwesomeIcon 
-          icon={faUsers} 
-          className="text-indigo-600 text-lg" 
+      <div className="flex items-center gap-3 bg-indigo-50 dark:bg-gray-800/80 px-4 py-2.5 rounded-lg border border-indigo-100 dark:border-gray-700 shadow-sm dark:shadow-gray-900/50">
+        <FontAwesomeIcon
+          icon={faUsers}
+          className="text-indigo-600 dark:text-indigo-400 text-lg"
         />
-        <span className="text-gray-700 text-sm">
-          Wyświetlanie <span className="font-medium text-indigo-700">1-25</span> z{' '}
-          <span className="font-medium text-indigo-700">{totalUsers}</span> osób
+        <span className="text-gray-700 dark:text-gray-200 text-sm">
+          Wyświetlanie{' '}
+          <span className="font-semibold text-indigo-700 dark:text-indigo-300">
+            {startItem}-{endItem}
+          </span>{' '}
+          z{' '}
+          <span className="font-semibold text-indigo-700 dark:text-indigo-300">
+            {totalUsers.toLocaleString()}
+          </span>{' '}
+          <span className="hidden sm:inline">osób</span>
+          <span className="sm:hidden">os.</span>
         </span>
       </div>
-      
+
       {/* Right Section - Search and Actions */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch w-full md:w-auto">
         {/* Enhanced Search Bar */}
         <div className={`relative transition-all duration-300 ease-out ${isSearchOpen ? 'flex-1 max-w-xl' : 'w-12'}`}>
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-400">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-400 dark:text-indigo-300">
             <FontAwesomeIcon icon={faSearch} />
           </div>
           <input
             type="text"
-            className={`block w-full h-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-black shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 ${
-              !isSearchOpen ? 'opacity-0 cursor-pointer' : 'opacity-100'
-            }`}
+            className={`block w-full h-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-black dark:text-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 ${!isSearchOpen ? 'opacity-0 cursor-pointer' : 'opacity-100'
+              }`}
             placeholder="Wyszukaj osoby..."
             value={searchQuery}
             onChange={onSearchChange}
@@ -70,13 +83,13 @@ const Header: React.FC<HeaderProps> = ({
             onClick={!isSearchOpen ? onToggleSearch : undefined}
           />
           {!isSearchOpen && (
-            <div 
+            <div
               className="absolute inset-0 flex items-center justify-center cursor-pointer"
               onClick={onToggleSearch}
             >
-              <FontAwesomeIcon 
-                icon={faSearch} 
-                className="text-indigo-500 hover:text-indigo-700 transition-colors" 
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
               />
             </div>
           )}
@@ -85,19 +98,8 @@ const Header: React.FC<HeaderProps> = ({
         {/* Action Buttons Group */}
         <div className="flex gap-2">
           <button
-            onClick={onToggleAlphabetFilter}
-            className="p-3 rounded-lg bg-white border border-gray-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            aria-label="Filtruj alfabetycznie"
-          >
-            <FontAwesomeIcon icon={faSortAlphaDown} />
-            <span className="hidden sm:inline-block text-sm">Filtr</span>
-          </button>
-          
-
-
-          <button
             onClick={onToggleSettingsPanel}
-            className="p-3 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-all duration-200 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="p-3 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all duration-200 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             aria-label="Ustawienia"
           >
             <FontAwesomeIcon icon={faSlidersH} />

@@ -31,7 +31,9 @@ interface DisplayOptions {
     showBirthDate: boolean;
     showDeathDate: boolean;
     showDeceasedRibbon: boolean;
-  }
+    showGenderColors: boolean;
+}
+
 interface SearchControlPanelProps {
     familyData: FamilyData;
     filteredNodes: Person[];
@@ -70,14 +72,15 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
             } catch (error) {
                 console.error('Failed to parse display options', error);
                 // Reset to default options if parsing fails
- setDisplayOptions({
-          showGenderIcon: true,
-          showShortId: false,
-          showFullName: true,
-          showBirthDate: true,
-          showDeathDate: true,
-          showDeceasedRibbon: true
-        });
+                setDisplayOptions({
+                    showGenderIcon: true,
+                    showShortId: false,
+                    showFullName: true,
+                    showBirthDate: true,
+                    showDeathDate: true,
+                    showDeceasedRibbon: true,
+                    showGenderColors: false,
+                });
             }
         }
     }, [setDisplayOptions]);
@@ -88,11 +91,10 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
     }, [displayOptions]);
 
     const handleOptionChange = (option: keyof DisplayOptions) => {
-        const newOptions = {
+        setDisplayOptions({
             ...displayOptions,
             [option]: !displayOptions[option]
-        };
-        setDisplayOptions(newOptions);
+        });
     };
 
     return (
@@ -101,7 +103,7 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
             {!isPanelOpen && (
                 <button
                     onClick={() => setIsPanelOpen(true)}
-                    className="p-3 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+                    className="p-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-full shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-800 transition-colors"
                 >
                     <FontAwesomeIcon icon={faCog} className="text-xl" />
                 </button>
@@ -109,30 +111,34 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
 
             {/* Control Panel (visible when opened) */}
             {isPanelOpen && (
-                <div className="bg-white shadow-xl rounded-xl p-4 w-80 border border-gray-200 animate-slide-up">
+                <div className="bg-white dark:bg-gray-800 shadow-xl rounded-xl p-4 w-80 border border-gray-200 dark:border-gray-700 animate-slide-up">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium text-gray-800">
+                        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
                             {activeTab === 'search' ? 'Wyszukiwanie' : 'Ustawienia wyświetlania'}
                         </h3>
                         <button
                             onClick={() => setIsPanelOpen(false)}
-                            className="text-gray-500 hover:text-gray-700 transition-colors"
+                            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                         >
                             <FontAwesomeIcon icon={faArrowLeft} />
                         </button>
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex border-b border-gray-200 mb-4">
+                    <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
                         <button
-                            className={`px-4 py-2 font-medium text-sm ${activeTab === 'search' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`px-4 py-2 font-medium text-sm ${activeTab === 'search'
+                                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
                             onClick={() => setActiveTab('search')}
                         >
                             <FontAwesomeIcon icon={faSearch} className="mr-2" />
                             Wyszukiwanie
                         </button>
                         <button
-                            className={`px-4 py-2 font-medium text-sm ${activeTab === 'settings' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`px-4 py-2 font-medium text-sm ${activeTab === 'settings'
+                                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
                             onClick={() => setActiveTab('settings')}
                         >
                             <FontAwesomeIcon icon={faCog} className="mr-2" />
@@ -144,14 +150,14 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                     {activeTab === 'search' && (
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor="rootSearch" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="rootSearch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     <FontAwesomeIcon icon={faSearch} className="mr-2" />
                                     Znajdź osobę
                                 </label>
                                 <input
                                     id="rootSearch"
                                     type="text"
-                                    className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                     placeholder="Wpisz imię lub nazwisko..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -159,12 +165,12 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                             </div>
 
                             <div>
-                                <label htmlFor="rootSelector" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="rootSelector" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Wybierz osobę
                                 </label>
                                 <select
                                     id="rootSelector"
-                                    className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                     onChange={handleRootChange}
                                     value={familyData.rootId}
                                 >
@@ -177,12 +183,12 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                             </div>
 
                             <div>
-                                <label htmlFor="recentRootSelector" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="recentRootSelector" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Ostatnio przeglądane
                                 </label>
                                 <select
                                     id="recentRootSelector"
-                                    className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                     onChange={handleRootChange}
                                     value={familyData.rootId}
                                 >
@@ -196,8 +202,8 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                                 onClick={goToPreviousRoot}
                                 disabled={!previousRoot}
                                 className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${previousRoot
-                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                    ? 'bg-indigo-600 dark:bg-indigo-700 text-white hover:bg-indigo-700 dark:hover:bg-indigo-800'
+                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                                     }`}
                             >
                                 Powrót do poprzedniego
@@ -210,9 +216,9 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <FontAwesomeIcon icon={faVenus} className="mr-3 text-pink-500" />
-                                    <FontAwesomeIcon icon={faMars} className="mr-3 text-blue-500" />
-                                    <span className="text-sm font-medium text-gray-700">Ikona płci</span>
+                                    <FontAwesomeIcon icon={faVenus} className="mr-3 text-pink-500 dark:text-pink-400" />
+                                    <FontAwesomeIcon icon={faMars} className="mr-3 text-blue-500 dark:text-blue-400" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Ikona płci</span>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -221,14 +227,14 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                                         checked={displayOptions.showGenderIcon}
                                         onChange={() => handleOptionChange('showGenderIcon')}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:bg-gray-700"></div>
                                 </label>
                             </div>
 
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <FontAwesomeIcon icon={faIdCard} className="mr-3 text-gray-500" />
-                                    <span className="text-sm font-medium text-gray-700">Pełne imię i nazwisko</span>
+                                    <FontAwesomeIcon icon={faIdCard} className="mr-3 text-gray-500 dark:text-gray-400" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pełne imię i nazwisko</span>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -237,14 +243,14 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                                         checked={displayOptions.showFullName}
                                         onChange={() => handleOptionChange('showFullName')}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:bg-gray-700"></div>
                                 </label>
                             </div>
 
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <FontAwesomeIcon icon={faHashtag} className="mr-3 text-gray-500" />
-                                    <span className="text-sm font-medium text-gray-700">Skrócony identyfikator</span>
+                                    <FontAwesomeIcon icon={faHashtag} className="mr-3 text-gray-500 dark:text-gray-400" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Skrócony identyfikator</span>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -253,13 +259,14 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                                         checked={displayOptions.showShortId}
                                         onChange={() => handleOptionChange('showShortId')}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:bg-gray-700"></div>
                                 </label>
                             </div>
+
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <FontAwesomeIcon icon={faBirthdayCake} className="mr-3 text-gray-500" />
-                                    <span className="text-sm font-medium text-gray-700">Data urodzenia</span>
+                                    <FontAwesomeIcon icon={faBirthdayCake} className="mr-3 text-gray-500 dark:text-gray-400" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Data urodzenia</span>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -268,14 +275,14 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                                         checked={displayOptions.showBirthDate}
                                         onChange={() => handleOptionChange('showBirthDate')}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:bg-gray-700"></div>
                                 </label>
                             </div>
 
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <FontAwesomeIcon icon={faCross} className="mr-3 text-gray-500" />
-                                    <span className="text-sm font-medium text-gray-700">Data śmierci</span>
+                                    <FontAwesomeIcon icon={faCross} className="mr-3 text-gray-500 dark:text-gray-400" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Data śmierci</span>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -284,13 +291,14 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                                         checked={displayOptions.showDeathDate}
                                         onChange={() => handleOptionChange('showDeathDate')}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:bg-gray-700"></div>
                                 </label>
                             </div>
+
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <FontAwesomeIcon icon={faRibbon} className="mr-3 text-gray-700" />
-                                    <span className="text-sm font-medium text-gray-700">Wstążka dla zmarłych</span>
+                                    <FontAwesomeIcon icon={faRibbon} className="mr-3 text-gray-700 dark:text-gray-300" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Wstążka dla zmarłych</span>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -299,7 +307,23 @@ export const SearchControlPanel: React.FC<SearchControlPanelProps> = ({
                                         checked={displayOptions.showDeceasedRibbon}
                                         onChange={() => handleOptionChange('showDeceasedRibbon')}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:bg-gray-700"></div>
+                                </label>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <div className="w-6 h-6 mr-3 rounded-full bg-gradient-to-br from-blue-400 to-pink-400"></div>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Kolory płci</span>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={displayOptions.showGenderColors}
+                                        onChange={() => handleOptionChange('showGenderColors')}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:bg-gray-700"></div>
                                 </label>
                             </div>
                         </div>
