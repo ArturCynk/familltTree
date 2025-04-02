@@ -29,7 +29,7 @@ interface TableRowProps {
   showColorCoding: boolean;
   showRelatives: boolean;
   getDisplayName: (person: Person) => string;
-  renderRelations: (person: Person) => JSX.Element;
+  renderRelations: (person: Person) => JSX.Element | null;
   formatDate: (dateString: string | undefined) => string;
   onOpenRelationModal: (person: Person) => void;
   onOpenEditModal: (person: Person) => void;

@@ -5,7 +5,6 @@ import mongoose from 'mongoose';
 import Person, { IPerson } from '../models/Person';
 import User, { UserDocument } from '../models/User'; 
 import jwt from 'jsonwebtoken';
-import { log } from 'console';
 
 export const addPerson = async (req: Request, res: Response): Promise<void> => {
   const errors = validationResult(req);
@@ -114,68 +113,6 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: 'Wystąpił błąd podczas dodawania osoby', error });
   }
 };
-// import { faker } from '@faker-js/faker';
-
-// const createRandomPerson = (gender: 'male' | 'female') => {
-//   const firstName = gender === 'male' ? faker.person.firstName('male') : faker.person.firstName('female');
-//   const lastName = faker.person.lastName();
-//   const birthDate = null;  // Losowa data urodzenia
-//   const status = Math.random() > 0.5 ? 'alive' : 'deceased';  // Losowy status
-//   const genderType = gender;
-
-//   const newPerson = new Person({
-//     gender: genderType,
-//     firstName,
-//     middleName: faker.person.firstName(),  // Losowe drugie imię
-//     lastName,
-//     maidenName: gender === 'female' ? faker.person.lastName() : undefined,  // Losowe nazwisko panieńskie tylko dla kobiet
-//     birthDateType: 'exact',
-//     birthDate,
-//     birthDateFrom: null,
-//     birthDateTo: null,
-//     birthPlace: faker.location.city(),  // Losowe miasto urodzenia
-//     status,
-//     deathDateType: status === 'deceased' ? 'exact' : null,
-//     deathDate: status === 'deceased' ? null : null,
-//     deathDateFrom: null,
-//     deathDateTo: null,
-//     deathPlace: status === 'deceased' ? faker.location.city() : null,
-//     burialPlace: status === 'deceased' ? faker.location.city() : null,
-//     photo: faker.image.avatar(),  // Losowe zdjęcie
-//     parents: [],
-//     siblings: [],
-//     spouses: [],
-//     children: [],
-//   });
-
-//   return newPerson;
-// };
-
-// // Funkcja do dodawania 100 osób do użytkownika
-// const add100PersonsToUser = async (userEmail: string) => {
-//   const persons = [];
-
-//   for (let i = 0; i < 100; i++) {
-//     const gender = i % 2 === 0 ? 'male' : 'female';  // Na przemian mężczyźni i kobiety
-//     const newPerson = createRandomPerson(gender);
-//     persons.push(newPerson);
-//     console.log(`Created person ${i + 1}: ${newPerson.firstName} ${newPerson.lastName}`);
-//     await newPerson.save();
-//   }
-
-//   const updatedUser = await User.findOneAndUpdate(
-//     { email: userEmail },
-//     { $push: { persons: { $each: persons } } },
-//     { new: true, useFindAndModify: false }
-//   );
-
-//   console.log('Updated user:', updatedUser);
-// };
-
-// add100PersonsToUser('arturcynk197@gmail.com')
-//   .then(() => console.log('100 persons added successfully'))
-//   .catch((error) => console.error('Error adding persons:', error));
-
 
 export const updatePerson = async (req: Request, res: Response): Promise<void> => {
   const errors = validationResult(req);
@@ -367,344 +304,216 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ message: 'Wystąpił błąd podczas pobierania liczby osób', error });
   }
 };
-  
 
-  interface PersonData {
-    _id: string;
-    firstName: string;
-    lastName: string;
-  }
-  
-  const getPersonData = async (ids: mongoose.Types.ObjectId[]): Promise<PersonData[]> => {
-    if (ids.length === 0) return [];
-  
-    const people = await Person.find({ _id: { $in: ids } }, 'firstName lastName _id gender').exec();
-    return people.map(person => ({
-      _id: person._id.toString(),
-      firstName: person.firstName,
-      lastName: person.lastName,
-      gender: person.gender
-    }));
-  };
-  interface Query {
-    [key: string]: any; // This allows for dynamic keys but should be used cautiously
-  }
-  
+
   export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Sprawdzenie obecności tokena w nagłówku Authorization
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1]; // Token w nagłówku Authorization
-  
+      // Weryfikacja tokena
+      const token = req.headers.authorization?.split(' ')[1];
       if (!token) {
-        console.log('====================================');
-        console.log(token);
-        console.log('====================================');
         res.status(401).json({ msg: 'Brak tokenu' });
         return;
       }
   
-      // Weryfikacja tokena
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      const user = decoded as { email: string }; // Zakładam, że użytkownik ma email w tokenie
-  
-      if (!user) {
+      if (typeof decoded === 'string' || !('email' in decoded)) {
         res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-        return;
       }
+      const { email } = decoded as { email: string };
   
-      // Pobranie wartości z query string (filtrowanie według litery lub pełnego imienia i nazwiska)
+      // Pobranie parametrów zapytania
       const searchQuery = req.query.searchQuery as string | undefined;
       const letter = req.query.letter as string | undefined;
-      const page = parseInt(req.query.page as string) || 1; // Strona (domyślnie 1)
-      const limit = parseInt(req.query.limit as string) || 25; // Liczba użytkowników na stronie (domyślnie 25)
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 25;
   
-      // Budowanie zapytania
-      let query: any = {};
-      let firstName: string | undefined;
-      let lastName: string | undefined;
+      // Budowanie warunków wyszukiwania
+      const { mongoQuery, additionalFilter } = buildSearchConditions(searchQuery, letter);
   
-      if (searchQuery) {
-        [firstName, lastName] = searchQuery.split(' ');
-        query = {
-          $or: [
-            { firstName: { $regex: firstName, $options: 'i' } },
-            ...(lastName ? [{ lastName: { $regex: lastName, $options: 'i' } }] : [])
-          ]
-        };
-      } else if (letter) {
-        // Filtrowanie według pierwszej litery imienia lub nazwiska
-        query = {
-          $or: [
-            { firstName: { $regex: `^${letter}`, $options: 'i' } }, // Imiona zaczynające się na literę
-            { lastName: { $regex: `^${letter}`, $options: 'i' } }    // Nazwiska zaczynające się na literę
-          ]
-        };
-      }
+      // Pobranie użytkownika z osobami
+      const loggedInUser = await User.findOne({ email })
+        .populate<{ persons: IPerson[] }>({
+          path: 'persons',
+          match: mongoQuery,
+        })
+        .exec();
   
-      // Pobieranie użytkownika, a następnie jego osoby
-      const loggedInUser = await User.findOne({ email: user.email }) .populate({
-        path: 'persons',
-        match: query, // Użyj zapytania MongoDB do filtrowania
-      }).exec();
-
       if (!loggedInUser) {
-        res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
-        return;
+         res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
+         return;
       }
-
-      const getPersonsByIds = (ids: mongoose.Types.ObjectId[]) =>
-        loggedInUser.persons.filter((p: IPerson) =>
-          ids.some(id => id.toString() === p._id.toString())
-        );
-      
-      
-        const getPersonsByIdsSpouses = (ids: mongoose.Types.ObjectId[]) =>
-          loggedInUser.persons.filter(p =>
-            ids.some(id => id.toString() === p._id.toString()) // Porównujemy personId z _id osób w loggedInUser.persons
-          );
-        
-       
-      const persons = loggedInUser.persons.filter(person => {
-        if (firstName === "=") {
-          if (lastName && person.lastName.toLowerCase().includes(lastName.toLowerCase())) {
-            return true;
-          }
-          return !lastName;
-        }
-      
-        if (firstName) {
-          if (person.firstName.toLowerCase().includes(firstName.toLowerCase())) {
-            if (lastName && person.lastName.toLowerCase().includes(lastName.toLowerCase())) {
-              return true;
-            }
-            return !lastName;
-          }
-        }
-      
-        if (firstName === undefined && lastName === undefined) {
-          return true;
-        }
-        return false;
-      });
-      
   
-      let paginatedPersons = persons.slice((page - 1) * limit, page * limit);
-      // paginatedPersons = persons;
-
-      // paginatedPersons.forEach((p) => {
-      //   if (p._id.toString() === "673ceb0663b7c5c1f91635e9") {
-      //     p.spouses.push({
-      //       personId: new mongoose.Types.ObjectId("673ceaba63b7c5c1f9162ca0"), // Konwersja stringa na ObjectId
-      //       weddingDate: new Date(Date.UTC(2000, 10, 2, 1, 3, 2)), // Listopad = 10
-      //     });
-      //   }
-      //   if (p._id.toString() === "673ceaba63b7c5c1f9162ca0") {
-      //     p.spouses.push({
-      //       personId: new mongoose.Types.ObjectId("673ceb0663b7c5c1f91635e9"), // Konwersja stringa na ObjectId
-      //       weddingDate: new Date(Date.UTC(2000, 10, 2, 1, 3, 2)), // Listopad = 10
-      //     });
-      //   }
-      // });
-
-      
-      // await loggedInUser.save();
-      // console.log(1);
-      
+      // Filtracja dodatkowa po stronie serwera
+      const filteredPersons = loggedInUser.persons.filter(person => 
+        additionalFilter(person)
+      );
   
-      const totalUsers = persons.length;
+      // Paginacja
+      const paginatedPersons = filteredPersons.slice((page - 1) * limit, page * limit);
+      const totalUsers = filteredPersons.length;
   
-      const result = await Promise.all(paginatedPersons.map(async (person,i) => {
-        // Pobierz dane rodziców, rodzeństwa, małżonków i dzieci
-        const relations = {
-            Rodzice: getPersonsByIds(person.parents),
-            Rodzeństwo: getPersonsByIds(person.siblings),
-            Małżonkowie: getPersonsByIdsSpouses(person.spouses.map(spouse => spouse.personId)), // Mapujemy po personId
-            Dzieci: getPersonsByIds(person.children),
-        };
-  
-
-
-
-        // Zwróć sformatowane dane
-        return {
-          id: person._id.toString(),
-          firstName: person.firstName,
-          lastName: person.lastName,
-          maidenName: person.maidenName,
-          birthDate: person.birthDate,
-          deathDate: person.deathDate,
-          gender: person.gender,
-          birthPlace: person.birthPlace,
-          deathPlace: person.deathPlace,
-          burialPlace: person.burialPlace,
-          photo: person.photo,
-          parents: relations.Rodzice.map((parent: IPerson) => ({
-                id: parent._id,
-                firstName: parent.firstName,
-                lastName: parent.lastName,
-                gender: parent.gender,
-                type: 'blood'
-              })),
-              siblings: relations.Rodzeństwo.map((sibling: IPerson) => ({
-                id: sibling._id,
-                firstName: sibling.firstName,
-                lastName: sibling.lastName,
-                gender: sibling.gender,
-                type: 'blood'
-              })),
-              spouses: relations.Małżonkowie.map((spouse: IPerson) => ({
-                id: spouse._id,
-                firstName: spouse.firstName,
-                lastName: spouse.lastName,
-                gender: spouse.gender,
-                type: 'married'
-              })),
-              children: relations.Dzieci.map((child: IPerson) => ({
-                id: child._id,
-                firstName: child.firstName,
-                lastName: child.lastName,
-                gender: child.gender,
-                type: 'blood'
-              })),
-        };
+      // Mapowanie wyników
+      const result = paginatedPersons.map(person => ({
+        ...getPersonBasicInfo(person),
+        ...getPersonRelations(person, loggedInUser.persons)
       }));
-
+  
       res.status(200).json({
-        // result
-        // loggedInUser: loggedInUser,
         users: result,
         totalUsers,
         currentPage: page,
         totalPages: Math.ceil(totalUsers / limit)
-    });
+      });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });
+      console.error('Błąd podczas pobierania użytkowników:', error);
+      const status = error instanceof jwt.JsonWebTokenError ? 401 : 500;
+      res.status(status).json({ 
+        message: error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania użytkowników.' 
+      });
     }
   };
-
+  
+  // Typy dla funkcji pomocniczych
+  interface SearchConditions {
+    mongoQuery: any;
+    additionalFilter: (person: IPerson) => boolean;
+  }
+  
+  interface RelationPerson {
+    id: mongoose.Types.ObjectId;
+    firstName: string;
+    lastName: string;
+    gender: string;
+    type: string;
+  }
+  
+  // Funkcje pomocnicze
+  const buildSearchConditions = (searchQuery?: string, letter?: string): SearchConditions => {
+    let mongoQuery: any = {};
+    let additionalFilter = (person: IPerson) => true;
+  
+    if (searchQuery) {
+      const [firstName, lastName] = searchQuery.split(' ');
+      
+      mongoQuery = {
+        $or: [
+          { firstName: { $regex: firstName, $options: 'i' } },
+          ...(lastName ? [{ lastName: { $regex: lastName, $options: 'i' } }] : [])
+        ]
+      };
+  
+      additionalFilter = (person: IPerson): boolean => {
+        if (firstName === "=") {
+          return lastName 
+            ? person.lastName.toLowerCase().includes(lastName.toLowerCase())
+            : true;
+        }
+        
+        const matchesFirstName = person.firstName.toLowerCase().includes(firstName.toLowerCase());
+        const matchesLastName = lastName 
+          ? person.lastName.toLowerCase().includes(lastName.toLowerCase())
+          : true;
+        
+        return matchesFirstName && matchesLastName;
+      };
+    } else if (letter) {
+      mongoQuery = {
+        $or: [
+          { firstName: { $regex: `^${letter}`, $options: 'i' } },
+          { lastName: { $regex: `^${letter}`, $options: 'i' } }
+        ]
+      };
+    }
+  
+    return { mongoQuery, additionalFilter };
+  };
+  
+  const getPersonBasicInfo = (person: IPerson) => ({
+    id: person._id.toString(),
+    firstName: person.firstName,
+    lastName: person.lastName,
+    maidenName: person.maidenName,
+    birthDate: person.birthDate,
+    deathDate: person.deathDate,
+    gender: person.gender,
+    birthPlace: person.birthPlace,
+    deathPlace: person.deathPlace,
+    burialPlace: person.burialPlace,
+    photo: person.photo,
+    status: person.status
+  });
+  
+  const getPersonRelations = (person: IPerson, allPersons: IPerson[]): {
+    parents: RelationPerson[];
+    siblings: RelationPerson[];
+    spouses: RelationPerson[];
+    children: RelationPerson[];
+  } => {
+    const getRelatedPersons = (ids: mongoose.Types.ObjectId[], type: string): RelationPerson[] =>
+      allPersons
+        .filter(p => ids.some(id => id.toString() === p._id.toString()))
+        .map(p => ({
+          id: p._id,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          gender: p.gender,
+          type
+        }));
+  
+    return {
+      parents: getRelatedPersons(person.parents, 'blood'),
+      siblings: getRelatedPersons(person.siblings, 'blood'),
+      spouses: getRelatedPersons(
+        person.spouses.map(spouse => spouse.personId),
+        'married'
+      ),
+      children: getRelatedPersons(person.children, 'blood')
+    };
+  };
   export const getAllUserss = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Sprawdzenie obecności tokena w nagłówku Authorization
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1]; // Token w nagłówku Authorization
-  
+      // Weryfikacja tokena
+      const token = req.headers.authorization?.split(' ')[1];
       if (!token) {
-        console.log('====================================');
-        console.log(token);
-        console.log('====================================');
         res.status(401).json({ msg: 'Brak tokenu' });
         return;
       }
   
-      // Weryfikacja tokena
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      const user = decoded as { email: string }; // Zakładam, że użytkownik ma email w tokenie
-  
-      if (!user) {
+      if (typeof decoded === 'string' || !('email' in decoded)) {
         res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-        return;
       }
+      const { email } = decoded as { email: string };
   
-     
   
-      // Pobieranie użytkownika, a następnie jego osoby
-      const loggedInUser = await User.findOne({ email: user.email }) .populate({
-        path: 'persons'
-      }).exec();
-
-      if (!loggedInUser) {
-        res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
-        return;
-      }
-
-      const getPersonsByIds = (ids: mongoose.Types.ObjectId[]) =>
-        loggedInUser.persons.filter((p: IPerson) =>
-          ids.some(id => id.toString() === p._id.toString())
-        );
-      
-      
-        const getPersonsByIdsSpouses = (ids: mongoose.Types.ObjectId[]) =>
-          loggedInUser.persons.filter(p =>
-            ids.some(id => id.toString() === p._id.toString()) // Porównujemy personId z _id osób w loggedInUser.persons
-          );
-        
-       
-      
-      
+      // Pobranie użytkownika z osobami
+      const user = await User.findOne({ email })
+        .populate<{ persons: IPerson[] }>('persons')
+        .lean()
+        .exec();
   
-      let paginatedPersons = loggedInUser.persons;
-
+        if (!user) {
+          res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
+          return;
+       }
   
-      const totalUsers = paginatedPersons.length;
-  
-      const result = await Promise.all(paginatedPersons.map(async (person,i) => {
-        // Pobierz dane rodziców, rodzeństwa, małżonków i dzieci
-        const relations = {
-            Rodzice: getPersonsByIds(person.parents),
-            Rodzeństwo: getPersonsByIds(person.siblings),
-            Małżonkowie: getPersonsByIdsSpouses(person.spouses.map(spouse => spouse.personId)), // Mapujemy po personId
-            Dzieci: getPersonsByIds(person.children),
-        };
-  
-
-
-
-        // Zwróć sformatowane dane
-        return {
-          id: person._id.toString(),
-          firstName: person.firstName,
-          lastName: person.lastName,
-          maidenName: person.maidenName,
-          birthDate: person.birthDate,
-          deathDate: person.deathDate,
-          gender: person.gender,
-          birthPlace: person.birthPlace,
-          deathPlace: person.deathPlace,
-          burialPlace: person.burialPlace,
-          photo: person.photo,
-          status: person.status,
-          parents: relations.Rodzice.map((parent: IPerson) => ({
-                id: parent._id,
-                firstName: parent.firstName,
-                lastName: parent.lastName,
-                gender: parent.gender,
-                type: 'blood'
-              })),
-              siblings: relations.Rodzeństwo.map((sibling: IPerson) => ({
-                id: sibling._id,
-                firstName: sibling.firstName,
-                lastName: sibling.lastName,
-                gender: sibling.gender,
-                type: 'blood'
-              })),
-              spouses: relations.Małżonkowie.map((spouse: IPerson) => ({
-                id: spouse._id,
-                firstName: spouse.firstName,
-                lastName: spouse.lastName,
-                gender: spouse.gender,
-                type: 'married'
-              })),
-              children: relations.Dzieci.map((child: IPerson) => ({
-                id: child._id,
-                firstName: child.firstName,
-                lastName: child.lastName,
-                gender: child.gender,
-                type: 'blood'
-              })),
-        };
+      // Mapowanie wyników
+      const result = user.persons.map(person => ({
+        ...getPersonBasicInfo(person),
+        ...getPersonRelations(person, user.persons)
       }));
-
+  
       res.status(200).json({
-        // result
-        // loggedInUser: loggedInUser,
         users: result,
-        totalUsers,
-    });
+        totalUsers: result.length
+      });
+  
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Wystąpił błąd podczas pobierania użytkowników.' });
+      console.error('Błąd podczas pobierania użytkowników:', error);
+      const status = error instanceof jwt.JsonWebTokenError ? 401 : 500;
+      res.status(status).json({ 
+        message: error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania użytkowników.' 
+      });
     }
   };
   
@@ -1026,6 +835,8 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
             return;
         }
 
+
+        
         // Verify the token
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
         const user = decoded as UserDocument;
