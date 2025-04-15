@@ -23,6 +23,8 @@ const usePeople = (letter: string | null, page: number, searchQuery: string | nu
       });
 
       
+
+      
       setPeople(response.data.users);
       setTotalUsers(response.data.totalUsers);
       setTotalPages(response.data.totalPages);

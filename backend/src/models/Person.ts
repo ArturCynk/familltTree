@@ -1,5 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+
+
 export interface IPerson extends Document {
   _id: mongoose.Types.ObjectId;
   gender: 'male' | 'female' | 'non-binary';

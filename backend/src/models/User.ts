@@ -1,5 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { PersonSchema, IPerson } from './Person'; // Import PersonSchema
+import { PersonSchema, IPerson } from './Person';
+
+
 
 export interface UserDocument extends Document {
   email: string;

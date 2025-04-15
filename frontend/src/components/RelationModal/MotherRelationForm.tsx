@@ -79,11 +79,35 @@ const MotherRelationForm: React.FC<MotherRelationFormProps> = ({
     );
   };
 
+  // ✅ Dodana funkcja walidacji
+  const validateForm = () => {
+    if (!selectedOption) {
+      setError("Wybierz jedną z opcji (Tak / Nie / Niektóre).");
+      return false;
+    }
+
+    if (selectedOption === "some" && selectedIds.length === 0) {
+      setError("Zaznacz przynajmniej jedną osobę, jeśli wybierasz 'Niektóre'.");
+      return false;
+    }
+
+    setError("");
+    return true;
+  };
+
   return (
     <div className="space-y-4 p-5 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
       <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
         Czy dodać inne dzieci, które są rodzeństwem?
       </h3>
+
+      {/* ✅ Dodany blok błędu */}
+      {error && (
+        <div className="text-red-600 dark:text-red-400 text-sm font-medium">
+          {error}
+        </div>
+      )}
+
       <div className="space-y-3">
         {[{ value: "yes", label: "Tak" }, { value: "no", label: "Nie" }, { value: "some", label: "Niektóre" }].map((option) => (
           <label key={option.value} className="flex items-center space-x-3 cursor-pointer">
@@ -93,7 +117,10 @@ const MotherRelationForm: React.FC<MotherRelationFormProps> = ({
                 name="relation"
                 value={option.value}
                 checked={selectedOption === option.value}
-                onChange={() => setSelectedOption(option.value)}
+                onChange={() => {
+                  setSelectedOption(option.value);
+                  setError(""); // ✅ Czyszczenie błędu przy zmianie opcji
+                }}
                 className="sr-only peer"
               />
               <div
@@ -129,7 +156,10 @@ const MotherRelationForm: React.FC<MotherRelationFormProps> = ({
                             ? "border-indigo-300 bg-indigo-50 dark:bg-indigo-900 dark:border-indigo-400"
                             : "border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                         }`}
-                        onClick={() => handleSelect(p.id)}
+                        onClick={() => {
+                          handleSelect(p.id);
+                          setError(""); // ✅ Czyszczenie błędu po kliknięciu
+                        }}
                       >
                         <FontAwesomeIcon
                           icon={p.gender === "male" ? faMale : p.gender === "female" ? faFemale : faGenderless}

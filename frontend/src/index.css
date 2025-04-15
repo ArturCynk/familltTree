@@ -1,3 +1,32 @@
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.high-contrast {
+  --contrast-primary: #000;
+  --contrast-secondary: #fff;
+  --contrast-accent: #ffff00;
+}
+
+.high-contrast body {
+  background: var(--contrast-secondary) !important;
+  color: var(--contrast-primary) !important;
+}
+
+.high-contrast .dark {
+  background: var(--contrast-primary) !important;
+  color: var(--contrast-secondary) !important;
+}
+
+.high-contrast a,
+.high-contrast button,
+.high-contrast [role="button"] {
+  outline: 2px solid var(--contrast-accent) !important;
+}
+
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select {
+  border: 2px solid var(--contrast-primary) !important;
+}

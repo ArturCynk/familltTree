@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPen, faPlus, faUnlink, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faPen, faPlus, faUnlink, faEllipsisV, faTrash } from '@fortawesome/free-solid-svg-icons';
 import Modal from '../deleteRelation/Modal';
+import LoadingSpinner from "../Loader/LoadingSpinner";
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 interface Person {
   id: string;
@@ -52,6 +55,31 @@ const TableRow: React.FC<TableRowProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+
+  const confirmDelete = async () => {
+    if (selectedPerson && selectedPerson.id) {
+      setIsDeleting(true);
+      try {
+        const token = localStorage.getItem('authToken');
+        await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        toast.success('Osoba została pomyślnie usunięta!');
+        onSuccess(); // wywołuje refetch po stronie nadrzędnej
+      } catch (error) {
+        toast.error('Wystąpił błąd podczas usuwania osoby.');
+      } finally {
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+      }
+    }
+  };
+
 
   const handleOpenDeleteModal = (person: Person) => {
     setSelectedPerson(person);
@@ -74,18 +102,16 @@ const TableRow: React.FC<TableRowProps> = ({
     <>
       <tr
         key={person.id}
-        className={`relative group border-b border-gray-100 dark:border-gray-700 transition-all duration-200 ease-out hover:shadow-md dark:hover:shadow-gray-800 ${
-          showColorCoding ? getColorByGender(person.gender) : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-        }`}
+        className={`relative group border-b border-gray-100 dark:border-gray-700 transition-all duration-200 ease-out hover:shadow-md dark:hover:shadow-gray-800 ${showColorCoding ? getColorByGender(person.gender) : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+          }`}
         onClick={onClickRow}
       >
         {/* Kolumna imię i nazwisko */}
         <td className="px-6 py-4">
           <div className="flex items-center">
             <div
-              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-white font-medium mr-4 ${
-                showColorCoding ? getInitialsBgByGender(person.gender) : 'bg-indigo-500 dark:bg-indigo-600'
-              }`}
+              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-white font-medium mr-4 ${showColorCoding ? getInitialsBgByGender(person.gender) : 'bg-indigo-500 dark:bg-indigo-600'
+                }`}
             >
               {person.firstName[0]}
               {person.lastName[0]}
@@ -166,6 +192,19 @@ const TableRow: React.FC<TableRowProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setSelectedPerson(person);
+                      setIsDeleteModalOpen(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+                  >
+                    <FontAwesomeIcon icon={faTrash} className="mr-3" />
+                    Usuń osobę
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       handleOpenDeleteModal(person);
                     }}
                     className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
@@ -188,6 +227,41 @@ const TableRow: React.FC<TableRowProps> = ({
           person={selectedPerson}
         />
       )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Potwierdzenie usunięcia</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Czy na pewno chcesz usunąć tę osobę? Tej akcji nie można cofnąć.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className={`px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-rose-600 text-white font-medium hover:from-red-700 hover:to-rose-700 transition-colors flex items-center gap-2 ${isDeleting ? 'opacity-75 cursor-not-allowed' : ''
+                  }`}
+              >
+                {isDeleting ? (
+                  <LoadingSpinner />
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faTrash} />
+                    Usuń
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 };

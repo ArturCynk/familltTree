@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
-
 import Person, { IPerson } from '../models/Person';
 import User, { UserDocument } from '../models/User'; 
 import jwt from 'jsonwebtoken';
@@ -36,20 +35,7 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       status
     } = req.body;
 
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; 
-
-    if (!token) {
-      res.status(401).json({ msg: 'Brak tokenu' });
-      return;
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
-      if (err) {
-        res.status(403).json({ msg: 'Token jest nieprawidłowy' });
-      }
-      req.user = decoded as UserDocument;
-    });
+   
 
     let photoPath: string | null = null;
 
@@ -87,7 +73,6 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
       children: [],
     });
 
-    console.log(newPerson);
 
     await newPerson.save();  // Save the subdocument first
     const updatedUser = await User.findOneAndUpdate(
@@ -125,33 +110,12 @@ export const updatePerson = async (req: Request, res: Response): Promise<void> =
     const personId = req.params.id;
     const updateData = req.body;
 
-    // Check for token in Authorization header
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Extract token
-
-    if (!token) {
-      res.status(401).json({ msg: 'Brak tokenu' });
-      return;
-    }
-
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-    const user = decoded as UserDocument;
-
-    if (!user) {
-      res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-      return;
-    }
-
-    // Fetch the logged-in user and populate their persons field
-    const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+    const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
 
     if (!loggedInUser) {
       res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
       return;
     }
-
-    
 
     // Find the person index in the logged-in user's persons list
     const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === personId);
@@ -213,26 +177,7 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
   try {
     const personId = req.params.id;
 
-    // Check for token in Authorization header
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Extract token
-
-    if (!token) {
-      res.status(401).json({ msg: 'Brak tokenu' });
-      return;
-    }
-
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-    const user = decoded as UserDocument;
-
-    if (!user) {
-      res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-      return;
-    }
-
-    // Fetch the logged-in user and populate their persons field
-    const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+    const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
 
     if (!loggedInUser) {
       res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
@@ -253,8 +198,6 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
     // Save the updated user document
     await loggedInUser.save();
 
-
-
     // Return success response
     res.status(200).json({ message: 'Osoba została usunięta'});
 
@@ -264,63 +207,9 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-
-// Funkcja do pobierania liczby osób w drzewie
-export const getPersonCount = async (req: Request, res: Response): Promise<void> => {
-  try {
-    // Sprawdź obecność tokena w nagłówku Authorization
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Token w nagłówku Authorization
-
-    if (!token) {
-      res.status(401).json({ msg: 'Brak tokenu' });
-      return;
-    }
-
-    // Weryfikacja tokena
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-    const user = decoded as UserDocument;
-
-    if (!user) {
-      res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-      return;
-    }
-
-    // Znajdź użytkownika na podstawie emaila
-    const foundUser = await User.findOne({ email: user.email }).populate('persons');
-    
-    if (!foundUser) {
-      res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
-      return;
-    }
-
-    // Zlicz liczbę osób przypisanych do użytkownika
-    const personCount = foundUser.persons.length;
-
-    // Zwróć liczbę osób
-    res.status(200).json({ count: personCount });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Wystąpił błąd podczas pobierania liczby osób', error });
-  }
-};
-
-
   export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Weryfikacja tokena
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token) {
-        res.status(401).json({ msg: 'Brak tokenu' });
-        return;
-      }
-  
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      if (typeof decoded === 'string' || !('email' in decoded)) {
-        res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-      }
-      const { email } = decoded as { email: string };
-  
+
       // Pobranie parametrów zapytania
       const searchQuery = req.query.searchQuery as string | undefined;
       const letter = req.query.letter as string | undefined;
@@ -331,7 +220,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
       const { mongoQuery, additionalFilter } = buildSearchConditions(searchQuery, letter);
   
       // Pobranie użytkownika z osobami
-      const loggedInUser = await User.findOne({ email })
+      const loggedInUser = await User.findOne({ email : req.user?.email })
         .populate<{ persons: IPerson[] }>({
           path: 'persons',
           match: mongoQuery,
@@ -357,13 +246,15 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         ...getPersonBasicInfo(person),
         ...getPersonRelations(person, loggedInUser.persons)
       }));
+
+
   
-      res.status(200).json({
+      res.status(200).send(JSON.stringify({
         users: result,
         totalUsers,
         currentPage: page,
         totalPages: Math.ceil(totalUsers / limit)
-      });
+      },null,0))
     } catch (error) {
       console.error('Błąd podczas pobierania użytkowników:', error);
       const status = error instanceof jwt.JsonWebTokenError ? 401 : 500;
@@ -437,9 +328,9 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
     deathDate: person.deathDate,
     gender: person.gender,
     birthPlace: person.birthPlace,
-    deathPlace: person.deathPlace,
+    // deathPlace: person.deathPlace,
     burialPlace: person.burialPlace,
-    photo: person.photo,
+    // photo: person.photo,
     status: person.status
   });
   
@@ -472,22 +363,8 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
   };
   export const getAllUserss = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Weryfikacja tokena
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token) {
-        res.status(401).json({ msg: 'Brak tokenu' });
-        return;
-      }
-  
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      if (typeof decoded === 'string' || !('email' in decoded)) {
-        res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-      }
-      const { email } = decoded as { email: string };
-  
-  
       // Pobranie użytkownika z osobami
-      const user = await User.findOne({ email })
+      const user = await User.findOne({ email: req.user?.email })
         .populate<{ persons: IPerson[] }>('persons')
         .lean()
         .exec();
@@ -503,10 +380,10 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
         ...getPersonRelations(person, user.persons)
       }));
   
-      res.status(200).json({
+      res.status(200).send(JSON.stringify({
         users: result,
         totalUsers: result.length
-      });
+      },null,0))
   
     } catch (error) {
       console.error('Błąd podczas pobierania użytkowników:', error);
@@ -521,26 +398,7 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
 
   export const getUser = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Check for token in Authorization header
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1]; // Extract token
-  
-      if (!token) {
-        res.status(401).json({ msg: 'Brak tokenu' });
-        return;
-      }
-  
-      // Verify the token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      const user = decoded as UserDocument;
-  
-      if (!user) {
-        res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-        return;
-      }
-  
-      // Fetch the logged-in user and populate their persons field
-      const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+      const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
   
       if (!loggedInUser) {
         res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
@@ -595,26 +453,8 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
             id // ID of the existing person to whom we are adding a relationship
         } = req.body;
 
-        // Check for token in Authorization header
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-
-        if (!token) {
-            res.status(401).json({ msg: 'Brak tokenu' });
-            return;
-        }
-
-        // Verify the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-        const user = decoded as UserDocument;
-
-        if (!user) {
-            res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-            return;
-        }
-
         // Fetch the logged-in user and populate their persons field
-        const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+        const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
 
         if (!loggedInUser) {
             res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
@@ -826,28 +666,8 @@ export const getPersonCount = async (req: Request, res: Response): Promise<void>
     try {
         const { id } = req.params;
 
-        // Check for token in Authorization header
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-
-        if (!token) {
-            res.status(401).json({ msg: 'Brak tokenu' });
-            return;
-        }
-
-
-        
-        // Verify the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-        const user = decoded as UserDocument;
-
-        if (!user) {
-            res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-            return;
-        }
-
         // Fetch the logged-in user and populate their persons field
-        const loggedInUser = await User.findOne({ email: user.email }).populate({
+        const loggedInUser = await User.findOne({ email: req.user?.email }).populate({
             path: 'persons',
             populate: [
                 {
@@ -992,26 +812,8 @@ export const getRelations = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    // Check for token in Authorization header
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    console.log('====================================');
-    console.log(token);
-    console.log('====================================');
-    if (!token) {
-      return res.status(401).json({ msg: 'Brak tokenu' });
-    }
 
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-    const user = decoded as UserDocument;
-
-    if (!user) {
-      return res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-    }
-
-    // Fetch the logged-in user and populate their persons field
-    const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+    const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
 
     if (!loggedInUser) {
       return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
@@ -1080,23 +882,8 @@ export const deleteRelationship = async (req: Request, res: Response) => {
   const { personId, relationId } = req.params;
 
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ msg: 'Brak tokenu' });
-    }
-
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-    const user = decoded as UserDocument;
-
-    if (!user) {
-      return res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-    }
-
     // Fetch the logged-in user and populate their persons field
-    const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+    const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
 
     if (!loggedInUser) {
       return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
@@ -1177,23 +964,7 @@ export const getPersonsWithoutRelation = async (req: Request, res: Response) => 
   const personId = req.params.id; // ID osoby, dla której szukamy osób bez relacji
 
   try {
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1];
-
-      if (!token) {
-          return res.status(401).json({ msg: 'Brak tokenu' });
-      }
-
-      // Verify the token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-      const user = decoded as UserDocument;
-
-      if (!user) {
-          return res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-      }
-
-      // Fetch the logged-in user and populate their persons field
-      const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+      const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
 
       if (!loggedInUser) {
           return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
@@ -1251,21 +1022,7 @@ export const addRelation = async (req: Request, res: Response) => {
   }
 
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ msg: 'Brak tokenu' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-    const user = decoded as UserDocument;
-
-    if (!user) {
-      return res.status(401).json({ msg: 'Token jest nieprawidłowy' });
-    }
-
-    const loggedInUser = await User.findOne({ email: user.email }).populate('persons').exec();
+    const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
 
     if (!loggedInUser) {
       return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });

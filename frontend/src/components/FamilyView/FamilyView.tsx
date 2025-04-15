@@ -30,7 +30,7 @@ interface DisplayOptions {
   showGenderColors: boolean;
 }
 
-const NODE_WIDTH = 130;
+const NODE_WIDTH = 150;
 const NODE_HEIGHT = 130;
 
 const getNodeStyle = ({ left, top }: Readonly<ExtNode>): CSSProperties => {

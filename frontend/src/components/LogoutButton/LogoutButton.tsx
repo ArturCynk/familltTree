@@ -13,7 +13,6 @@ const LogoutButton: React.FC = () => {
     setIsActive(true);
     setTimeout(() => {
       localStorage.removeItem('authToken');
-      localStorage.removeItem('userData'); // Clear additional user data
       toast.success('Wylogowano pomyślnie!', {
         position: 'bottom-right',
         autoClose: 3000,

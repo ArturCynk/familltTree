@@ -4,7 +4,7 @@ import bodyParser from "body-parser";
 import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
-import personRoutes from './src/routes/personRoutes'; // Importowanie trasy
+import personRoutes from './src/routes/personRoutes'; 
 import authRoutes from './src/routes/authRoutes'
 import connectDB from './src/config/database';
 
@@ -15,6 +15,26 @@ const port = process.env.PORT || 3000;
 const MONGOURL = process.env.MONGOURL;
 
 app.use(cors());
+
+// import compression from 'compression';
+import { createUserWithFamilyTree } from './src/utils/createUserWithFamilyTree';
+import bcrypt from 'bcryptjs';
+// app.use(compression());
+
+// Przykład użycia
+createUserWithFamilyTree('test@example.com', 'securepassword123');
+
+
+// Funkcja uruchamiająca logikę asynchroniczną
+const run = async () => {
+  const hashedPassword = await bcrypt.hash('securepassword123', 10);
+  console.log('====================================');
+  console.log(hashedPassword);
+  console.log('====================================');
+};
+
+run();
+
 
 app.use(bodyParser.json());
 

@@ -250,17 +250,7 @@ const PeopleTable: React.FC = () => {
         </div>
       </div>
 
-      {/* Sidebar Panel */}
-      {selectedPerson && (
-        <ProfileCard
-          isSidebarOpen={isSidebarOpen}
-          closeSidebar={closeSidebar}
-          selectedPerson={selectedPerson}
-          onOpenRelationModal={openRelationModal}
-          onOpenEditModal={openEditModal}
-          refetch={refetch}
-        />
-      )}
+     
 
       {/* Modals */}
       {isRelationModalOpen && selectedPerson && (

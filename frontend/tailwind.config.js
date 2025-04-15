@@ -1,37 +1,38 @@
+// tailwind.config.js
 module.exports = {
-  darkMode: 'class', // Ustawienia domyślne dla trybu ciemnego
-  content: ['./src/**/*.{js,jsx,ts,tsx}'], // Twój folder źródłowy
+  darkMode: 'class',
+  content: [
+    './src/**/*.{js,jsx,ts,tsx}',
+  ],
   theme: {
     extend: {
       colors: {
-        male: "#a4ecff",
-        female: "#fdaed8",
+        accent: {
+          DEFAULT: 'rgb(var(--color-accent))',
+        },
+        backgroundImage: {
+          'gradient-to-r': 'linear-gradient(to right)',
+        },
         indigo: {
-          500: '#6366f1',
           600: '#4f46e5',
         },
         blue: {
-          500: '#3b82f6',
           600: '#2563eb',
         },
-        red: {
-          500: '#ef4444',
-          600: '#dc2626',
-        },
-        green: {
-          500: '#10b981',
+        emerald: {
           600: '#059669',
         },
-        purple: {
-          500: '#a855f7',
-          600: '#9333ea',
+        rose: {
+          600: '#e11d48',
         },
-        pink: {
-          500: '#ec4899',
-          600: '#db2777',
+        amber: {
+          600: '#d97706',
         },
       },
     },
+  },
+  variants: {
+    extend: {},
   },
   plugins: [],
 }

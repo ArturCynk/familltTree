@@ -26,9 +26,12 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
   const [deathDateTo, setDeathDateTo] = useState<string>('');
   const [deathPlace, setDeathPlace] = useState<string>('');
   const [burialPlace, setBurialPlace] = useState<string>('');
-  const [photo, setPhoto] = useState<File | null>(null); 
+  const [photo, setPhoto] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string>(''); // URL zdjęcia
-  const [isFileUpload, setIsFileUpload] = useState<boolean>(true); 
+  const [isFileUpload, setIsFileUpload] = useState<boolean>(true);
+  const [firstNameError, setFirstNameError] = useState<string | null>(null);
+  const [lastNameError, setLastNameError] = useState<string | null>(null);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -39,8 +42,24 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!firstName || !lastName) {
-      toast.error('Imię i nazwisko są wymagane.');
+    let hasError = false;
+
+    if (!firstName.trim()) {
+      setFirstNameError('Imię jest wymagane.');
+      hasError = true;
+    } else {
+      setFirstNameError(null);
+    }
+
+    if (!lastName.trim()) {
+      setLastNameError('Nazwisko jest wymagane.');
+      hasError = true;
+    } else {
+      setLastNameError(null);
+    }
+
+    if (hasError) {
+      toast.error('Proszę uzupełnić wymagane pola.');
       return;
     }
 
@@ -76,11 +95,11 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
 
     console.log(personData);
     try {
-      const token = localStorage.getItem('authToken'); 
+      const token = localStorage.getItem('authToken');
 
       await axios.post('http://localhost:3001/api/person/add', personData, {
         headers: {
-          Authorization: `Bearer ${token}`, 
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
@@ -106,7 +125,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
             <div>
               <h2 className="text-2xl font-bold text-white tracking-tight">Dodaj nową osobę do drzewa genealogicznego</h2>
             </div>
-            <button 
+            <button
               onClick={onClose}
               className="p-1.5 rounded-full hover:bg-white/10 transition-colors duration-200"
               aria-label="Zamknij"
@@ -126,12 +145,18 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
               <SectionTitle title="Płeć" />
               <div className="flex flex-wrap gap-3">
                 {[
-                  { value: 'male', label: 'Mężczyzna', icon: '♂', 
-                    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700' },
-                  { value: 'female', label: 'Kobieta', icon: '♀', 
-                    color: 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200 border-pink-200 dark:border-pink-700' },
-                  { value: 'non-binary', label: 'Niebinarny', icon: '⚧', 
-                    color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700' }
+                  {
+                    value: 'male', label: 'Mężczyzna', icon: '♂',
+                    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700'
+                  },
+                  {
+                    value: 'female', label: 'Kobieta', icon: '♀',
+                    color: 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200 border-pink-200 dark:border-pink-700'
+                  },
+                  {
+                    value: 'non-binary', label: 'Niebinarny', icon: '⚧',
+                    color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700'
+                  }
                 ].map((option) => (
                   <label key={option.value} className={`flex-1 min-w-[120px]`}>
                     <input
@@ -172,9 +197,22 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                         id={field.id}
                         type="text"
                         value={field.value}
-                        onChange={(e) => field.setter(e.target.value)}
-                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                        onChange={(e) => {
+                          field.setter(e.target.value);
+                          if (field.id === 'firstName') setFirstNameError(null);
+                          if (field.id === 'lastName') setLastNameError(null);
+                        }}
+                        className={`block w-full px-4 py-2.5 border ${(field.id === 'firstName' && firstNameError) || (field.id === 'lastName' && lastNameError)
+                            ? 'border-red-500'
+                            : 'border-gray-300 dark:border-gray-600'
+                          } rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700`}
                       />
+                      {(field.id === 'firstName' && firstNameError) && (
+                        <p className="text-red-500 text-xs mt-1">{firstNameError}</p>
+                      )}
+                      {(field.id === 'lastName' && lastNameError) && (
+                        <p className="text-red-500 text-xs mt-1">{lastNameError}</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -287,11 +325,10 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={() => setIsFileUpload(true)}
-                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${
-                    isFileUpload 
-                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-800' 
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${isFileUpload
+                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-800'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -303,11 +340,10 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={() => setIsFileUpload(false)}
-                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${
-                    !isFileUpload 
-                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-800' 
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${!isFileUpload
+                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-800'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -328,11 +364,11 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                       <p className="mb-2 text-sm text-gray-500 dark:text-gray-400 mt-3"><span className="font-semibold">Kliknij aby wybrać plik</span></p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (MAX. 5MB)</p>
                     </div>
-                    <input 
-                      id="photo" 
-                      type="file" 
-                      onChange={handleFileChange} 
-                      className="hidden" 
+                    <input
+                      id="photo"
+                      type="file"
+                      onChange={handleFileChange}
+                      className="hidden"
                       accept="image/*"
                     />
                   </label>
@@ -386,13 +422,13 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                   <div className="w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-red-500 dark:peer-checked:border-red-400 peer-checked:ring-2 peer-checked:ring-red-100 dark:peer-checked:ring-red-900/50 peer-checked:bg-red-50 dark:peer-checked:bg-red-900/20 bg-white dark:bg-gray-700">
                     <div className="flex items-center justify-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-gradient-to-br from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 flex items-center justify-center text-white shadow-md">
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          className="h-3.5 w-3.5" 
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-3.5 w-3.5"
                           viewBox="0 0 384 512"
                           fill="currentColor"
                         >
-                          <path d="M320 128c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V32c0-17.7-14.3-32-32-32s-32 14.3-32 32V64H64C46.3 64 32 78.3 32 96s14.3 32 32 32H192V480c0 17.7 14.3 32 32 32s32-14.3 32-32V128h64z"/>
+                          <path d="M320 128c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V32c0-17.7-14.3-32-32-32s-32 14.3-32 32V64H64C46.3 64 32 78.3 32 96s14.3 32 32 32H192V480c0 17.7 14.3 32 32 32s32-14.3 32-32V128h64z" />
                         </svg>
                       </span>
                       <span className="font-medium">Zmarły</span>
@@ -411,7 +447,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                   </svg>
                   Informacje o śmierci
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ daty</label>
@@ -509,7 +545,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({ isOpen, onClose }) => {
                 Dodaj osobę
               </button>
             </div>
-            <div className="h-2"></div> 
+            <div className="h-2"></div>
           </form>
         </div>
       </div>

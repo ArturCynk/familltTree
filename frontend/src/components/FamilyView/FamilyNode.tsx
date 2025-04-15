@@ -67,6 +67,7 @@ export const FamilyNode = React.memo(
         return dateString;
       }
     };
+    
 
     return (
       <div

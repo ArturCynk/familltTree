@@ -4,11 +4,12 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import MotherRelationForm from './MotherRelationForm';
 import './app.css'
+
 interface AddPersonModalProps {
   isOpen: boolean;
   onClose: () => void;
-  relationLabel: string; // Etykieta relacji
-  relationType: string; // Typ relacji (angielski)
+  relationLabel: string;
+  relationType: string;
   id: string;
 }
 
@@ -37,6 +38,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
   const [isFileUpload, setIsFileUpload] = useState<boolean>(true);
   const [selectedOption, setSelectedOption] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [errors, setErrors] = useState<{firstName?: string; lastName?: string}>({});
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -44,11 +46,21 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
     }
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: {firstName?: string; lastName?: string} = {};
+    
+    if (!firstName.trim()) newErrors.firstName = 'Imię jest wymagane';
+    if (!lastName.trim()) newErrors.lastName = 'Nazwisko jest wymagane';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!firstName || !lastName) {
-      toast.error('Imię i nazwisko są wymagane.');
+    if (!validateForm()) {
+      toast.error('Proszę uzupełnić wymagane pola');
       return;
     }
 
@@ -113,7 +125,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 text-white/90 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300  bg-black/50 dark:bg-black/70 backdrop-blur-sm"
       onClick={handleClose}
     >
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-3xl mx-4 overflow-hidden max-h-[95vh] transform transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] scale-95 opacity-0 animate-modalEnter">
@@ -176,27 +188,71 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
             <div className="space-y-4">
               <SectionTitle title="Dane osobowe" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {[
-                  { id: 'firstName', label: 'Pierwsze imię', value: firstName, setter: setFirstName },
-                  { id: 'middleName', label: 'Drugie imię', value: middleName, setter: setMiddleName },
-                  { id: 'lastName', label: 'Nazwisko', value: lastName, setter: setLastName },
-                  { id: 'maidenName', label: 'Nazwisko panieńskie', value: maidenName, setter: setMaidenName }
-                ].map((field) => (
-                  <div key={field.id} className="space-y-1">
-                    <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {field.label}
-                    </label>
-                    <div className="relative">
-                      <input
-                        id={field.id}
-                        type="text"
-                        value={field.value}
-                        onChange={(e) => field.setter(e.target.value)}
-                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
-                      />
-                    </div>
+                <div className="space-y-1">
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Pierwsze imię <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="firstName"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className={`block black w-full px-4 py-2.5 border ${errors.firstName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700`}
+                    />
                   </div>
-                ))}
+                  {errors.firstName && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.firstName}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-1">
+                  <label htmlFor="middleName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Drugie imię
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="middleName"
+                      type="text"
+                      value={middleName}
+                      onChange={(e) => setMiddleName(e.target.value)}
+                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Nazwisko <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className={`block w-full px-4 py-2.5 border ${errors.lastName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700`}
+                    />
+                  </div>
+                  {errors.lastName && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.lastName}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-1">
+                  <label htmlFor="maidenName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Nazwisko panieńskie
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="maidenName"
+                      type="text"
+                      value={maidenName}
+                      onChange={(e) => setMaidenName(e.target.value)}
+                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
