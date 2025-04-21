@@ -14,7 +14,6 @@ import type { CSSProperties } from 'react';
 import NotAuthenticatedScreen from '../NotAuthenticatedScreen/NotAuthenticatedScreen';
 import { SearchControlPanel } from './SearchControlPanel';
 
-
 interface FamilyData {
   nodes: Node[];
   rootId: string;
@@ -53,6 +52,7 @@ const FamilyView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [previousRoot, setPreviousRoot] = useState<string | null>(null);
+  const [initialRootId, setInitialRootId] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isRelationModalOpen, setIsRelationModalOpen] = useState<boolean>(false);
   const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boolean>(false);
@@ -81,10 +81,18 @@ const FamilyView: React.FC = () => {
       });
       
       if (response.data?.users?.length) {
+        const savedRootId = localStorage.getItem('currentRootId');
+        const defaultRootId = response.data.users[0].id;
+        
+        const rootIdToUse = savedRootId && response.data.users.some((node: Node) => node.id === savedRootId) 
+          ? savedRootId 
+          : defaultRootId;
+
         setFamilyData({
           nodes: response.data.users,
-          rootId: response.data.users[0].id,
+          rootId: rootIdToUse,
         });
+        setInitialRootId(rootIdToUse);
       } else {
         setError('No family data found in response.');
       }
@@ -101,20 +109,24 @@ const FamilyView: React.FC = () => {
 
   useEffect(() => {
     fetchFamilyData();
-  }, [fetchFamilyData]);
-
-  useEffect(() => {
+    
     const storedRoots = localStorage.getItem('recentRoots');
     if (storedRoots) {
       setRecentRoots(JSON.parse(storedRoots));
     }
-  }, []);
+
+    return () => {
+      // Opcjonalne czyszczenie przy unmount
+      // localStorage.removeItem('currentRootId');
+    };
+  }, [fetchFamilyData]);
 
   const handleRootChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newRootId = event.target.value;
     if (familyData) {
       setPreviousRoot(familyData.rootId);
       setFamilyData({ ...familyData, rootId: newRootId });
+      localStorage.setItem('currentRootId', newRootId);
     }
 
     const selectedPerson = familyData?.nodes.find(node => node.id === newRootId);
@@ -128,9 +140,17 @@ const FamilyView: React.FC = () => {
     }
   };
 
+  const resetToDefaultRoot = useCallback(() => {
+    if (familyData && initialRootId) {
+      setFamilyData({ ...familyData, rootId: initialRootId });
+      localStorage.setItem('currentRootId', initialRootId);
+    }
+  }, [familyData, initialRootId]);
+
   const goToPreviousRoot = useCallback(() => {
     if (previousRoot && familyData) {
       setFamilyData({ ...familyData, rootId: previousRoot });
+      localStorage.setItem('currentRootId', previousRoot);
       setPreviousRoot(null);
     }
   }, [previousRoot, familyData]);
@@ -258,7 +278,10 @@ const FamilyView: React.FC = () => {
                     isRoot={node.id === familyData.rootId}
                     isHover={node.id === hoverId}
                     onClick={setSelectId}
-                    onSubClick={(id: string) => setFamilyData(prev => prev ? { ...prev, rootId: id } : prev)}
+                    onSubClick={(id: string) => {
+                      setFamilyData(prev => prev ? { ...prev, rootId: id } : prev);
+                      localStorage.setItem('currentRootId', id);
+                    }}
                     style={getNodeStyle(node)}
                     displayOptions={displayOptions}
                   />

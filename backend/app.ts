@@ -16,26 +16,6 @@ const MONGOURL = process.env.MONGOURL;
 
 app.use(cors());
 
-// import compression from 'compression';
-import { createUserWithFamilyTree } from './src/utils/createUserWithFamilyTree';
-import bcrypt from 'bcryptjs';
-// app.use(compression());
-
-// Przykład użycia
-createUserWithFamilyTree('test@example.com', 'securepassword123');
-
-
-// Funkcja uruchamiająca logikę asynchroniczną
-const run = async () => {
-  const hashedPassword = await bcrypt.hash('securepassword123', 10);
-  console.log('====================================');
-  console.log(hashedPassword);
-  console.log('====================================');
-};
-
-run();
-
-
 app.use(bodyParser.json());
 
 connectDB(MONGOURL);
