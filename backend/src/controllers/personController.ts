@@ -570,22 +570,97 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
                                   } 
                                 });
                                 break;
-                            case 'Daughter':
-                            case 'Son':
-                              existingPerson.children.forEach(async children => {
-                                const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === children.toString());
-                                let person = loggedInUser.persons[personIndex];
+                                case 'Daughter':
+                                  case 'Son':
+                                      // Dodaj dziecko do istniejącej osoby
+                                      newPerson.parents.push(existingPerson._id);
+                                      existingPerson.children.push(newPerson._id);
 
-                                if (person) {
-                                  person.siblings.push(newPerson._id);
-                                  newPerson.siblings.push(person._id)
-                                } 
-                              });
-                              await loggedInUser.save();
-
-                              newPerson.parents.push(existingPerson._id); // Add the child to the new person
-                                existingPerson.children.push(newPerson._id); // Add the parent to the existing person
-                                break;
+                                      if (existingPerson.spouses.length === 0) {
+                                        const unknownGender = existingPerson.gender === 'female' ? 'male' : 'female';
+                                        
+                                        const unknownParent = new Person({
+                                            firstName: "Nieznany",
+                                            lastName: existingPerson.lastName,
+                                            gender: unknownGender,
+                                            status: 'alive'
+                                        });
+                                
+                                        // Powiąż nieznanego rodzica z istniejącą osobą
+                                        existingPerson.spouses.push({
+                                            personId: unknownParent._id,
+                                            weddingDate: new Date()
+                                        });
+                                
+                                        unknownParent.spouses.push({
+                                            personId: existingPerson._id,
+                                            weddingDate: new Date()
+                                        });
+                                
+                                        // Dodaj do użytkownika
+                                        loggedInUser.persons.push(unknownParent);
+                                        await unknownParent.save();
+                                    }
+                                  
+                                      // Automatycznie dodaj dziecko do WSZYSTKICH małżonków/partnerów
+                                      for (const spouse of existingPerson.spouses) {
+                                          const spousePerson = loggedInUser.persons.find(
+                                              (p: IPerson) => p._id.toString() === spouse.personId.toString()
+                                          );
+                                  
+                                          if (spousePerson) {
+                                              // Dodaj dziecko do małżonka
+                                              if (!spousePerson.children.includes(newPerson._id)) {
+                                                  spousePerson.children.push(newPerson._id);
+                                              }
+                                  
+                                              // Dodaj małżonka jako rodzica dziecka
+                                              if (!newPerson.parents.includes(spousePerson._id)) {
+                                                  newPerson.parents.push(spousePerson._id);
+                                              }
+                                  
+                                              // Aktualizuj rodzeństwo dla wszystkich dzieci małżonka
+                                              spousePerson.children.forEach(async (childId: any) => {
+                                                  if (childId.toString() !== newPerson._id.toString()) {
+                                                      const sibling = loggedInUser.persons.find(
+                                                          (p: IPerson) => p._id.toString() === childId.toString()
+                                                      );
+                                  
+                                                      if (sibling) {
+                                                          if (!sibling.siblings.includes(newPerson._id)) {
+                                                              sibling.siblings.push(newPerson._id);
+                                                          }
+                                                          if (!newPerson.siblings.includes(sibling._id)) {
+                                                              newPerson.siblings.push(sibling._id);
+                                                          }
+                                                          await sibling.save();
+                                                      }
+                                                  }
+                                              });
+                                  
+                                              await spousePerson.save();
+                                          }
+                                      }
+                                  
+                                      // Aktualizuj rodzeństwo dla istniejących dzieci
+                                      existingPerson.children.forEach(async (childId: any) => {
+                                          if (childId.toString() !== newPerson._id.toString()) {
+                                              const sibling = loggedInUser.persons.find(
+                                                  (p: IPerson) => p._id.toString() === childId.toString()
+                                              );
+                                  
+                                              if (sibling) {
+                                                  if (!sibling.siblings.includes(newPerson._id)) {
+                                                      sibling.siblings.push(newPerson._id);
+                                                  }
+                                                  if (!newPerson.siblings.includes(sibling._id)) {
+                                                      newPerson.siblings.push(sibling._id);
+                                                  }
+                                                  await sibling.save();
+                                              }
+                                          }
+                                      });
+                                      break;
 
 
                             case 'Partner':
