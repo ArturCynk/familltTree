@@ -592,10 +592,27 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
                                   
                                           loggedInUser.persons.push(unknownParent);
                                           await unknownParent.save();
+                                      } 
+
+                                      if(existingPerson.spouses.length === 1){
+                                        const spouseId = existingPerson.spouses[0].personId;
+                                        const spousePerson = loggedInUser.persons.find(
+                                            (p: IPerson) => p._id.toString() === spouseId.toString()
+                                        );
+                                
+                                        if (spousePerson) {
+                                            // Link child to spouse
+                                            if (!spousePerson.children.includes(newPerson._id)) {
+                                                spousePerson.children.push(newPerson._id);
+                                            }
+                                            if (!newPerson.parents.includes(spousePerson._id)) {
+                                                newPerson.parents.push(spousePerson._id);
+                                            }
                                       }
+                                    }
                                   
-                                      // Check if a spouse is selected (corrected 'length' typo)
-                                      if (selectedIds.length === 1) {
+                                      
+                                      if (selectedIds && selectedIds.length === 1) {
                                           const spouseId = selectedIds[0];
                                           const spousePerson = loggedInUser.persons.find(
                                               (p: IPerson) => p._id.toString() === spouseId.toString()
