@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import MotherRelationForm from './MotherRelationForm';
 import './app.css'
+import SpouseSelection from './SpouseSelection';
 
 interface AddPersonModalProps {
   isOpen: boolean;
@@ -587,6 +588,15 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                 personId={id}
                 selectedOption={selectedOption}
                 setSelectedOption={setSelectedOption}
+                selectedIds={selectedIds}
+                setSelectedIds={setSelectedIds}
+              />
+            )}
+
+
+            {(relationType === "Son" || relationType === "Daughter") && (
+                <SpouseSelection
+                personId={id}
                 selectedIds={selectedIds}
                 setSelectedIds={setSelectedIds}
               />
