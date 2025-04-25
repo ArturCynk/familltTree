@@ -23,6 +23,7 @@ export const registerUser = async (req: Request, res: Response) => {
             email,
             password: hashedPassword,
             isActive: false,
+            accountType:'private'
         });
 
         await newUser.save();
@@ -150,7 +151,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
     try {
         // Znajdź użytkownika po emailu
-        let user: UserDocument | null = await User.findOne({ email });
+        let user: UserDocument | null = await User.findOne({ email :  email});
 
         if (!user) {
             return res.status(404).json({ msg: 'Konto nie zostało znalezione' });
@@ -183,3 +184,37 @@ export const loginUser = async (req: Request, res: Response) => {
         return res.status(500).json({ msg: 'Błąd serwera' });
     }
 };
+
+export const getCurrentUser = async (req: Request, res: Response) => {
+    try {
+      const user = await User.findOne({ email: req.user?.email }).select('-persons -password')
+      if (!user) return res.status(404).json({ msg: 'User not found' });
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ msg: 'Server error' });
+    }
+  };
+
+  export const updateUser = async (req: Request, res: Response) => {
+    try {
+      const { email, accountType, newPassword } = req.body;
+      const user = await User.findOne({ email: req.user?.email }).select('-persons');
+  
+      if (!user) return res.status(404).json({ msg: 'User not found' });
+  
+      if (email) user.email = email;
+      if (accountType) user.accountType = accountType;
+  
+      if (newPassword) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+      }
+  
+      await user.save();
+      res.json({ msg: 'User updated successfully' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  };
+  

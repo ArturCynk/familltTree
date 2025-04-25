@@ -10,6 +10,7 @@ import ForgotPassword from './components/ForgotPassword/ForgotPassword';
 import ChangePassword from './components/ChangePassword/ChangePassword';
 import HomePage from './components/HomePage/HomePage';
 import FamilyView from './components/FamilyView/FamilyView';
+import UserSettings from './components/Settings/SettingsModal';
 
 const App: React.FC = () => {
   return (
@@ -22,6 +23,8 @@ const App: React.FC = () => {
           <Route path="/list-view" element={<ListView />} />
           <Route path="/" element={<HomePage />} />
           {/* Dodaj inne trasy w zależności od potrzeb */}
+          <Route path="/settings-page" element={<UserSettings />} />
+
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/activate/:token" element={<ActivateAccount />} />

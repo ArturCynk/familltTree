@@ -540,12 +540,9 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
                                     existingPerson.siblings.push(newPerson._id);
                                 }
 
-                               
-                                
                                 existingPerson.siblings.forEach(async sibling => {
                                   const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === sibling.toString());
                                   let person = loggedInUser.persons[personIndex];
-
 
                                   if (person) {
                                     person.siblings.push(newPerson._id);
@@ -564,12 +561,12 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
                                   const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === parent.toString());
                                   let person = loggedInUser.persons[personIndex];
 
-
                                   if (person) {
                                     person.children.push(newPerson._id);
                                   } 
                                 });
                                 break;
+
                                 case 'Daughter':
                                   case 'Son':
                                       // Add child to the existing person
@@ -733,8 +730,6 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
 };
 
 
-  
-  
   interface IEvent {
     type: 'Narodziny' | 'Śmierć' | 'Ślub';
     who: string; // Imię i nazwisko osoby

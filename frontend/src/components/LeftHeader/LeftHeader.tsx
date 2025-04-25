@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faUsers, faTree, faFan, faList, faCog
+  faUsers, faTree, faFan, faList, faCog, faSliders
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LogoutButton from '../LogoutButton/LogoutButton';
@@ -30,18 +30,17 @@ const LeftHeader: React.FC = () => {
           {navButtons.map((button) => (
             <div key={button.path} className="relative group">
               <button
-                className={`p-3 rounded-xl transition-all duration-300 flex items-center justify-center ${
-                  isActive(button.path)
+                className={`p-3 rounded-xl transition-all duration-300 flex items-center justify-center ${isActive(button.path)
                     ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg'
                     : 'bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 shadow-md hover:shadow-lg'
-                }`}
+                  }`}
                 onClick={() => navigate(button.path)}
                 onMouseEnter={() => setActiveTooltip(button.tooltip)}
                 onMouseLeave={() => setActiveTooltip(null)}
                 aria-label={button.tooltip}
               >
-                <FontAwesomeIcon 
-                  icon={button.icon} 
+                <FontAwesomeIcon
+                  icon={button.icon}
                   className={`transition-transform duration-300 ${isActive(button.path) ? 'scale-110' : 'group-hover:scale-110'}`}
                 />
               </button>
@@ -61,18 +60,17 @@ const LeftHeader: React.FC = () => {
         {/* Settings Button */}
         <div className="mb-4 relative">
           <button
-            className={`p-3 rounded-xl transition-all duration-300 flex items-center justify-center ${
-              isSettingsOpen
+            className={`p-3 rounded-xl transition-all duration-300 flex items-center justify-center ${isSettingsOpen
                 ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg'
                 : 'bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 shadow-md hover:shadow-lg'
-            }`}
+              }`}
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
             onMouseEnter={() => setActiveTooltip('Ustawienia')}
             onMouseLeave={() => setActiveTooltip(null)}
             aria-label="Ustawienia"
           >
-            <FontAwesomeIcon 
-              icon={faCog} 
+            <FontAwesomeIcon
+              icon={faCog}
               className={`transition-transform duration-300 ${isSettingsOpen ? 'rotate-90 scale-110' : 'group-hover:scale-110'}`}
             />
           </button>
@@ -88,6 +86,33 @@ const LeftHeader: React.FC = () => {
             </div>
           )}
         </div>
+        <div className="mb-4 relative">
+          <button
+            className={`p-3 rounded-xl transition-all duration-300 flex items-center justify-center ${isActive('/settings-page')
+                ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 shadow-md hover:shadow-lg'
+              }`}
+            onClick={() => navigate('/settings-page')}
+            onMouseEnter={() => setActiveTooltip('Ustawienia zaawansowane')}
+            onMouseLeave={() => setActiveTooltip(null)}
+            aria-label="Ustawienia zaawansowane"
+          >
+            <FontAwesomeIcon
+              icon={faSliders}
+              className={`transition-transform duration-300 ${isActive('/settings-page') ? 'scale-110' : 'group-hover:scale-110'}`}
+            />
+          </button>
+
+          {activeTooltip === 'Ustawienia zaawansowane' && (
+            <div className="absolute left-full top-1/2 ml-3 transform -translate-y-1/2">
+              <div className="bg-gray-800 dark:bg-gray-700 text-white text-sm font-medium rounded-lg py-1.5 px-3 whitespace-nowrap shadow-lg">
+                Ustawienia zaawansowane
+                <div className="absolute right-full top-1/2 w-2 h-2 -mt-1 -mr-1 bg-gray-800 dark:bg-gray-700 transform rotate-45"></div>
+              </div>
+            </div>
+          )}
+        </div>
+
 
         <div className="mt-auto">
           <LogoutButton />

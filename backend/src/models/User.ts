@@ -1,17 +1,22 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 import { PersonSchema, IPerson } from './Person';
 
-
+// Dodajemy enum dla typu konta
+export enum AccountType {
+  PRIVATE = 'private',
+  PUBLIC = 'public'
+}
 
 export interface UserDocument extends Document {
   email: string;
   password: string;
   isActive: boolean;
+  accountType: AccountType; // Nowe pole typu konta
   activationToken?: string;
   resetPasswordToken?: string;
   createdAt: Date;
   updatedAt: Date;
-  persons: IPerson[]; // Array of embedded Person documents
+  persons: IPerson[]; // Lepsze typowanie dla subdokumentów
 }
 
 const UserSchema: Schema<UserDocument> = new Schema(
@@ -29,18 +34,29 @@ const UserSchema: Schema<UserDocument> = new Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
+      minlength: [8, 'Password must be at least 8 characters long'],
     },
     isActive: {
       type: Boolean,
       default: false,
     },
+    accountType: {
+      type: String,
+      enum: {
+        values: Object.values(AccountType),
+        message: 'Invalid account type'
+      },
+      default: AccountType.PRIVATE
+    },
+    
     activationToken: String,
     resetPasswordToken: String,
-    persons: [PersonSchema], // Embed the entire Person schema
+    persons: [PersonSchema],
   },
   {
-    versionKey: false,  // Wyłącza wersjonowanie
-    timestamps: true    // Dodaje pola `createdAt` i `updatedAt`
+    versionKey: false,
+    timestamps: true,
+    toJSON: { virtuals: true } // Konfiguracja dla transformacji danych wyjściowych
   }
 );
 

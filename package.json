@@ -8,6 +8,7 @@
     "concurrently": "^8.2.0"
   },
   "dependencies": {
-    "react-toastify": "^10.0.5"
+    "react-toastify": "^10.0.5",
+    "string-similarity": "^4.0.4"
   }
 }
