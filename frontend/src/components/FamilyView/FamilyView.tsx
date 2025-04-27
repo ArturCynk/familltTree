@@ -40,57 +40,6 @@ interface ErrorBoundaryProps {
   onError?: (error: Error, errorInfo: ErrorInfo) => void; // Add onError prop
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { 
-    hasError: false, 
-    error: null 
-  };
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { 
-      hasError: true, 
-      error 
-    };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("Error caught by ErrorBoundary:", error, errorInfo);
-    if (this.props.onError) {
-      this.props.onError(error, errorInfo); // Trigger callback
-    }
-  }
-
-
-  render(): ReactNode {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
-          <div className="bg-red-100 dark:bg-red-900/20 p-6 rounded-xl max-w-md text-center border border-red-200 dark:border-red-800">
-            <div className="text-red-600 dark:text-red-400 mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-2 text-red-800 dark:text-red-200">
-              Tree Rendering Error
-            </h3>
-            <p className="text-red-700 dark:text-red-300 mb-4">
-              {this.state.error?.toString()}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Reload Page
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 
 interface DisplayOptions {
   showGenderIcon: boolean;
@@ -195,7 +144,85 @@ const FamilyView: React.FC = () => {
     };
   }, [fetchFamilyData]);
 
+  useEffect(() => {
+    localStorage.setItem('recentRoots', JSON.stringify(recentRoots));
+  }, [recentRoots]);
 
+
+  class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    state: ErrorBoundaryState = { 
+      hasError: false, 
+      error: null 
+    };
+  
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+      return { 
+        hasError: true, 
+        error 
+      };
+    }
+  
+    componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+      console.error("Error caught by ErrorBoundary:", error, errorInfo);
+      if (this.props.onError) {
+        this.props.onError(error, errorInfo); // Trigger callback
+      }
+    }
+
+    fetchData = () => {
+      if (recentRoots.length > 0) {
+        // 1. Utwórz kopię tablicy bez pierwszego elementu
+        const updatedRoots = recentRoots.slice(1);
+        
+        // 2. Nowy rootId to ID pierwszego elementu w ZAKTUALIZOWANEJ tablicy (czyli byłego drugiego)
+        const newRootId = updatedRoots.length > 0 ? updatedRoots[0].id : null;
+
+
+        // 3. Zaktualizuj oba stany
+        setRecentRoots(updatedRoots);
+        setFamilyData(prevData => ({
+          nodes: prevData?.nodes || [],
+          rootId: newRootId || '' // fallback na pusty string jeśli nie ma elementów
+        }));
+    
+        console.log('Removed first element. New rootId:', newRootId);
+      } else {
+        console.log('No elements to remove');
+      }
+    }
+  
+  
+    render(): ReactNode {
+      if (this.state.hasError) {
+
+        return (
+          <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
+            <div className="bg-red-100 dark:bg-red-900/20 p-6 rounded-xl max-w-md text-center border border-red-200 dark:border-red-800">
+              <div className="text-red-600 dark:text-red-400 mb-4">
+                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-red-800 dark:text-red-200">
+                Tree Rendering Error
+              </h3>
+              <p className="text-red-700 dark:text-red-300 mb-4">
+                {this.state.error?.toString()}
+              </p>
+              <button
+                onClick={() => this.fetchData()}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        );
+      }
+      return this.props.children;
+    }
+  }
+  
 
   const handleRootChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newRootId = event.target.value;
