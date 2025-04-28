@@ -211,6 +211,9 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
     // Usuwamy osobę z listy osób użytkownika
     loggedInUser.persons.splice(personIndex, 1);
 
+
+    //cleanUpRelations(loggedInUser.persons)
+
     // Zapisujemy zmiany
     await loggedInUser.save();
 
@@ -219,6 +222,26 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
     console.error(error);
     res.status(500).json({ message: 'Wystąpił błąd podczas usuwania osoby', error });
   }
+};
+
+const cleanUpRelations = (persons: IPerson[]): void => {
+  // Zbuduj zbiór istniejących ID
+  const existingPersonIds = new Set(persons.map(person => person._id.toString()));
+
+  // Dla każdej osoby sprawdź relacje
+  persons.forEach(person => {
+    // Czyszczenie parents
+    person.parents = person.parents.filter(parentId => existingPersonIds.has(parentId.toString()));
+
+    // Czyszczenie siblings
+    person.siblings = person.siblings.filter(siblingId => existingPersonIds.has(siblingId.toString()));
+
+    // Czyszczenie children
+    person.children = person.children.filter(childId => existingPersonIds.has(childId.toString()));
+
+    // Czyszczenie spouses
+    person.spouses = person.spouses.filter(spouse => existingPersonIds.has(spouse.personId.toString()));
+  });
 };
 
 
