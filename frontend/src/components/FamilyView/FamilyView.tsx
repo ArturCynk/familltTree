@@ -1,10 +1,10 @@
-import React, { 
-  useMemo, 
-  useState, 
-  useCallback, 
-  useEffect, 
+import React, {
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
   ReactNode,
-  ErrorInfo 
+  ErrorInfo
 } from 'react';
 import LeftHeader from '../LeftHeader/LeftHeader';
 import ReactFamilyTree from 'react-family-tree';
@@ -150,18 +150,18 @@ const FamilyView: React.FC = () => {
 
 
   class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    state: ErrorBoundaryState = { 
-      hasError: false, 
-      error: null 
+    state: ErrorBoundaryState = {
+      hasError: false,
+      error: null
     };
-  
+
     static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-      return { 
-        hasError: true, 
-        error 
+      return {
+        hasError: true,
+        error
       };
     }
-  
+
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
       console.error("Error caught by ErrorBoundary:", error, errorInfo);
       if (this.props.onError) {
@@ -170,28 +170,20 @@ const FamilyView: React.FC = () => {
     }
 
     fetchData = () => {
-      if (recentRoots.length > 0) {
-        // 1. Utwórz kopię tablicy bez pierwszego elementu
-        const updatedRoots = recentRoots.slice(1);
-        
-        // 2. Nowy rootId to ID pierwszego elementu w ZAKTUALIZOWANEJ tablicy (czyli byłego drugiego)
-        const newRootId = updatedRoots.length > 0 ? updatedRoots[0].id : null;
+      const updatedRoots = recentRoots.slice(1);
 
-
-        // 3. Zaktualizuj oba stany
-        setRecentRoots(updatedRoots);
-        setFamilyData(prevData => ({
-          nodes: prevData?.nodes || [],
-          rootId: newRootId || '' // fallback na pusty string jeśli nie ma elementów
-        }));
-    
-        console.log('Removed first element. New rootId:', newRootId);
-      } else {
-        console.log('No elements to remove');
-      }
+      setRecentRoots(updatedRoots);
+      setFamilyData(prevData => {
+        const nodes = prevData?.nodes ? [...prevData.nodes] : [];
+        const rootUser = nodes[0];
+        return {
+          nodes,
+          rootId: rootUser?.id || '' // fallback to empty string if undefined
+        };
+      });
     }
-  
-  
+
+
     render(): ReactNode {
       if (this.state.hasError) {
 
@@ -222,7 +214,7 @@ const FamilyView: React.FC = () => {
       return this.props.children;
     }
   }
-  
+
 
   const handleRootChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newRootId = event.target.value;

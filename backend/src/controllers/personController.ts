@@ -167,11 +167,10 @@ export const updatePerson = async (req: Request, res: Response): Promise<void> =
 };
 
 export const deletePerson = async (req: Request, res: Response): Promise<void> => {
-  // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400).json({ errors: errors.array() });
-    return; // Avoid further processing in case of validation errors
+    return;
   }
 
   try {
@@ -184,28 +183,44 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Find the person index in the logged-in user's persons list
+    // Find the person to delete
     const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === personId);
-
     if (personIndex === -1) {
       res.status(404).json({ message: 'Osoba nie znaleziona' });
-      return; // Prevent further execution if person is not found
+      return;
     }
 
-    // Remove the person from the logged-in user's persons list
+    // ID osoby do usunięcia
+    const deletingPersonId = loggedInUser.persons[personIndex]._id;
+
+    // Usuwamy referencje do osoby w relacjach innych osób
+    loggedInUser.persons.forEach(person => {
+      // Usuwanie z parents
+      person.parents = person.parents.filter(parentId => parentId.toString() !== deletingPersonId.toString());
+
+      // Usuwanie z siblings
+      person.siblings = person.siblings.filter(siblingId => siblingId.toString() !== deletingPersonId.toString());
+
+      // Usuwanie z children
+      person.children = person.children.filter(childId => childId.toString() !== deletingPersonId.toString());
+
+      // Usuwanie z spouses
+      person.spouses = person.spouses.filter(spouse => spouse.personId.toString() !== deletingPersonId.toString());
+    });
+
+    // Usuwamy osobę z listy osób użytkownika
     loggedInUser.persons.splice(personIndex, 1);
 
-    // Save the updated user document
+    // Zapisujemy zmiany
     await loggedInUser.save();
 
-    // Return success response
-    res.status(200).json({ message: 'Osoba została usunięta'});
-
+    res.status(200).json({ message: 'Osoba została usunięta wraz z powiązaniami' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Wystąpił błąd podczas usuwania osoby', error });
   }
 };
+
 
   export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
