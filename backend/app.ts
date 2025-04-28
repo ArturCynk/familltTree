@@ -6,6 +6,7 @@ import multer from 'multer';
 import path from 'path';
 import personRoutes from './src/routes/personRoutes'; 
 import authRoutes from './src/routes/authRoutes'
+import familyTreeRoutes from './src/routes/familyTree'
 import connectDB from './src/config/database';
 
 dotenv.config();
@@ -39,6 +40,8 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/api/person', personRoutes)
 app.use('/api/auth',authRoutes )
+
+app.use('/api/family-trees', familyTreeRoutes);
 
 app.listen(port, () => {
   console.log(`Serwer uruchomiony na porcie ${port}`);
