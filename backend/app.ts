@@ -9,11 +9,14 @@ import authRoutes from './src/routes/authRoutes'
 import familyTreeRoutes from './src/routes/familyTree'
 import connectDB from './src/config/database';
 
+
+
 dotenv.config();
 
 const app: Application = express();
 const port = process.env.PORT || 3000;
 const MONGOURL = process.env.MONGOURL;
+
 
 app.use(cors());
 

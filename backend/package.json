@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app.ts"
+    "start": "nodemon app.ts",
+    "huj": "nodemon add.ts"
   },
   "keywords": [],
   "author": "",
@@ -39,6 +40,8 @@
     "google-protobuf": "^3.21.4",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.1",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   }
 }
