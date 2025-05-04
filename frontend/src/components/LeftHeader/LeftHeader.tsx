@@ -18,7 +18,8 @@ const LeftHeader: React.FC = () => {
     { path: '/family-view', icon: faTree, tooltip: 'Widok rodzinny' },
     { path: '/ancestry-view', icon: faUsers, tooltip: 'Widok rodowodu' },
     { path: '/fan-view', icon: faFan, tooltip: 'Widok wentylatora' },
-    { path: '/list-view', icon: faList, tooltip: 'Widok listy' }
+    { path: '/list-view', icon: faList, tooltip: 'Widok listy' },
+    { path: '/collaborative-tree', icon: faUsers, tooltip: 'Wspólne drzewo' }
   ];
 
   const isActive = (path: string) => location.pathname === path;

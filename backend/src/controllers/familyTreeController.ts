@@ -382,3 +382,92 @@ export const leaveFamilyTree = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error leaving the family tree' });
   }
 };
+
+interface PopulatedOwner {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+export const getUserTrees = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.email) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Pobierz drzewa z populacją właściciela
+    const trees = await FamilyTree.find(
+      { 'members.user': user._id },
+      { _id: 1, name: 1, owner: 1 }
+    )
+    .populate<{ owner: PopulatedOwner }>({
+      path: 'owner',
+      select: 'name email',
+      model: 'User'
+    })
+    .lean();
+
+    // Formatowanie wyników
+    const formattedTrees = trees.map(tree => ({
+      _id: tree._id,
+      name: tree.name,
+      owner: {
+        name: tree.owner.name,
+        email: tree.owner.email
+      }
+    }));
+
+    res.status(200).json(formattedTrees);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching user trees' });
+  }
+};
+
+export const getOwnedTrees = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.email) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const trees = await FamilyTree.find({ owner: user._id })
+      .populate<{ owner: PopulatedOwner }>({
+        path: 'owner',
+        select: 'name email',
+        model: 'User'
+      })
+      .populate({
+        path: 'members.user',
+        select: 'email',
+        model: 'User'
+      })
+      .lean();
+
+    const enrichedTrees = trees.map(tree => ({
+      ...tree,
+      members: tree.members.map(member => ({
+        _id: member._id,
+        role: member.role,
+        user: {
+          _id: (member.user as any)._id,  // Type assertion needed
+          email: (member.user as any).email
+        },
+      }))
+    }));
+
+    res.status(200).json(enrichedTrees);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching owned trees' });
+  }
+};

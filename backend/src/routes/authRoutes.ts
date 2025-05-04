@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { registerUser, activateAccount, sendResetPasswordEmail, resetPassword, loginUser, getCurrentUser, updateUser } from '../controllers/authController';
+import { registerUser, activateAccount, sendResetPasswordEmail, resetPassword, loginUser, getCurrentUser, updateUser, getAllUsers } from '../controllers/authController';
 // , loginUser, , resetPassword, logoutUser
 import { registrationValidationRules, loginValidationRules, validate } from '../validation/authValidation';
 import { authenticateToken } from '../Middleware/authenticateToken';
@@ -20,5 +20,6 @@ router.post('/reset-password/:token', resetPassword);
 
 router.get('/me', authenticateToken, getCurrentUser);
 router.put('/update',authenticateToken, updateUser);
+router.get('/users', authenticateToken, getAllUsers);
 
 export default router

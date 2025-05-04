@@ -217,4 +217,14 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       res.status(500).json({ msg: 'Server error' });
     }
   };
+
+  export const getAllUsers = async (req: Request, res: Response) => {
+    try {
+        const users = await User.find({}).select('email _id');
+        return res.json(users);
+    } catch (error) {
+        console.error('Błąd podczas pobierania użytkowników:', error);
+        return res.status(500).json({ msg: 'Błąd serwera' });
+    }
+};
   

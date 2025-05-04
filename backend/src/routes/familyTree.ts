@@ -9,7 +9,9 @@ import {
   changeOwner,   // 🆕
   deleteFamilyTree,  // 🆕
   deleteAllPersons,   // 🆕
-  leaveFamilyTree
+  leaveFamilyTree,
+  getUserTrees,
+  getOwnedTrees
 } from '../controllers/familyTreeController';
 import { authenticateToken } from '../Middleware/authenticateToken';
 
@@ -43,6 +45,11 @@ router.delete('/:id', authenticateToken, deleteFamilyTree);
 router.delete('/:id/persons', authenticateToken, deleteAllPersons);
 
 router.post('/:id/leave',authenticateToken, leaveFamilyTree);
+
+
+router.get('/my-trees', authenticateToken, getUserTrees);
+
+router.get('/owned-trees', authenticateToken, getOwnedTrees);
 
 
 export default router;

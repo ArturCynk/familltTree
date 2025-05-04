@@ -11,6 +11,8 @@ import ChangePassword from './components/ChangePassword/ChangePassword';
 import HomePage from './components/HomePage/HomePage';
 import FamilyView from './components/FamilyView/FamilyView';
 import UserSettings from './components/Settings/SettingsModal';
+import CollaborativeTreeView from './components/CollaborativeTreeView/CollaborativeTreeView';
+import Appewfd from './components/appewfd';
 
 const App: React.FC = () => {
   return (
@@ -30,6 +32,8 @@ const App: React.FC = () => {
           <Route path="/activate/:token" element={<ActivateAccount />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ChangePassword />} />
+          <Route path="/collaborative-tree" element={<CollaborativeTreeView />} />
+          <Route path="/app" element={<Appewfd />} />
         </Routes>
       </Router>
       <ToastContainer />
