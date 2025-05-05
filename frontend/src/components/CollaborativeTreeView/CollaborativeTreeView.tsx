@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import LeftHeader from '../LeftHeader/LeftHeader';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
     _id: string;
@@ -49,6 +50,8 @@ const CollaborativeTreeView: React.FC = () => {
     const [memberRole, setMemberRole] = useState<'admin' | 'editor' | 'guest'>('editor');
     const [users, setUsers] = useState<User[]>([]);
     const [usersLoading, setUsersLoading] = useState(false);
+
+    const navigate = useNavigate();
 
     const fetchUsers = async () => {
         try {
@@ -352,7 +355,9 @@ const CollaborativeTreeView: React.FC = () => {
                         {selectedTab === 'member' ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {memberTrees.map((tree) => (
-                                    <div key={tree._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                                    <div key={tree._id}
+                                    onClick={() => navigate(`/tree/${tree._id}`)} 
+                                      className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                                         <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">{tree.name}</h4>
                                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
                                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

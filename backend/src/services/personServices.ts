@@ -2,6 +2,7 @@ import mongoose, { Types } from 'mongoose';
 import User from '../models/User';
 import Person from '../models/Person';
 import { IPerson } from '../models/Person';
+import FamilyTree from '../models/FamilyTree';
 
 interface AddPersonInput {
   email: string | undefined;
@@ -35,9 +36,16 @@ interface IEvent {
   description: string; // Opis wydarzenia
 }
 
+type PersonType = 'user' | 'familyTree';
+
 export class PersonService {
-  public async deletePerson(userEmail: string, personId: string): Promise<void> {
-    const user = await User.findOne({ email: userEmail }).populate('persons').exec();
+  public async deletePerson(  personId: string,
+    type: PersonType,
+    userEmail?: string,
+    treeId?: string): Promise<void> {
+    const user = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
 
     if (!user) {
       throw new Error('Użytkownik nie znaleziony');
@@ -118,12 +126,16 @@ export class PersonService {
   }
 
   public async updatePerson(
-    userEmail: string,
     personId: string,
     updateData: any,
-    file?: Express.Multer.File
+    type: PersonType,
+    userEmail?: string,
+    treeId?: string,
+    file?: Express.Multer.File,
   ): Promise<IPerson> {
-    const user = await User.findOne({ email: userEmail }).populate('persons').exec();
+    const user = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
 
     if (!user) {
       throw new Error('Użytkownik nie znaleziony');
@@ -167,11 +179,12 @@ export class PersonService {
     return user.persons[personIndex];
   }
 
-  public async getAllPersonsWithRelations(userEmail: string): Promise<any[]> {
-    const user = await User.findOne({ email: userEmail })
-      .populate<{ persons: IPerson[] }>('persons')
-      .lean()
-      .exec();
+  public async getAllPersonsWithRelations(type: PersonType,
+    userEmail?: string,
+    treeId?: string): Promise<any[]> {
+    const user = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
 
     if (!user) throw new Error('Użytkownik nie znaleziony');
 
@@ -181,8 +194,12 @@ export class PersonService {
     }));
   }
 
-  public async getPerson(userEmail: string | undefined, personId: string): Promise<IPerson | null> {
-    const user = await User.findOne({ email: userEmail }).populate('persons').exec();
+  public async getPerson(personId: string,type: PersonType,
+    userEmail?: string,
+    treeId?: string): Promise<IPerson | null> {
+    const user = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
 
     if (!user) {
       throw new Error('Użytkownik nie znaleziony');
@@ -198,7 +215,10 @@ export class PersonService {
     return person;
   }
 
-  public async getAllPersons(userEmail: string, query: any): Promise<{
+  public async getAllPersons(query: any,type: PersonType,
+    userEmail?: string,
+    treeId?: string
+  ): Promise<{
     users: any[];
     totalUsers: number;
     currentPage: number;
@@ -211,12 +231,9 @@ export class PersonService {
 
     const { mongoQuery, additionalFilter } = this.buildSearchConditions(searchQuery, letter);
 
-    const loggedInUser = await User.findOne({ email: userEmail })
-      .populate<{ persons: IPerson[] }>({
-        path: 'persons',
-        match: mongoQuery,
-      })
-      .exec();
+    const loggedInUser = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
 
     if (!loggedInUser) {
       throw new Error('Użytkownik nie znaleziony');
@@ -239,8 +256,13 @@ export class PersonService {
     };
   }
 
-  public async getRelationsForPerson(userEmail: string, personId: string) {
-    const user = await User.findOne({ email: userEmail }).populate('persons').exec();
+  public async getRelationsForPerson(personId: string,type: PersonType,
+    userEmail?: string,
+    treeId?: string) {
+    const user = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
+
 
     if (!user) {
       throw new Error('Użytkownik nie znaleziony');
@@ -260,9 +282,6 @@ export class PersonService {
       user.persons.filter(p =>
         ids.some(id => id.toString() === p._id.toString())
       );
-
-      console.log('tak');
-      
 
     const relations = {
       Rodzice: getPersonsByIds(person.parents),
@@ -299,8 +318,12 @@ export class PersonService {
     };
   }
 
-  public async deleteRelation(userEmail: string, personId: string, relationId: string): Promise<void> {
-    const loggedInUser = await User.findOne({ email: userEmail }).populate('persons').exec();
+  public async deleteRelation(personId: string, relationId: string,type: PersonType,
+    userEmail?: string,
+    treeId?: string): Promise<void> {
+    const loggedInUser = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
 
     if (!loggedInUser) {
       throw new Error('Użytkownik nie znaleziony');
@@ -369,8 +392,12 @@ export class PersonService {
     await loggedInUser.save();
   }
 
-  public async getPersonsWithoutRelation(userEmail: string, personId: string): Promise<IPerson[]> {
-    const loggedInUser = await User.findOne({ email: userEmail }).populate('persons').exec();
+  public async getPersonsWithoutRelation(personId: string,type: PersonType,
+    userEmail?: string,
+    treeId?: string): Promise<IPerson[]> {
+    const loggedInUser = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
 
     if (!loggedInUser) {
       throw new Error('Użytkownik nie znaleziony');
@@ -400,10 +427,21 @@ export class PersonService {
 
   
 
-  public async getEventsForPerson(personId: string, loggedInUser: any): Promise<IEvent[]> {
+  public async getEventsForPerson(personId: string, type: PersonType,
+    userEmail?: string,
+    treeId?: string): Promise<IEvent[]> {
     const events: IEvent[] = [];
 
-    const person = loggedInUser.persons.find((person: IPerson) => person._id.toString() === personId);
+    const user = type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
+
+    if (!user) throw new Error(`${type} not found`);
+
+    const persons: IPerson[] = user.persons;
+    const person = persons.find(p => p._id.toString() === personId);
+    if (!person) throw new Error('Person not found');
+
 
     if (!person) {
       throw new Error('Osoba nie znaleziona');
@@ -513,7 +551,9 @@ export class PersonService {
   }
 
   public async addPersonWithRelationships(input: {
-    email: string | undefined;
+    type: PersonType,
+    userEmail?: string,
+    treeId?: string
     file?: Express.Multer.File;
     body: {
       gender: string;
@@ -566,7 +606,9 @@ export class PersonService {
     } = input.body;
   
     // Fetch the logged-in user and populate their persons field
-    const loggedInUser = await User.findOne({ email: input.email }).populate('persons').exec();
+    const loggedInUser = input.type === 'user'
+    ? await User.findOne({ email: input.userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(input.treeId).populate('persons').exec();
   
     if (!loggedInUser) {
       throw new Error('Użytkownik nie znaleziony');

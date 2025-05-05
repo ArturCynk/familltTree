@@ -1,5 +1,5 @@
 import React from 'react';
-import { ToastContainer} from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ListView from './components/ListView/ListView';
@@ -12,7 +12,7 @@ import HomePage from './components/HomePage/HomePage';
 import FamilyView from './components/FamilyView/FamilyView';
 import UserSettings from './components/Settings/SettingsModal';
 import CollaborativeTreeView from './components/CollaborativeTreeView/CollaborativeTreeView';
-import Appewfd from './components/appewfd';
+import TreeDetails from './components/TreeDetails/TreeDetails'; // Nowy komponent
 
 const App: React.FC = () => {
   return (
@@ -20,20 +20,16 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           <Route path="/family-view" element={<FamilyView />} />
-         {/*<Route path="/ancestry-view" element={<AncestryView />} />
-          <Route path="/fan-view" element={<FanView />} /> */}
+          <Route path="/tree/:id" element={<TreeDetails />} /> {/* Nowa trasa */}
           <Route path="/list-view" element={<ListView />} />
           <Route path="/" element={<HomePage />} />
-          {/* Dodaj inne trasy w zależności od potrzeb */}
           <Route path="/settings-page" element={<UserSettings />} />
-
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/activate/:token" element={<ActivateAccount />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ChangePassword />} />
           <Route path="/collaborative-tree" element={<CollaborativeTreeView />} />
-          <Route path="/app" element={<Appewfd />} />
         </Routes>
       </Router>
       <ToastContainer />

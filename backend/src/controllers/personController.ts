@@ -41,12 +41,7 @@ export const updatePerson = async (req: Request, res: Response): Promise<void> =
     const updateData = req.body;
     const file = req.file;
 
-    const updatedPerson = await personService.updatePerson(
-      req.user?.email!,
-      personId,
-      updateData,
-      file
-    );
+    const updatedPerson = await personService.updatePerson(personId,updateData,'user',req.user?.email,undefined,file)
 
     res.json({ message: 'Osoba została zaktualizowana', person: updatedPerson });
   } catch (error: any) {
@@ -70,7 +65,7 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    await personService.deletePerson(req.user.email, personId);
+    await personService.deletePerson(personId,'user',req.user.email);
     
     res.status(200).json({ message: 'Osoba została usunięta wraz z powiązaniami' });
   } catch (error) {
@@ -87,7 +82,7 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
 
 export const getAllPersons = async (req: Request, res: Response): Promise<void> => {
   try {
-    const result = await personService.getAllPersons(req.user?.email!, req.query);
+    const result = await personService.getAllPersons(req.query,'user',req.user?.email);
 
     res.status(200).json(result);
   } catch (error: any) {
@@ -110,7 +105,7 @@ export const getAllPersonss = async (req: Request, res: Response): Promise<void>
     }
 
     // Użycie serwisu PersonService do pobrania osób z relacjami
-    const result = await personService.getAllPersonsWithRelations(userEmail);
+    const result = await personService.getAllPersonsWithRelations('user',req.user?.email);
 
     res.status(200).send({
       users: result,
@@ -130,7 +125,7 @@ export const getPerson = async (req: Request, res: Response): Promise<void> => {
     const userEmail = req.user?.email; 
     const personId = req.params.id; 
 
-    const person = await personService.getPerson(userEmail, personId);
+    const person = await personService.getPerson(personId,'user',req.user?.email);
 
     res.json(person);
   } catch (error: any) {
@@ -147,7 +142,8 @@ export const addPersonWithRelationships = async (req: Request, res: Response): P
 
   try {
     const person = await personService.addPersonWithRelationships({
-      email: req.user?.email,
+      type: 'user',
+      userEmail: req.user?.email,
       file: req.file,
       body: req.body
     });
@@ -189,7 +185,7 @@ export const addPersonWithRelationships = async (req: Request, res: Response): P
         return;
       }
   
-      const events = await personService.getEventsForPerson(id, loggedInUser);
+      const events = await personService.getEventsForPerson(id,'user',req.user?.email);
   
       res.status(200).json(events);
     } catch (error) {
@@ -215,7 +211,7 @@ export const addPersonWithRelationships = async (req: Request, res: Response): P
 
       console.log(2);
       
-      const relations = await personService.getRelationsForPerson(userEmail, id);
+      const relations = await personService.getRelationsForPerson(id,'user',req.user?.email);
   
       // Zwrócenie relacji
       res.json(relations);
@@ -235,7 +231,7 @@ export const addPersonWithRelationships = async (req: Request, res: Response): P
         return res.status(400).json({ msg: 'Nie znaleziono adresu e-mail użytkownika' });
       }
   
-      await personService.deleteRelation(userEmail, personId, relationId);
+      await personService.deleteRelation(personId,relationId,'user',req.user?.email);
   
       res.status(200).json({ message: 'Nastąpiło usunięcie relacji' });
     } catch (error: any) {
@@ -255,7 +251,7 @@ export const addPersonWithRelationships = async (req: Request, res: Response): P
       }
   
       // Wywołanie serwisu w celu pobrania osób bez relacji
-      const personsWithoutRelation = await personService.getPersonsWithoutRelation(userEmail, personId);
+      const personsWithoutRelation = await personService.getPersonsWithoutRelation(personId,'user',req.user?.email);
   
       // Mapowanie wyników, aby zwrócić tylko wymagane pola
       const result = personsWithoutRelation.map(p => ({
