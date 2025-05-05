@@ -7,11 +7,16 @@ const TreeDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
 
+  const startTimeRef = useRef<number>(0);
+
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const familyTreeId = id;
     const ws = new WebSocket('ws://localhost:3001');
     wsRef.current = ws;
+
+    // Start measuring time
+    startTimeRef.current = performance.now();
 
     ws.onopen = () => {
       console.log('Połączono z WebSocket!');
@@ -25,10 +30,13 @@ const TreeDetails = () => {
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        if (message.type === 'familyTreeData') {
-          console.log('Dane drzewa:', message.data);
+        if (message.type === 'init') {
+          const endTime = performance.now();
+          const elapsedTime = endTime - startTimeRef.current;
+          console.log(`⏱️ Czas ładowania danych drzewa: ${elapsedTime.toFixed(2)} ms`);
+
           setFamilyTreeData(message.data);
-          setIsLoading(false); // Koniec ładowania
+          setIsLoading(false);
         } else if (message.type === 'error') {
           console.error('Błąd:', message.message);
           setIsLoading(false);
@@ -63,7 +71,8 @@ const TreeDetails = () => {
       }
     };
     wsRef.current?.send(JSON.stringify(updateData));
-    setIsLoading(true); // Załaduj ponownie po aktualizacji
+    setIsLoading(true);
+    startTimeRef.current = performance.now(); // zmierz od nowa
   };
 
   return (

@@ -26,9 +26,13 @@ export const initializeWebSocket = (server: http.Server) => {
     ws.on('message', async (msg: Buffer) => {
       try {
         const data = JSON.parse(msg.toString());
-
+        console.log(2);
+        
         // Authentication phase
         if (!familyTreeId) {
+          console.log('====================================');
+          console.log(data);
+          console.log('====================================');
           if (data.type !== 'auth' || !data.token || !data.familyTreeId) throw new Error('Auth required');
           const decoded = jwt.verify(data.token, process.env.JWT_SECRET as string) as { userId: string };
           const tree = await FamilyTree.findById(data.familyTreeId);
@@ -45,27 +49,37 @@ export const initializeWebSocket = (server: http.Server) => {
 
           // Send initial full data only once
           const persons = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
-          return ws.send(JSON.stringify({ type: 'init', data: persons }));
+          return ws.send(JSON.stringify({ type: 'init'}));
         }
+        console.log(3);
+        
 
         let payload: any;
         let broadcast = false;
         let messageType: string;
 
         switch (data.type) {
-          case 'getAllPersons':
-            payload = await personService.getAllPersons(data.query,'familyTree', undefined, familyTreeId);
-            messageType = 'allPersons';
+          case 'getAllPersonsWithRelations':
+            payload = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
+            messageType = 'allPersonsWithRelations';
             break;
+          
+
+            case 'getAllPersons':
+              payload = await personService.getAllPersons(data.query,'familyTree', undefined, familyTreeId);
+              messageType = 'allPersons';
+              break;
 
           case 'getPerson':
-            payload = await personService.getPerson(data.personId, 'familyTree', undefined, familyTreeId);
+            payload = await personService.getPerson(data.payload.id, 'familyTree', undefined, familyTreeId);
             messageType = 'person';
             break;
 
 
           case 'updatePerson':
-            payload = await personService.updatePerson(data.personId, data.body, 'familyTree', undefined, familyTreeId);
+            await personService.updatePerson(data.personId, data.body, 'familyTree', undefined, familyTreeId);
+            payload = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
+           
             messageType = 'personUpdated';
             broadcast = true;
             break;
@@ -165,7 +179,7 @@ export const initializeWebSocket = (server: http.Server) => {
         if (broadcast) {
           const clients = familyTreeClients.get(familyTreeId) || [];
           clients.forEach(client => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
+            if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({ type: messageType, data: payload }));
             }
           });
