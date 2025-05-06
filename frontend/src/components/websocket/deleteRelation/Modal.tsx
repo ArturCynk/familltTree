@@ -12,6 +12,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   person: Person | Node;
+  idTree: string | undefined;
 }
 
 interface Relation {
@@ -23,7 +24,7 @@ interface Relation {
 
 
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person,  idTree }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [relations, setRelations] = useState<{
     parents: Relation[];
@@ -93,28 +94,55 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, person }) => {
     setSelectedId(id === selectedId ? null : id);
   };
 
-  const handleDelete = async () => {
-    if (!selectedId) return;
-
-    try {
-      setLoading(true);
+ const wsRef = useRef<WebSocket | null>(null);
+  
+    useEffect(() => {
       const token = localStorage.getItem('authToken');
-      const response = await axios.delete(`http://localhost:3001/api/person/relation/${person.id}/${selectedId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const ws = new WebSocket('ws://localhost:3001');
+      wsRef.current = ws;
+  
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'auth', token, familyTreeId: idTree }));
+      };
+  
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+  
+        if (msg.type === 'init') {
 
-      toast.success(response.data.message);
-      setSelectedId(null);
-      onClose();
-    } catch (error) {
-      console.error('Error deleting relation:', error);
-      toast.error('Wystąpił błąd podczas usuwania relacji');
-    } finally {
-      setLoading(false);
-    }
-  };
+          return;
+        }
+  
+        switch (msg.type) {
+          case 'relationDeleted':
+            toast.success('Relacja została usunięta');
+            onClose();
+            break;
+  
+          case 'error':
+            toast.error(msg.message || 'Błąd WebSocket');
+            onClose();
+            break;
+  
+          default:
+            break;
+        }
+      };
+      return () => {
+        ws.close(); // Clean up
+      };
+    },[idTree]);
+
+    const handleDelete = () => {
+      if (!wsRef ||  !wsRef.current  || wsRef.current.readyState !== WebSocket.OPEN || !selectedId) return;
+      setLoading(true);
+      wsRef.current.send(JSON.stringify({
+        type: 'deleteRelation',
+        personId: person.id,
+        relationId: selectedId,
+      }));
+      console.log(234);
+    };
 
   if (!isOpen) return null;
 

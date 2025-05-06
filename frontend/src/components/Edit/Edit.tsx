@@ -24,6 +24,8 @@ interface Person {
   deathDateTo?: string;
   burialPlace?: string;
   spouses?: { weddingDate: string }[];
+  birthDateFreeText?: string;
+  deathDateFreeText?: string;
   photo?: string;
 }
 
@@ -253,16 +255,30 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
 
                 {(formData?.birthDateType === 'exact' || !formData?.birthDateType) && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data</label>
-                    <input
-                      type="date"
-                      name="birthDate"
-                      value={formData?.birthDate ? new Date(formData.birthDate).toISOString().substring(0, 10) : ''}
-                      onChange={handleChange}
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
-                    />
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {formData?.birthDateType === 'freeText' ? 'Opis daty' : 'Data'}
+                  </label>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={formData?.birthDate}
+                        onChange={handleChange}
+                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                      />
+                    </div>
+                </div>
                 )}
+
+{formData?.birthDateType === 'freeText' && (
+                    <input
+                      type="text"
+                      value={formData?.birthDateFreeText}
+                      name="birthDateFreeText"
+                      onChange={handleChange}
+                      placeholder="np. 'zima 1945'"
+                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                    />
+                  )}
 
                 {(formData?.birthDateType === 'between' || formData?.birthDateType === 'fromTo') && (
                   <>
@@ -422,6 +438,17 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                         className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
                       />
                     </div>
+                  )}
+
+{formData?.deathDateType === 'freeText' && (
+                    <input
+                      type="text"
+                      value={formData?.deathDateFreeText}
+                      name="deathDateFreeText"
+                      onChange={handleChange}
+                      placeholder="np. 'zima 1945'"
+                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                    />
                   )}
 
                   {(formData?.deathDateType === 'between' || formData?.deathDateType === 'fromTo') && (

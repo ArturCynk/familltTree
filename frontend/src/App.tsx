@@ -12,7 +12,6 @@ import HomePage from './components/HomePage/HomePage';
 import FamilyView from './components/FamilyView/FamilyView';
 import UserSettings from './components/Settings/SettingsModal';
 import CollaborativeTreeView from './components/CollaborativeTreeView/CollaborativeTreeView';
-import TreeDetails from './components/TreeDetails/TreeDetails'; // Nowy komponent
 import FamilyViewWebsocket from './components/websocket/FamilyView/FamilyView'
 
 const App: React.FC = () => {

@@ -577,6 +577,10 @@ export class PersonService {
       weddingDate?: Date;
       selectedOption?: string;
       selectedIds?: string[];
+      birthDateFreeText?: string,
+deathDateFreeText?: string,
+
+      
       id?: string; // ID of the existing person to whom we are adding a relationship
     };
   }): Promise<IPerson> {
@@ -597,6 +601,9 @@ export class PersonService {
       deathDateFrom,
       deathDateTo,
       relationType,
+      birthDateFreeText,
+deathDateFreeText,
+
       burialPlace,
       photoUrl,
       weddingDate,
@@ -630,6 +637,9 @@ export class PersonService {
       lastName,
       maidenName,
       birthDateType,
+      birthDateFreeText,
+deathDateFreeText,
+
       birthDate,
       birthDateFrom,
       birthDateTo,
@@ -891,6 +901,8 @@ export class PersonService {
       birthPlace: person.birthPlace,
       burialPlace: person.burialPlace,
       status: person.status,
+      deathDateFreeText: person.deathDateFreeText,
+      birthDateFreeText: person.birthDateFreeText
     };
   }
 

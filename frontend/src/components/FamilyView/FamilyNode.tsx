@@ -28,6 +28,8 @@ interface NamedNode {
   gender: string;
   birthDate?: string;
   deathDate?: string;
+  deathDateFreeText?: string;
+  birthDateFreeText?: string;
 }
 
 interface CustomNode extends ExtNode {
@@ -43,6 +45,9 @@ export const FamilyNode = React.memo(
 
     const customNode = node as CustomNode;
     const isDeceased = customNode.status === 'deceased';
+
+    console.log(node);
+    
 
     const getDisplayName = (n: ExtNode) => {
       const namedNode = n as unknown as NamedNode;
@@ -136,12 +141,13 @@ export const FamilyNode = React.memo(
                   />
                   <span>
                     {formatDate((node as unknown as NamedNode).birthDate)}
+                    {(node as NamedNode).birthDateFreeText}
                   </span>
                 </div>
               )}
 
               {/* Death date display */}
-              {displayOptions.showDeathDate && (node as unknown as NamedNode).deathDate && (
+              {displayOptions.showDeathDate  && (
                 <div className="flex items-center justify-center text-[9px] text-gray-600 dark:text-gray-400">
                   <FontAwesomeIcon
                     icon={faCross}
@@ -149,6 +155,7 @@ export const FamilyNode = React.memo(
                   />
                   <span>
                     {formatDate((node as unknown as NamedNode).deathDate)}
+                    {(node as NamedNode).deathDateFreeText}
                   </span>
                 </div>
               )}

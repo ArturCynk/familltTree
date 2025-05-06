@@ -24,6 +24,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
   const [maidenName, setMaidenName] = useState<string>('');
   const [birthDateType, setBirthDateType] = useState<'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText'>('exact');
   const [birthDate, setBirthDate] = useState<string>('');
+  const [birthDateFreeText, setBirthDateFreeText] = useState<string>('');
   const [birthDateFrom, setBirthDateFrom] = useState<string>('');
   const [birthDateTo, setBirthDateTo] = useState<string>('');
   const [birthPlace, setBirthPlace] = useState<string>('');
@@ -31,6 +32,7 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
   const [deathDateType, setDeathDateType] = useState<'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText'>('exact');
   const [deathDateFrom, setDeathDateFrom] = useState<string>('');
   const [deathDate, setDeathDate] = useState<string>('');
+  const [deathDateFreeText, setDeathDateFreeText] = useState<string>('');
   const [deathDateTo, setDeathDateTo] = useState<string>('');
   const [burialPlace, setBurialPlace] = useState<string>('');
   const [weddingDate, setWeddingDate] = useState<string>('');
@@ -87,6 +89,8 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
       photoUrl,
       selectedIds,
       selectedOption,
+      deathDateFreeText,
+      birthDateFreeText
     };
 
     if (photo) {
@@ -300,8 +304,8 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                     {birthDateType === 'freeText' ? (
                       <input
                         type="text"
-                        value={birthDate}
-                        onChange={(e) => setBirthDate(e.target.value)}
+                        value={birthDateFreeText}
+                        onChange={(e) => setBirthDateFreeText(e.target.value)}
                         placeholder="np. 'zima 1945'"
                         className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                       />
@@ -513,17 +517,31 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                     </select>
                   </div>
 
-                  {deathDateType === 'exact' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data śmierci</label>
-                      <input
-                        type="date"
-                        value={deathDate}
-                        onChange={(e) => setDeathDate(e.target.value)}
-                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white dark:bg-gray-700"
-                      />
-                    </div>
-                  )}
+                  {/* Death Date (non-range, including freeText) */}
+{deathDateType !== 'between' && deathDateType !== 'fromTo' && (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      {deathDateType === 'freeText' ? 'Opis daty śmierci' : 'Data śmierci'}
+    </label>
+    {deathDateType === 'freeText' ? (
+      <input
+        type="text"
+        value={deathDateFreeText}
+        onChange={(e) => setDeathDateFreeText(e.target.value)}
+        placeholder="np. 'zima 1950', 'około 1980'"
+        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+      />
+    ) : (
+      <input
+        type="date"
+        value={deathDate}
+        onChange={(e) => setDeathDate(e.target.value)}
+        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white dark:bg-gray-700"
+      />
+    )}
+  </div>
+)}
+
 
                   {deathDateType === 'between' && (
                     <>

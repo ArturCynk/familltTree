@@ -86,20 +86,21 @@ export const initializeWebSocket = (server: http.Server) => {
 
           case 'deletePerson':
             await personService.deletePerson(data.personId, 'familyTree', undefined, familyTreeId);
-            payload = { personId: data.personId };
+            payload = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
             messageType = 'personDeleted';
             broadcast = true;
             break;
 
           case 'addPersonWithRelationships':
-            payload = await personService.addPersonWithRelationships({ type: 'familyTree', userEmail: undefined, file: undefined, body: data.body,treeId:familyTreeId });
+            await personService.addPersonWithRelationships({ type: 'familyTree', userEmail: undefined, file: undefined, body: data.body,treeId:familyTreeId });
             messageType = 'personWithRelationsAdded';
+            payload = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
             broadcast = true;
             break;
 
           case 'deleteRelation':
             await personService.deleteRelation(data.personId, data.relationId, 'familyTree', undefined, familyTreeId);
-            payload = { personId: data.personId, relationId: data.relationId };
+            payload = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
             messageType = 'relationDeleted';
             broadcast = true;
             break;

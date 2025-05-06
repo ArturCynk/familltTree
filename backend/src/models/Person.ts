@@ -9,19 +9,21 @@ export interface IPerson extends Document {
   middleName?: string;
   lastName: string;
   maidenName?: string;
-  birthDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo';
+  birthDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
   birthDate?: Date;
   birthDateFrom?: Date;
   birthDateTo?: Date;
+  birthDateFreeText?: string; // <-- Dodane
   birthPlace?: string;
   status: 'alive' | 'deceased';
-  deathDate?: Date;
-  deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo';
+  deathDate?: Date ;
+  deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
   deathDateFrom?: Date;
   deathDateTo?: Date;
+  deathDateFreeText?: string; // <-- Dodane
   deathPlace?: string;
   burialPlace?: string;
-  photo?: string; // Dodane pole na zdjęcie
+  photo?: string;
   parents: mongoose.Types.ObjectId[];
   siblings: mongoose.Types.ObjectId[];
   spouses: { personId: mongoose.Types.ObjectId, weddingDate: Date }[];
@@ -50,10 +52,19 @@ export const PersonSchema: Schema = new Schema({
   },
   birthDateType: {
     type: String,
-    enum: ['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo'],
+    enum: ['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo', 'freeText'],
   },
   birthDate: {
     type: Date,
+  },
+  birthDateFreeText: { // <-- Dodane
+    type: String,
+  },
+  deathDate: {
+    type: Date,
+  },
+  deathDateFreeText: { // <-- Dodane
+    type: String,
   },
   birthDateFrom: {
     type: Date,
@@ -69,12 +80,9 @@ export const PersonSchema: Schema = new Schema({
     enum: ['alive', 'deceased'],
     required: [true, 'Status is required'],
   },
-  deathDate: {
-    type: Date,
-  },
   deathDateType: {
     type: String,
-    enum: ['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo'],
+    enum: ['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo', 'freeText'],
   },
   deathDateFrom: {
     type: Date,

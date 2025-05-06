@@ -1,5 +1,5 @@
 // AddPersonModal.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import MotherRelationForm from './MotherRelationForm';
@@ -12,10 +12,11 @@ interface AddPersonModalProps {
   relationLabel: string;
   relationType: string;
   id: string;
+  idTree?: string;
 }
 
 const AddPersonModal: React.FC<AddPersonModalProps> = ({
-  isOpen, onClose, relationLabel, relationType, id,
+  isOpen, onClose, relationLabel, relationType, id,idTree
 }) => {
   const [gender, setGender] = useState<'male' | 'female' | 'non-binary'>('male');
   const [firstName, setFirstName] = useState<string>('');
@@ -56,14 +57,53 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  // WebSocket ref
+  const wsRef = useRef<WebSocket | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Initialize WebSocket when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const token = localStorage.getItem('authToken');
+    const ws = new WebSocket('ws://localhost:3001');
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'auth', token, familyTreeId: idTree }));
+    };
+
+    ws.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data);
+
+      if (msg.type === 'init') {
+
+        return;
+      }
+
+    // Clean up on close
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  }}, [isOpen, idTree]);
+
+
+  const [submitting, setSubmitting] = useState(false);
+
+  // Submit handler
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Proszę uzupełnić wymagane pola');
+      toast.error('Uzupełnij wymagane pola.');
       return;
     }
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast.error('Brak połączenia z serwerem.');
+      return;
+      }
+      setSubmitting(true);
 
     const personData: any = {
       gender,
@@ -87,6 +127,8 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
       photoUrl,
       selectedIds,
       selectedOption,
+      id,
+      relationType
     };
 
     if (photo) {
@@ -99,22 +141,29 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
       personData.selectedOption = selectedOption;
       personData.selectedIds = selectedIds;
     }
+    const payload = {
+      type: 'addPersonWithRelationships',
+      body: personData,
+    };
 
-    try {
-      const token = localStorage.getItem('authToken');
-      await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', { ...personData, relationType, id }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      toast.success('Osoba została pomyślnie dodana!');
-      onClose();
-    } catch (error) {
-      toast.error('Wystąpił błąd podczas dodawania osoby.');
-      console.error(error);
-    }
+    ws.send(JSON.stringify(payload));
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'personWithRelationsAdded') {
+          toast.success('Osoba została dodana.');
+          setSubmitting(false);
+          onClose();
+        } else if (msg.type === 'error') {
+          toast.error(msg.message || 'Błąd serwera');
+        }
+      } catch {
+        toast.error('Nieprawidłowa odpowiedź z serwera');
+      }
+    };
   };
+
 
   if (!isOpen) return null;
 
@@ -613,12 +662,13 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={submitting}
                 className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 text-white font-medium hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-800 dark:hover:to-purple-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-600 shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Dodaj osobę
+                {submitting ? 'Trwa zapisywanie' : 'Dodaj osobę'}
               </button>
             </div>
             <div className="h-2"></div> 

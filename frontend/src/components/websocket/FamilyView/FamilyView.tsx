@@ -119,25 +119,31 @@ const FamilyViewWebsocket: React.FC = () => {
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        console.log(message.type);
+        
         if (message.type === 'init') {
           ws.send(JSON.stringify({ type: 'getAllPersonsWithRelations' }));
           return;
         } else if (message.type === 'error') {
           console.error('Błąd:', message.message);
           setLoading(false);
-        } else if (message.type === 'allPersonsWithRelations') {
+        } else if (message.type === 'personUpdated' || message.type === 'personDeleted'  ||  message.type === 'relationDeleted' || message.type === 'personWithRelationsAdded') {
+        const savedRootId = localStorage.getItem('currentRootId');
+        const defaultRootId = message.data[1].id;
 
+        const rootIdToUse = savedRootId && message.data.some((node: Node) => node.id === savedRootId)
+          ? savedRootId
+          : defaultRootId;
+
+        setFamilyData({
+          nodes: message.data,
+          rootId: rootIdToUse,
+        });
+        setInitialRootId(rootIdToUse);
+        } else if(message.type === 'allPersonsWithRelations') {
           setFamilyData({
             nodes: message.data,
-            rootId: message.data[0].id
-          })
-          setLoading(false);
-        }
-        else if (message.type === 'personUpdated') {
-
-          setFamilyData({
-            nodes: message.data,
-            rootId: message.data[0].id
+            rootId: message.data[1].id
           })
           setLoading(false);
         }
@@ -434,6 +440,7 @@ const FamilyViewWebsocket: React.FC = () => {
           onClose={closeModals}
           personGender={selectedNode.gender}
           id={selectedNode.id}
+          idTree={id}
           personName={`${selectedNode.firstName} ${selectedNode.lastName}`}
         />
       )}
@@ -443,6 +450,7 @@ const FamilyViewWebsocket: React.FC = () => {
           onClose={closeModals}
           isOpen={isRelationDeleteModalOpen}
           person={selectedNode}
+          idTree={id}
         />
       )}
     </div>

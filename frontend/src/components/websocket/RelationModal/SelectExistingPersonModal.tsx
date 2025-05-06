@@ -8,6 +8,7 @@ interface SelectExistingPersonModalProps {
   isOpen: boolean;
   onClose: () => void;
   id: string;
+  idTree: string | undefined; 
 }
 
 const relationshipTypes = [
@@ -17,7 +18,7 @@ const relationshipTypes = [
   { value: 'child', label: 'Dziecko' },
 ];
 
-const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ id, isOpen, onClose }) => {
+const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ id, isOpen, onClose,idTree }) => {
   const [selectedPerson, setSelectedPerson] = useState<any | null>(null);
   const [selectedRelationType, setSelectedRelationType] = useState<string>('');
   const [persons, setPersons] = useState<any[]>([]);
