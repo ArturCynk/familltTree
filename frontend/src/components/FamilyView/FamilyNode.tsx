@@ -45,10 +45,7 @@ export const FamilyNode = React.memo(
 
     const customNode = node as CustomNode;
     const isDeceased = customNode.status === 'deceased';
-
-    console.log(node);
     
-
     const getDisplayName = (n: ExtNode) => {
       const namedNode = n as unknown as NamedNode;
       if (!displayOptions.showFullName) return '';

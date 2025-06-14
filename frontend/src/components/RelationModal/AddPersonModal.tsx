@@ -12,10 +12,12 @@ interface AddPersonModalProps {
   relationLabel: string;
   relationType: string;
   id: string;
+    persons?:any|null;
+   onUpdate?: (updatedPerson:any) => void;
 }
 
 const AddPersonModal: React.FC<AddPersonModalProps> = ({
-  isOpen, onClose, relationLabel, relationType, id,
+  isOpen, onClose, relationLabel, relationType, id,persons,onUpdate 
 }) => {
   const [gender, setGender] = useState<'male' | 'female' | 'non-binary'>('male');
   const [firstName, setFirstName] = useState<string>('');
@@ -106,13 +108,17 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
 
     try {
       const token = localStorage.getItem('authToken');
-      await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', { ...personData, relationType, id }, {
+      const response=await axios.post('http://localhost:3001/api/person/addPersonWithRelationships', { ...personData, relationType, id }, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
       toast.success('Osoba została pomyślnie dodana!');
+            if (onUpdate) {
+  onUpdate(response.data);
+}
+
       onClose();
     } catch (error) {
       toast.error('Wystąpił błąd podczas dodawania osoby.');

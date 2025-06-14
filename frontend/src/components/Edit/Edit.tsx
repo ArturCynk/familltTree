@@ -33,9 +33,11 @@ interface Person {
 interface PersonModalProps {
   id: string;
   onClose: () => void;
+  persons:any|null;
+   onUpdate?: (updatedPerson:any) => void;
 }
 
-const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
+const PersonModal: React.FC<PersonModalProps> = ({ id, onClose,persons,onUpdate }) => {
   const [person, setPerson] = useState<Person | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [formData, setFormData] = useState<Person | null>(null);
@@ -55,7 +57,6 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
           });
           setPerson(response.data);
           setFormData(response.data);
-          console.log(response.data);
           setIsLoading(false);
         } catch (error) {
           toast.error('Nie udało się pobrać danych o osobie.');
@@ -86,12 +87,18 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('authToken');
-      await axios.put(`http://localhost:3001/api/person/update/${id}`, formData, {
+      const response = await axios.put(`http://localhost:3001/api/person/update/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
+      console.log(response.data);
+      
+      if (onUpdate) {
+  onUpdate(response.data.person);
+}
+      
       toast.success('Dane zostały pomyślnie zaktualizowane!');
       onClose();
     } catch (error) {

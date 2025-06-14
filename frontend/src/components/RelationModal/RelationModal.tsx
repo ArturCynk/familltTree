@@ -12,10 +12,12 @@ interface RelationModalProps {
   personName: string;
   personGender: 'male' | 'female' | 'not-binary';
   id: string;
+  persons?:any|null;
+   onUpdate?: (updatedPerson:any) => void;
 }
 
 const RelationModal: React.FC<RelationModalProps> = ({
-  isOpen, onClose, personName, personGender, id,
+  isOpen, onClose, personName, personGender, id,persons, onUpdate
 }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isSelectExistingOpen, setIsSelectExistingOpen] = useState<boolean>(false);
@@ -163,6 +165,8 @@ const RelationModal: React.FC<RelationModalProps> = ({
           relationLabel={selectedRelation}
           relationType={relationType}
           id={id}
+          persons={persons}
+          onUpdate={onUpdate}
         />
 
         <SelectExistingPersonModal

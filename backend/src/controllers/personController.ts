@@ -148,7 +148,13 @@ export const addPersonWithRelationships = async (req: Request, res: Response): P
       body: req.body
     });
 
-    res.status(201).json({ message: 'Osoba została dodana z relacjami.', person });
+const { newPerson, changedPersons } = person;
+
+   res.status(201).json({
+  message: 'Osoba została dodana z relacjami.',
+  person: newPerson,
+  changedPersons
+});
   } catch (error: any) {
     console.error('Błąd podczas dodawania osoby z relacjami:', error);
     const status = error.message.includes('nie znalezion') ? 404 : 
@@ -200,16 +206,10 @@ export const addPersonWithRelationships = async (req: Request, res: Response): P
     try {
       const userEmail = req.user?.email;
 
-      console.log(userEmail);
-      
-  
       if (!userEmail) {
         return res.status(400).json({ msg: 'Nie znaleziono adresu e-mail użytkownika' });
       }
   
-      // Wywołanie serwisu w celu pobrania relacji
-
-      console.log(2);
       
       const relations = await personService.getRelationsForPerson(id,'user',req.user?.email);
   

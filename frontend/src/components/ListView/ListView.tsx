@@ -267,6 +267,7 @@ const PeopleTable: React.FC = () => {
         <EditModal
           id={selectedPerson.id}
           onClose={closeModals}
+          persons={selectedPerson}
         />
       )}
 

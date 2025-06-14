@@ -20,6 +20,32 @@ import type { Node, ExtNode } from 'relatives-tree/lib/types';
 import type { CSSProperties } from 'react';
 import NotAuthenticatedScreen from '../NotAuthenticatedScreen/NotAuthenticatedScreen';
 import { SearchControlPanel } from './SearchControlPanel';
+import { Person } from '../ListView/Types';
+
+ interface Persone {
+  _id: string;
+  gender: 'male' | 'female' | 'non-binary';
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  maidenName?: string;
+  birthDateType: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
+  birthDate?: string;
+  birthDateFrom?: string;
+  birthDateTo?: string;
+  birthPlace?: string;
+  status: 'alive' | 'deceased';
+  deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
+  deathDate?: string;
+  deathDateFrom?: string;
+  deathDateTo?: string;
+  burialPlace?: string;
+  spouses?: { weddingDate: string }[];
+  birthDateFreeText?: string;
+  deathDateFreeText?: string;
+  photo?: string;
+}
+
 
 interface FamilyData {
   nodes: Node[];
@@ -89,6 +115,9 @@ const FamilyView: React.FC = () => {
     showDeceasedRibbon: true,
     showGenderColors: false,
   });
+  const [selectedPerson, setSelectedPerson] = useState<any | null>(null);
+  const [selectedPersonAdd, setSelectedPersonAdd] = useState<any | null>(null);
+
 
   const fetchFamilyData = useCallback(async () => {
     const token = localStorage.getItem('authToken');
@@ -147,8 +176,6 @@ const FamilyView: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('recentRoots', JSON.stringify(recentRoots));
   }, [recentRoots]);
-
-
   class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
     state: ErrorBoundaryState = {
       hasError: false,
@@ -263,12 +290,77 @@ const FamilyView: React.FC = () => {
   }, [familyData, selectId]);
 
   const closeModals = useCallback(async () => {
-    setIsRelationModalOpen(false);
-    setIsEditModalOpen(false);
     setIsModalDeleteRelationOpen(false);
     await fetchFamilyData();
   }, [fetchFamilyData]);
 
+  const updateNodeInFamilyData = (updatedNode: Node) => {
+  if (!familyData) return;
+
+  const updatedNodes = familyData.nodes.map((node) =>
+    node.id === updatedNode.id ? updatedNode : node
+  );
+
+  setFamilyData({
+    ...familyData,
+    nodes: updatedNodes,
+  });
+};
+
+const updateFamilyDataWithNewAndChangedPersons = (
+  newPerson: Node,
+  changedPersons: Node[]
+) => {
+  if (!familyData) return;
+
+  const updatedNodesMap = new Map<string, Node>();
+
+  // Dodaj istniejące nodes do mapy
+  familyData.nodes.forEach(node => {
+    updatedNodesMap.set(node.id, node);
+  });
+
+  // Dodaj/aktualizuj changedPersons
+  changedPersons.forEach(person => {
+    updatedNodesMap.set(person.id, person);
+  });
+
+  // Dodaj/aktualizuj nową osobę
+  updatedNodesMap.set(newPerson.id, newPerson);
+
+  // Zamień mapę z powrotem na tablicę
+  const updatedNodes = Array.from(updatedNodesMap.values());
+
+  setFamilyData({
+    ...familyData,
+    nodes: updatedNodes,
+  });
+};
+
+
+
+    const closeModalsEdit =useCallback(async () => {
+      setIsEditModalOpen(false);
+    }, [selectedPerson]);
+
+    useEffect(() => {
+  if (selectedPerson) {
+    updateNodeInFamilyData({ id: selectedPerson._id, ...selectedPerson }); // Zmień
+  }
+}, [selectedPerson]);
+
+
+    const closeModalsAdd =useCallback(async () => {
+      setIsRelationModalOpen(false); 
+    }, [selectedPersonAdd]);
+
+    useEffect(() => {
+  if (selectedPersonAdd) {
+updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPersonAdd.changedPersons);
+  }
+}, [selectedPersonAdd]);
+
+  
   const handleEdit = useCallback(() => {
     setIsEditModalOpen(true);
   }, []);
@@ -406,17 +498,22 @@ const FamilyView: React.FC = () => {
       {isEditModalOpen && selectedNode && (
         <EditModal
           id={selectedNode.id}
-          onClose={closeModals}
+            persons={selectedPerson}
+          onClose={closeModalsEdit}
+          onUpdate={setSelectedPerson}
         />
       )}
 
       {isRelationModalOpen && selectedNode && (
         <RelationModal
           isOpen={isRelationModalOpen}
-          onClose={closeModals}
+          onClose={closeModalsAdd}
           personGender={selectedNode.gender}
           id={selectedNode.id}
           personName={`${selectedNode.firstName} ${selectedNode.lastName}`}
+          persons={selectedPersonAdd}
+          onUpdate={setSelectedPersonAdd}
+
         />
       )}
 

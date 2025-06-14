@@ -3,6 +3,8 @@ import User from '../models/User';
 import Person from '../models/Person';
 import { IPerson } from '../models/Person';
 import FamilyTree from '../models/FamilyTree';
+import { buildCheckFunction } from 'express-validator';
+import { setPriority } from 'node:os';
 
 interface AddPersonInput {
   email: string | undefined;
@@ -132,7 +134,7 @@ export class PersonService {
     userEmail?: string,
     treeId?: string,
     file?: Express.Multer.File,
-  ): Promise<IPerson> {
+  ): Promise<object> {
     const user = type === 'user'
     ? await User.findOne({ email: userEmail }).populate('persons').exec()
     : await FamilyTree.findById(treeId).populate('persons').exec();
@@ -192,7 +194,7 @@ export class PersonService {
 
     await user.save();
 
-    return user.persons[personIndex];
+    return {...this.getPersonBasicInfo(user.persons[personIndex]),...this.getPersonRelations(user.persons[personIndex], user.persons)};
   }
 
   public async getAllPersonsWithRelations(type: PersonType,
@@ -566,7 +568,7 @@ export class PersonService {
     return events;
   }
 
-  public async addPersonWithRelationships(input: {
+public async addPersonWithRelationships(input: {
     type: PersonType,
     userEmail?: string,
     treeId?: string
@@ -593,13 +595,11 @@ export class PersonService {
       weddingDate?: Date;
       selectedOption?: string;
       selectedIds?: string[];
-      birthDateFreeText?: string,
-deathDateFreeText?: string,
-
-      
-      id?: string; // ID of the existing person to whom we are adding a relationship
+      birthDateFreeText?: string;
+      deathDateFreeText?: string;
+      id?: string;
     };
-  }): Promise<IPerson> {
+  }): Promise<{ newPerson: object; changedPersons: object[] }> {
     const {
       gender,
       firstName,
@@ -618,8 +618,7 @@ deathDateFreeText?: string,
       deathDateTo,
       relationType,
       birthDateFreeText,
-deathDateFreeText,
-
+      deathDateFreeText,
       burialPlace,
       photoUrl,
       weddingDate,
@@ -628,24 +627,32 @@ deathDateFreeText,
       id
     } = input.body;
   
-    // Fetch the logged-in user and populate their persons field
+    // Track all changed person IDs
+    const changedPersonsIds: string[] = [];
+    const addToChanged = (personId: Types.ObjectId | string) => {
+      const idStr = personId.toString();
+      if (!changedPersonsIds.includes(idStr)) {
+        changedPersonsIds.push(idStr);
+      }
+    };
+
+    // Fetch user/family tree
     const loggedInUser = input.type === 'user'
-    ? await User.findOne({ email: input.userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(input.treeId).populate('persons').exec();
+      ? await User.findOne({ email: input.userEmail }).populate('persons').exec()
+      : await FamilyTree.findById(input.treeId).populate('persons').exec();
   
     if (!loggedInUser) {
       throw new Error('Użytkownik nie znaleziony');
     }
-  
+
     let photoPath: string | null = null;
-  
     if (input.file) {
       photoPath = `uploads/${input.file.filename}`;
     } else if (photoUrl) {
       photoPath = photoUrl;
     }
   
-    // Create a new person with data from the request
+    // Create new person
     const newPerson = new Person({
       gender,
       firstName,
@@ -654,8 +661,7 @@ deathDateFreeText,
       maidenName,
       birthDateType,
       birthDateFreeText,
-deathDateFreeText,
-
+      deathDateFreeText,
       birthDate,
       birthDateFrom,
       birthDateTo,
@@ -673,195 +679,249 @@ deathDateFreeText,
       children: []
     });
   
-    // Find the existing person from the logged-in user's persons list
     if (relationType && id) {
-      const existingPerson = loggedInUser.persons.find((person: IPerson) => person._id.toString() === id);
+      const existingPerson = loggedInUser.persons.find(
+        (person: IPerson) => person._id.toString() === id
+      );
   
       if (existingPerson) {
+        // Track existing person (will be modified)
+        addToChanged(existingPerson._id);
+
         switch (relationType) {
           case 'Father':
-            case 'Mother':
-              // Sprawdzamy opcję "yes" lub "some"
-              if (selectedOption === "yes" || selectedOption === "some") {
-                const siblingsIds = selectedOption === "yes" ? existingPerson.siblings : selectedIds || []; // Upewniamy się, że selectedIds nie jest undefined
+          case 'Mother':
+            if (selectedOption === "yes" || selectedOption === "some") {
+              const siblingsIds = selectedOption === "yes" 
+                ? existingPerson.siblings 
+                : selectedIds || [];
             
-                for (const siblingId of siblingsIds) {
-                  const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === siblingId.toString());
-                  const person = loggedInUser.persons[personIndex];
+              for (const siblingId of siblingsIds) {
+                const sibling = loggedInUser.persons.find(
+                  (p: IPerson) => p._id.toString() === siblingId.toString()
+                );
             
-                  if (person) {
-                    person.parents.push(newPerson._id);
-                    newPerson.children.push(person._id);
-                  }
+                if (sibling) {
+                  sibling.parents.push(newPerson._id);
+                  newPerson.children.push(sibling._id);
+                  addToChanged(sibling._id);
                 }
-            
-                await loggedInUser.save();
               }
+            }
             
-              // Dodanie rodzica do dziecka
-              newPerson.children.push(existingPerson._id); // Dodanie nowego rodzica do nowej osoby
-              existingPerson.parents.push(newPerson._id); // Dodanie dziecka do istniejącej osoby
-            
-              break;
+            // Add parent-child relationship
+            newPerson.children.push(existingPerson._id);
+            existingPerson.parents.push(newPerson._id);
+            break;
+
           case 'Sibling':
+            // Add to existing siblings
             if (!existingPerson.siblings.includes(newPerson._id)) {
               existingPerson.siblings.push(newPerson._id);
             }
   
-            existingPerson.siblings.forEach(async sibling => {
-              const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === sibling.toString());
-              let person = loggedInUser.persons[personIndex];
-  
-              if (person) {
-                person.siblings.push(newPerson._id);
+            // Update all siblings
+            for (const siblingId of existingPerson.siblings) {
+              if (siblingId.toString() === newPerson._id.toString()) continue;
+              
+              const sibling = loggedInUser.persons.find(
+                (p: IPerson) => p._id.toString() === siblingId.toString()
+              );
+              
+              if (sibling && !sibling.siblings.includes(newPerson._id)) {
+                sibling.siblings.push(newPerson._id);
+                addToChanged(sibling._id);
               }
-            });
+            }
   
-            await loggedInUser.save();
-  
-            // Set siblings for the newly added person
-            newPerson.siblings = [...existingPerson.siblings.filter(
-              (siblingId: any) => siblingId.toString() !== newPerson._id.toString()
-            )];
-            newPerson.siblings.push(existingPerson._id);
+            // Set siblings for new person
+            newPerson.siblings = [
+              ...existingPerson.siblings.filter(
+                (siblingId: any) => siblingId.toString() !== newPerson._id.toString()
+              ),
+              existingPerson._id
+            ];
+            
+            // Share parents
             newPerson.parents.push(...existingPerson.parents);
-            existingPerson.parents.forEach(async parent => {
-              const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === parent.toString());
-              let person = loggedInUser.persons[personIndex];
-  
-              if (person) {
-                person.children.push(newPerson._id);
+            for (const parentId of existingPerson.parents) {
+              const parent = loggedInUser.persons.find(
+                (p: IPerson) => p._id.toString() === parentId.toString()
+              );
+              
+              if (parent && !parent.children.includes(newPerson._id)) {
+                parent.children.push(newPerson._id);
+                addToChanged(parent._id);
               }
-            });
+            }
             break;
   
-            case 'Daughter':
-              case 'Son':
-                // Add child to the existing person
-                newPerson.parents.push(existingPerson._id);
-                existingPerson.children.push(newPerson._id);
-              
-                // If existing person has no spouses, create an unknown parent
-                if (existingPerson.spouses.length === 0) {
-                  const unknownGender = existingPerson.gender === 'female' ? 'male' : 'female';
-                  const unknownParent = new Person({
-                    firstName: "Nieznany",
-                    lastName: existingPerson.lastName,
-                    gender: unknownGender,
-                    status: 'alive'
-                  });
-              
-                  // Link unknown parent to existing person
-                  existingPerson.spouses.push({ personId: unknownParent._id, weddingDate: new Date() });
-                  unknownParent.spouses.push({ personId: existingPerson._id, weddingDate: new Date() });
-              
-                  loggedInUser.persons.push(unknownParent);
-                  await unknownParent.save();
-                }
-              
-                // Link child to spouse if there is one
-                const linkChildToSpouse = async (spouseId: string | Types.ObjectId) => {
-                  const spousePerson = loggedInUser.persons.find((p: IPerson) => p._id.toString() === spouseId.toString());
-                  if (spousePerson) {
-                    if (!spousePerson.children.includes(newPerson._id)) {
-                      spousePerson.children.push(newPerson._id);
-                    }
-                    if (!newPerson.parents.includes(spousePerson._id)) {
-                      newPerson.parents.push(spousePerson._id);
-                    }
-              
-                    // Update siblings for spouse's children
-                    for (const childId of spousePerson.children) {
-                      if (childId.toString() !== newPerson._id.toString()) {
-                        const sibling = loggedInUser.persons.find((p: IPerson) => p._id.toString() === childId.toString());
-                        if (sibling) {
-                          if (!sibling.siblings.includes(newPerson._id)) {
-                            sibling.siblings.push(newPerson._id);
-                            await sibling.save();
-                          }
-                          if (!newPerson.siblings.includes(sibling._id)) {
-                            newPerson.siblings.push(sibling._id);
-                          }
-                        }
-                      }
-                    }
-                    await spousePerson.save();
-                  }
-                };
-              
-                // If there is one spouse, link the child to the spouse
-                if (existingPerson.spouses.length === 1) {
-                  const spouseId = existingPerson.spouses[0].personId;
-                  await linkChildToSpouse(spouseId);
-                }
-              
-                // If selectedIds are provided, link child to selected spouse
-                if (selectedIds && selectedIds.length === 1) {
-                  const spouseId = selectedIds[0];
-                  await linkChildToSpouse(spouseId);
-                }
-              
-                // Update siblings for existing person's children
-                for (const childId of existingPerson.children) {
-                  if (childId.toString() !== newPerson._id.toString()) {
-                    const sibling = loggedInUser.persons.find((p: IPerson) => p._id.toString() === childId.toString());
-                    if (sibling) {
-                      if (!sibling.siblings.includes(newPerson._id)) {
-                        sibling.siblings.push(newPerson._id);
-                        await sibling.save();
-                      }
-                      if (!newPerson.siblings.includes(sibling._id)) {
-                        newPerson.siblings.push(sibling._id);
-                      }
-                    }
-                  }
-                }
-              
-                break;
-              
-            case 'Partner':
-              // Dodanie partnera do obu osób
-              const weddingDateToUse = weddingDate || new Date(); // Jeśli brak daty, ustawiamy bieżącą
-            
-              newPerson.spouses.push({
+          case 'Daughter':
+          case 'Son':
+            // Add parent-child relationship
+            newPerson.parents.push(existingPerson._id);
+            existingPerson.children.push(newPerson._id);
+          
+            // Create unknown parent if needed
+            if (existingPerson.spouses.length === 0) {
+              const unknownGender = existingPerson.gender === 'female' ? 'male' : 'female';
+              const unknownParent = new Person({
+                firstName: "Nieznany",
+                lastName: existingPerson.lastName,
+                gender: unknownGender,
+                status: 'alive'
+              });
+          
+              // Link unknown parent
+              existingPerson.spouses.push({ 
+                personId: unknownParent._id, 
+                weddingDate: weddingDate || new Date()
+              });
+              unknownParent.spouses.push({
                 personId: existingPerson._id,
-                weddingDate: weddingDateToUse // Dodanie partnera do nowej osoby
+                weddingDate: weddingDate || new Date()
               });
-              existingPerson.spouses.push({
-                personId: newPerson._id,
-                weddingDate: weddingDateToUse // Dodanie partnera do istniejącej osoby
-              });
-            
-              // Dodawanie dzieci, jeśli wybrano odpowiednią opcję
-              if (selectedOption === "yes" || selectedOption === "some") {
-                const childrenIds = selectedOption === "yes" ? existingPerson.children : selectedIds  || [];
-            
-                for (const childId of childrenIds) {
-                  const personIndex = loggedInUser.persons.findIndex(p => p._id.toString() === childId.toString());
-                  const person = loggedInUser.persons[personIndex];
-            
-                  if (person) {
-                    person.parents.push(newPerson._id);
-                    newPerson.children.push(person._id);
+              unknownParent.children.push(newPerson._id);
+              newPerson.parents.push(unknownParent._id);
+          
+              loggedInUser.persons.push(unknownParent);
+              await unknownParent.save();
+              addToChanged(unknownParent._id);
+            }
+          
+            // Link child to spouse(s)
+            const linkChildToSpouse = async (spouseId: string | Types.ObjectId) => {
+              const spouse = loggedInUser.persons.find(
+                (p: IPerson) => p._id.toString() === spouseId.toString()
+              );
+              
+              if (spouse) {
+                if (!spouse.children.includes(newPerson._id)) {
+                  spouse.children.push(newPerson._id);
+                  addToChanged(spouse._id);
+                }
+                if (!newPerson.parents.includes(spouse._id)) {
+                  newPerson.parents.push(spouse._id);
+                }
+          
+                // Add sibling relationships
+                for (const childId of spouse.children) {
+                  if (childId.toString() === newPerson._id.toString()) continue;
+                  
+                  const sibling = loggedInUser.persons.find(
+                    (p: IPerson) => p._id.toString() === childId.toString()
+                  );
+                  
+                  if (sibling) {
+                    if (!sibling.siblings.includes(newPerson._id)) {
+                      sibling.siblings.push(newPerson._id);
+                      await sibling.save();
+                      addToChanged(sibling._id);
+                    }
+                    if (!newPerson.siblings.includes(sibling._id)) {
+                      newPerson.siblings.push(sibling._id);
+                    }
                   }
                 }
-            
-                await loggedInUser.save();
+                await spouse.save();
               }
-              break;
+            };
+          
+            // Link to all spouses if "yes" selected
+            if (selectedOption === "yes") {
+              for (const spouse of existingPerson.spouses) {
+                await linkChildToSpouse(spouse.personId);
+              }
+            } 
+            // Link to specific spouse if "some" selected
+            else if (selectedOption === "some" && selectedIds) {
+              for (const spouseId of selectedIds) {
+                await linkChildToSpouse(spouseId);
+              }
+            }
+          
+            // Add sibling relationships for existing children
+            for (const childId of existingPerson.children) {
+              if (childId.toString() === newPerson._id.toString()) continue;
+              
+              const sibling = loggedInUser.persons.find(
+                (p: IPerson) => p._id.toString() === childId.toString()
+              );
+              
+              if (sibling) {
+                if (!sibling.siblings.includes(newPerson._id)) {
+                  sibling.siblings.push(newPerson._id);
+                  await sibling.save();
+                  addToChanged(sibling._id);
+                }
+                if (!newPerson.siblings.includes(sibling._id)) {
+                  newPerson.siblings.push(sibling._id);
+                }
+              }
+            }
+            break;
+          
+          case 'Partner':
+            // Add partner relationship
+            const weddingDateToUse = weddingDate || new Date();
+            
+            newPerson.spouses.push({
+              personId: existingPerson._id,
+              weddingDate: weddingDateToUse
+            });
+            existingPerson.spouses.push({
+              personId: newPerson._id,
+              weddingDate: weddingDateToUse
+            });
+            
+            // Add children if selected
+            if (selectedOption === "yes" || selectedOption === "some") {
+              const childrenIds = selectedOption === "yes" 
+                ? existingPerson.children 
+                : selectedIds || [];
+            
+              for (const childId of childrenIds) {
+                const child = loggedInUser.persons.find(
+                  (p: IPerson) => p._id.toString() === childId.toString()
+                );
+            
+                if (child) {
+                  child.parents.push(newPerson._id);
+                  newPerson.children.push(child._id);
+                  addToChanged(child._id);
+                }
+              }
+            }
+            break;
+            
           default:
             throw new Error('Nieznany typ relacji.');
         }
-  
-        // Save the new person to the database
+
+        // Save all changes
         const savedPerson = await newPerson.save();
-  
-        // Add the new person to the logged-in user's persons list
+        addToChanged(savedPerson._id);
+        
+        // Add to user's persons list
         loggedInUser.persons.push(savedPerson);
         await loggedInUser.save();
         await existingPerson.save();
   
-        return savedPerson;
+return {
+  newPerson: {
+    ...this.getPersonBasicInfo(savedPerson),
+    ...this.getPersonRelations(savedPerson, loggedInUser.persons),
+  },
+  changedPersons: changedPersonsIds.map(id => {
+    const person = loggedInUser.persons.find(p => p._id.equals(id));
+    return person
+      ? {
+          ...this.getPersonBasicInfo(person),
+          ...this.getPersonRelations(person, loggedInUser.persons),
+        }
+      : null;
+  }).filter(p => p !== null), // na wypadek gdyby osoba nie została znaleziona
+};
       } else {
         throw new Error(`Osoba o ID ${id} nie została znaleziona wśród osób użytkownika.`);
       }
