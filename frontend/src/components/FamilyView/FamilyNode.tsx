@@ -147,7 +147,7 @@ export const FamilyNode = React.memo(
               )}
 
               {/* Death date display */}
-              {displayOptions.showDeathDate  && (
+              {isDeceased && displayOptions.showDeathDate  && (
                 <div className="flex items-center justify-center text-[9px] text-gray-600 dark:text-gray-400">
                   <FontAwesomeIcon
                     icon={faCross}

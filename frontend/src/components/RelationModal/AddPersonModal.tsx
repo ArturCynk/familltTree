@@ -277,12 +277,12 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                         <option key={type} value={type} className="bg-white dark:bg-gray-700">
                           {{
                             exact: 'Dokładna data',
-                            before: 'Przed datą',
-                            after: 'Po dacie',
-                            around: 'Około',
-                            probably: 'Prawdopodobnie',
-                            between: 'Pomiędzy datami',
-                            fromTo: 'Od - do',
+                          //  before: 'Przed datą',
+                          //  after: 'Po dacie',
+                          //  around: 'Około',
+                           // probably: 'Prawdopodobnie',
+                           // between: 'Pomiędzy datami',
+                           // fromTo: 'Od - do',
                             freeText: 'Dowolny opis'
                           }[type]}
                         </option>
@@ -504,12 +504,12 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
                         <option key={type} value={type} className="bg-white dark:bg-gray-700">
                           {{
                             exact: 'Dokładna data',
-                            before: 'Przed datą',
-                            after: 'Po dacie',
-                            around: 'Około',
-                            probably: 'Prawdopodobnie',
-                            between: 'Pomiędzy datami',
-                            fromTo: 'Od - do',
+                           // before: 'Przed datą',
+                           // after: 'Po dacie',
+                           // around: 'Około',
+                           // probably: 'Prawdopodobnie',
+                           // between: 'Pomiędzy datami',
+                           // fromTo: 'Od - do',
                             freeText: 'Dowolny opis'
                           }[type]}
                         </option>

@@ -169,6 +169,22 @@ export class PersonService {
       updateData.photo = person.photo;
     }
 
+    if(updateData.birthDateType === 'freeText') {
+      updateData.birthDate = undefined;
+    }
+
+        if(updateData.birthDateType === 'exact') {
+      updateData.birthDateFreeText = undefined;
+    }
+
+        if(updateData.deathDateType === 'freeText') {
+      updateData.deathDate = undefined;
+    }
+
+        if(updateData.deathDateType === 'exact') {
+      updateData.deathDateFreeText = undefined;
+    }
+    
     user.persons[personIndex] = {
       ...person.toObject(),
       ...updateData,

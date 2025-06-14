@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPen, faTrash, faTimes } from '@fortawesome/free-solid-svg-icons';
 import LoadingSpinner from '../Loader/LoadingSpinner';
+import { getParsedCommandLineOfConfigFile } from 'typescript';
 
 interface Person {
   _id: string;
@@ -54,6 +55,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
           });
           setPerson(response.data);
           setFormData(response.data);
+          console.log(response.data);
           setIsLoading(false);
         } catch (error) {
           toast.error('Nie udało się pobrać danych o osobie.');
@@ -65,6 +67,10 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
       fetchPerson();
     }
   }, [id, onClose]);
+
+  const formatDateForInput = (date: Date) => {
+  return date.toISOString().split("T")[0];
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -240,12 +246,12 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                       <option key={type} value={type}>
                         {{
                           exact: 'Dokładna data',
-                          before: 'Przed datą',
-                          after: 'Po dacie',
-                          around: 'Około',
-                          probably: 'Prawdopodobnie',
-                          between: 'Pomiędzy datami',
-                          fromTo: 'Od - do',
+                          //before: 'Przed datą',
+                          //after: 'Po dacie',
+                          //around: 'Około',
+                          //probably: 'Prawdopodobnie',
+                         // between: 'Pomiędzy datami',
+                         // fromTo: 'Od - do',
                           freeText: 'Dowolny opis'
                         }[type]}
                       </option>
@@ -261,8 +267,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                     <div className="relative">
                       <input
                         type="date"
-                        value={formData?.birthDate}
+                        value={formData?.birthDate ? formatDateForInput(new Date(formData.birthDate)) : ""}
                         onChange={handleChange}
+                        name="birthDate"
                         className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                       />
                     </div>
@@ -279,6 +286,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                       className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                     />
                   )}
+
 
                 {(formData?.birthDateType === 'between' || formData?.birthDateType === 'fromTo') && (
                   <>
@@ -414,12 +422,12 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose }) => {
                         <option key={type} value={type}>
                           {{
                             exact: 'Dokładna data',
-                            before: 'Przed datą',
-                            after: 'Po dacie',
-                            around: 'Około',
-                            probably: 'Prawdopodobnie',
-                            between: 'Pomiędzy datami',
-                            fromTo: 'Od - do',
+                           // before: 'Przed datą',
+                           // after: 'Po dacie',
+                           // around: 'Około',
+                           // probably: 'Prawdopodobnie',
+                           // between: 'Pomiędzy datami',
+                           // fromTo: 'Od - do',
                             freeText: 'Dowolny opis'
                           }[type]}
                         </option>
