@@ -65,9 +65,17 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    await personService.deletePerson(personId,'user',req.user.email);
+    const { deletedPersonId, updatedPersons } = await personService.deletePerson(
+      personId,
+      'user',
+      req.user.email
+    );
     
-    res.status(200).json({ message: 'Osoba została usunięta wraz z powiązaniami' });
+    res.status(200).json({ 
+      message: 'Osoba została usunięta wraz z powiązaniami',
+      deletedPersonId,
+      updatedPersons
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania osoby';
     const status = error instanceof Error && error.message.includes('nie znalezion') ? 404 : 500;
@@ -75,11 +83,12 @@ export const deletePerson = async (req: Request, res: Response): Promise<void> =
     console.error(error);
     res.status(status).json({ 
       message,
-      error: error instanceof Error ? error.stack : null 
+      error: process.env.NODE_ENV === 'development' 
+        ? (error instanceof Error ? error.stack : null)
+        : undefined
     });
   }
 };
-
 export const getAllPersons = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await personService.getAllPersons(req.query,'user',req.user?.email);

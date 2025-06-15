@@ -33,16 +33,18 @@ interface Person {
 interface PersonModalProps {
   id: string;
   onClose: () => void;
-  persons:any|null;
-   onUpdate?: (updatedPerson:any) => void;
+  persons: any | null;
+  onUpdate?: (updatedPerson: any) => void;
+  onDeleteSuccess?: (deletedPersonId: string, updatedPersons: any[]) => void;
 }
 
-const PersonModal: React.FC<PersonModalProps> = ({ id, onClose,persons,onUpdate }) => {
+const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdate, onDeleteSuccess }) => {
   const [person, setPerson] = useState<Person | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [formData, setFormData] = useState<Person | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -69,9 +71,11 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose,persons,onUpdate 
     }
   }, [id, onClose]);
 
-  const formatDateForInput = (date: Date) => {
-  return date.toISOString().split("T")[0];
-};
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0];
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -93,11 +97,10 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose,persons,onUpdate 
           'Content-Type': 'application/json',
         },
       });
-      console.log(response.data);
       
       if (onUpdate) {
-  onUpdate(response.data.person);
-}
+        onUpdate(response.data.person);
+      }
       
       toast.success('Dane zostały pomyślnie zaktualizowane!');
       onClose();
@@ -110,23 +113,31 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose,persons,onUpdate 
   };
 
   const handleDelete = async () => {
-    if (isDeleting) return;
-
+    if (!person) return;
+    
     setIsDeleting(true);
+    setError(null);
+
     try {
       const token = localStorage.getItem('authToken');
-      await axios.delete(`http://localhost:3001/api/person/delete/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await axios.delete(`http://localhost:3001/api/person/delete/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Osoba została pomyślnie usunięta!');
+
+      if (onDeleteSuccess) {
+        onDeleteSuccess(response.data.deletedPersonId, response.data.updatedPersons);
+      }
+      
+      toast.success(response.data.message || 'Osoba została usunięta pomyślnie');
       onClose();
-    } catch (error) {
-      toast.error('Wystąpił błąd podczas usuwania osoby.');
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || 
+                      err.message || 
+                      'Wystąpił błąd podczas usuwania osoby';
+      setError(errorMsg);
+      console.error('Delete error:', err);
     } finally {
       setIsDeleting(false);
-      setShowDeleteConfirm(false);
     }
   };
 
@@ -274,7 +285,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose,persons,onUpdate 
                     <div className="relative">
                       <input
                         type="date"
-                        value={formData?.birthDate ? formatDateForInput(new Date(formData.birthDate)) : ""}
+                        value={formData?.birthDate ? formatDateForInput(formData.birthDate) : ""}
                         onChange={handleChange}
                         name="birthDate"
                         className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
@@ -536,12 +547,25 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose,persons,onUpdate 
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 transform transition-all duration-300">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 transform transition-all duration-300"
+            onClick={e => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Potwierdzenie usunięcia</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">Czy na pewno chcesz usunąć tę osobę? Tej akcji nie można cofnąć.</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Czy na pewno chcesz usunąć <span className="font-semibold">{formData?.firstName} {formData?.lastName}</span>? 
+              Tej akcji nie można cofnąć. Wszystkie powiązania zostaną zaktualizowane.
+            </p>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">
+                {error}
+              </div>
+            )}
+            
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setShowDeleteConfirm(false)}

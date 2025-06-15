@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import FamilyTree from '../models/FamilyTree';
-import User from '../models/User'; // Potrzebny żeby sprawdzić istnienie użytkownika
+import User from '../models/User'; 
 import mongoose, { Types } from 'mongoose';
 
-// Tworzenie drzewa
+
 export const createFamilyTree = async (req: Request, res: Response) => {
   try {
     const { name } = req.body;

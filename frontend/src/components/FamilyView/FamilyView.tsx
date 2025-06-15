@@ -307,6 +307,50 @@ const FamilyView: React.FC = () => {
   });
 };
 
+
+const handleDeleteSuccess = useCallback((deletedPersonId: string, updatedPersons: any[]) => {
+  if (!familyData) return;
+
+  // Create a map of updated persons for quick lookup
+  const updatedPersonsMap = new Map<string, any>();
+  updatedPersons.forEach(person => {
+    updatedPersonsMap.set(person.id, person);
+  });
+
+  // Update the family data
+  const updatedNodes = familyData.nodes
+    .filter(node => node.id !== deletedPersonId) // Remove deleted person
+    .map(node => {
+      // If this node was updated, use the updated version
+      if (updatedPersonsMap.has(node.id)) {
+        return updatedPersonsMap.get(node.id);
+      }
+      return node;
+    });
+
+  // Handle root ID change if needed
+  let newRootId = familyData.rootId;
+  if (familyData.rootId === deletedPersonId) {
+    newRootId = updatedNodes[0]?.id || '';
+    localStorage.setItem('currentRootId', newRootId);
+  }
+
+  // Update recent roots if needed
+  const updatedRecentRoots = recentRoots.filter(root => root.id !== deletedPersonId);
+
+  // Update state
+  setFamilyData({
+    nodes: updatedNodes,
+    rootId: newRootId
+  });
+  setRecentRoots(updatedRecentRoots);
+  
+  // Clear selection if deleted the selected person
+  if (selectId === deletedPersonId) {
+    setSelectId(null);
+  }
+}, [familyData, selectId, recentRoots]);
+
 const updateFamilyDataWithNewAndChangedPersons = (
   newPerson: Node,
   changedPersons: Node[]
@@ -489,6 +533,7 @@ updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPerso
                 onEdit={handleEdit}
                 onRelationModal={handleRelationModal}
                 handleOpenDeleteModal={handleOpenDeleteModal}
+                onDeleteSuccess={handleDeleteSuccess}
               />
             </div>
           )}
@@ -501,6 +546,7 @@ updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPerso
             persons={selectedPerson}
           onClose={closeModalsEdit}
           onUpdate={setSelectedPerson}
+            onDeleteSuccess={handleDeleteSuccess}
         />
       )}
 

@@ -44,6 +44,8 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
   const [selectedOption, setSelectedOption] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<{firstName?: string; lastName?: string}>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -68,6 +70,9 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
       toast.error('Proszę uzupełnić wymagane pola');
       return;
     }
+
+     if (isSubmitting) return; // blokada wielokrotnego wysłania
+  setIsSubmitting(true);
 
     const personData: any = {
       gender,
@@ -123,7 +128,9 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
     } catch (error) {
       toast.error('Wystąpił błąd podczas dodawania osoby.');
       console.error(error);
-    }
+     } finally {
+    setIsSubmitting(false); // odblokuj po zakończeniu
+  }
   };
 
   if (!isOpen) return null;
@@ -637,12 +644,13 @@ const AddPersonModal: React.FC<AddPersonModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 text-white font-medium hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-800 dark:hover:to-purple-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-600 shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Dodaj osobę
+                 {isSubmitting ? 'Wysyłanie...' : 'Dodaj osobę'}
               </button>
             </div>
             <div className="h-2"></div> 

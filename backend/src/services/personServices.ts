@@ -3,8 +3,6 @@ import User from '../models/User';
 import Person from '../models/Person';
 import { IPerson } from '../models/Person';
 import FamilyTree from '../models/FamilyTree';
-import { buildCheckFunction } from 'express-validator';
-import { setPriority } from 'node:os';
 
 interface AddPersonInput {
   email: string | undefined;
@@ -41,37 +39,104 @@ interface IEvent {
 type PersonType = 'user' | 'familyTree';
 
 export class PersonService {
-  public async deletePerson(  personId: string,
-    type: PersonType,
-    userEmail?: string,
-    treeId?: string): Promise<void> {
-    const user = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+ public async deletePerson(
+  personId: string,
+  type: PersonType,
+  userEmail?: string,
+  treeId?: string
+): Promise<{ deletedPersonId: string; updatedPersons: object }> {
+  const user = await this.getUserOrTree(type, userEmail, treeId);
 
-    if (!user) {
-      throw new Error('Użytkownik nie znaleziony');
-    }
-
-    const personIndex = user.persons.findIndex(p => p._id.toString() === personId);
-    if (personIndex === -1) {
-      throw new Error('Osoba nie znaleziona');
-    }
-
-    const deletingPersonId = user.persons[personIndex]._id;
-
-    user.persons.forEach(person => {
-      person.parents = this.filterRelations(person.parents, deletingPersonId);
-      person.siblings = this.filterRelations(person.siblings, deletingPersonId);
-      person.children = this.filterRelations(person.children, deletingPersonId);
-      person.spouses = person.spouses.filter(
-        spouse => spouse.personId.toString() !== deletingPersonId.toString()
-      );
-    });
-
-    user.persons.splice(personIndex, 1);
-    await user.save();
+  if (!user) {
+    throw new Error('Użytkownik nie znaleziony');
   }
+
+  // Ensure persons array exists
+  if (!user.persons || !Array.isArray(user.persons)) {
+    throw new Error('Invalid persons data');
+  }
+
+  // Find the person to delete with proper null checks
+  const deletingPerson = user.persons.find(p => p?._id?.toString() === personId);
+  if (!deletingPerson) {
+    throw new Error('Osoba nie znaleziona');
+  }
+
+  const deletingPersonId = deletingPerson._id;
+  
+  // Track all persons that will be modified
+  const updatedPersonIds = new Set<string>();
+
+  // Process all relationships with proper null checks
+  user.persons.forEach(person => {
+    if (!person?._id) return; // Skip invalid entries
+
+    let wasModified = false;
+
+    // Check and update parents
+    if (person.parents && this.filterRelations(person.parents, deletingPersonId).length !== person.parents.length) {
+      person.parents = this.filterRelations(person.parents, deletingPersonId);
+      wasModified = true;
+    }
+
+    // Check and update siblings
+    if (person.siblings && this.filterRelations(person.siblings, deletingPersonId).length !== person.siblings.length) {
+      person.siblings = this.filterRelations(person.siblings, deletingPersonId);
+      wasModified = true;
+    }
+
+    // Check and update children
+    if (person.children && this.filterRelations(person.children, deletingPersonId).length !== person.children.length) {
+      person.children = this.filterRelations(person.children, deletingPersonId);
+      wasModified = true;
+    }
+
+    // Check and update spouses
+    if (person.spouses) {
+      const originalSpousesLength = person.spouses.length;
+      person.spouses = person.spouses.filter(
+        spouse => spouse?.personId !== deletingPersonId
+      );
+      if (person.spouses.length !== originalSpousesLength) {
+        wasModified = true;
+      }
+    }
+
+    // If person was modified, add to tracking set
+    if (wasModified && person._id) {
+      updatedPersonIds.add(person._id.toString());
+    }
+  });
+
+  // Remove the person from the array
+  user.persons = user.persons.filter(p => p?._id?.toString() !== personId);
+  
+  // Save changes
+  await user.save();
+  
+  const personMap = new Map(
+    user.persons
+      .filter(p => p?._id)
+      .map(p => [p._id.toString(), p])
+  );
+
+  // Return information about what was deleted and updated
+  return {
+    deletedPersonId: deletingPersonId.toString(),
+    updatedPersons: Array.from(updatedPersonIds)
+      .map(id => {
+        const person = user.persons.find(p => p?._id?.toString() === id);
+        return person
+          ? {
+              ...this.getPersonBasicInfo(person),
+              ...this.getPersonRelations(person, personMap),
+            }
+          : null;
+      })
+      .filter(p => p !== null),
+  };
+}
+
 
   private filterRelations(relations: Types.ObjectId[], deletingId: Types.ObjectId): Types.ObjectId[] {
     return relations.filter(id => id.toString() !== deletingId.toString());
@@ -81,13 +146,7 @@ export class PersonService {
     const { gender, firstName, middleName, lastName, maidenName, birthDateType, birthDate, 
             birthPlace, deathDateType, deathDate, deathPlace, burialPlace, status, photoUrl } = input.body;
 
-    let photoPath: string | null = null;
-
-    if (input.file) {
-      photoPath = `uploads/${input.file.filename}`;
-    } else if (photoUrl) {
-      photoPath = photoUrl;
-    }
+    const photoPath = this.resolvePhotoPath(input.file, input.body.photoUrl);
 
     const newPerson = new Person({
       gender,
@@ -115,7 +174,7 @@ export class PersonService {
     const updatedUser = await User.findOneAndUpdate(
       { email: input.email },
       { $push: { persons: newPerson } },
-      { new: true, useFindAndModify: false }
+      { new: true}
     );
 
     if (!updatedUser) {
@@ -135,9 +194,8 @@ export class PersonService {
     treeId?: string,
     file?: Express.Multer.File,
   ): Promise<object> {
-    const user = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+   const user = await this.getUserOrTree(type, userEmail, treeId);
+
 
     if (!user) {
       throw new Error('Użytkownik nie znaleziony');
@@ -171,53 +229,45 @@ export class PersonService {
       updateData.photo = person.photo;
     }
 
-    if(updateData.birthDateType === 'freeText') {
-      updateData.birthDate = undefined;
-    }
+this.cleanDateFields(updateData);
 
-        if(updateData.birthDateType === 'exact') {
-      updateData.birthDateFreeText = undefined;
-    }
+   user.persons[personIndex] = {
+  ...user.persons[personIndex].toObject(),
+  ...updateData,
+};
 
-        if(updateData.deathDateType === 'freeText') {
-      updateData.deathDate = undefined;
-    }
+await user.save();
 
-        if(updateData.deathDateType === 'exact') {
-      updateData.deathDateFreeText = undefined;
-    }
-    
-    user.persons[personIndex] = {
-      ...person.toObject(),
-      ...updateData,
-    };
+const updatedPerson = user.persons[personIndex];
+const personMap = new Map(user.persons.map(p => [p._id.toString(), p]));
 
-    await user.save();
-
-    return {...this.getPersonBasicInfo(user.persons[personIndex]),...this.getPersonRelations(user.persons[personIndex], user.persons)};
+return {
+  ...this.getPersonBasicInfo(updatedPerson),
+  ...this.getPersonRelations(updatedPerson, personMap),
+};
   }
 
-  public async getAllPersonsWithRelations(type: PersonType,
-    userEmail?: string,
-    treeId?: string): Promise<any[]> {
-    const user = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+public async getAllPersonsWithRelations(
+  type: PersonType,
+  userEmail?: string,
+  treeId?: string
+): Promise<any[]> {
+ const user = await this.getUserOrTree(type, userEmail, treeId);
 
-    if (!user) throw new Error('Użytkownik nie znaleziony');
+  if (!user) throw new Error('Użytkownik nie znaleziony');
 
-    return user.persons.map(person => ({
-      ...this.getPersonBasicInfo(person),
-      ...this.getPersonRelations(person, user.persons),
-    }));
-  }
+  const allPersons = user.persons as IPerson[];
+  const personMap = new Map<string, IPerson>(
+    allPersons.map(p => [p._id.toString(), p])
+  );
 
+  return allPersons.map(person => this.buildPersonWithRelations(person, personMap));
+}
   public async getPerson(personId: string,type: PersonType,
     userEmail?: string,
     treeId?: string): Promise<IPerson | null> {
-    const user = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+  const user = await this.getUserOrTree(type, userEmail, treeId);
+
 
     if (!user) {
       throw new Error('Użytkownik nie znaleziony');
@@ -233,38 +283,41 @@ export class PersonService {
     return person;
   }
 
-  public async getAllPersons(query: any,type: PersonType,
-    userEmail?: string,
-    treeId?: string
-  ): Promise<{
-    users: any[];
-    totalUsers: number;
-    currentPage: number;
-    totalPages: number;
-  }> {
-    const searchQuery = query.searchQuery as string | undefined;
-    const letter = query.letter as string | undefined;
-    const page = parseInt(query.page as string) || 1;
-    const limit = parseInt(query.limit as string) || 25;
+public async getAllPersons(
+  query: any,
+  type: PersonType,
+  userEmail?: string,
+  treeId?: string
+): Promise<{
+  users: any[];
+  totalUsers: number;
+  currentPage: number;
+  totalPages: number;
+}> {
+  const searchQuery = query.searchQuery as string | undefined;
+  const letter = query.letter as string | undefined;
+  const page = Math.max(1, parseInt(query.page as string) || 1);
+  const limit = Math.max(1, parseInt(query.limit as string) || 25);
 
-    const { mongoQuery, additionalFilter } = this.buildSearchConditions(searchQuery, letter);
+  const { mongoQuery, additionalFilter } = this.buildSearchConditions(searchQuery, letter);
 
-    const loggedInUser = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+  const user = await this.getUserOrTree(type, userEmail, treeId);
 
-    if (!loggedInUser) {
-      throw new Error('Użytkownik nie znaleziony');
-    }
+  if (!user || !user.persons) {
+    throw new Error('Użytkownik nie znaleziony lub brak osób');
+  }
 
-    const filteredPersons = loggedInUser.persons.filter(additionalFilter);
-    const paginatedPersons = filteredPersons.slice((page - 1) * limit, page * limit);
-    const totalUsers = filteredPersons.length;
+  const filteredPersons = user.persons.filter(additionalFilter);
+  const totalUsers = filteredPersons.length;
+  const totalPages = Math.ceil(totalUsers / limit);
 
-    const users = paginatedPersons.map(person => ({
-      ...this.getPersonBasicInfo(person),
-      ...this.getPersonRelations(person, loggedInUser.persons),
-    }));
+  const paginatedPersons = filteredPersons.slice((page - 1) * limit, page * limit);
+  const personMap = new Map(user.persons.map(p => [p._id.toString(), p]));
+
+  const users = paginatedPersons.map(person => ({
+    ...this.getPersonBasicInfo(person),
+    ...this.getPersonRelations(person, personMap),
+  }));
 
     return {
       users,
@@ -277,9 +330,7 @@ export class PersonService {
   public async getRelationsForPerson(personId: string,type: PersonType,
     userEmail?: string,
     treeId?: string) {
-    const user = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+    const user = await this.getUserOrTree(type, userEmail, treeId);
 
 
     if (!user) {
@@ -339,16 +390,15 @@ export class PersonService {
   public async deleteRelation(personId: string, relationId: string,type: PersonType,
     userEmail?: string,
     treeId?: string): Promise<void> {
-    const loggedInUser = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+   const user = await this.getUserOrTree(type, userEmail, treeId);
 
-    if (!loggedInUser) {
+
+    if (!user) {
       throw new Error('Użytkownik nie znaleziony');
     }
 
     // Find the person from whom we are removing the relation
-    const person = loggedInUser.persons.find(p => p._id.toString() === personId);
+    const person = user.persons.find(p => p._id.toString() === personId);
     if (!person) {
       throw new Error('Osoba nie znaleziona');
     }
@@ -382,7 +432,7 @@ export class PersonService {
     }
 
     // Usunięcie osoby z relacji powiązanego obiektu (relatedPerson)
-    const relatedPerson = loggedInUser.persons.find(p => p._id.toString() === relationId);
+    const relatedPerson = user.persons.find(p => p._id.toString() === relationId);
     if (relatedPerson) {
       for (const type of relationTypes) {
         const relations = relatedPerson[type] as any[];
@@ -407,15 +457,13 @@ export class PersonService {
       }
     }
 
-    await loggedInUser.save();
+    await user.save();
   }
 
   public async getPersonsWithoutRelation(personId: string,type: PersonType,
     userEmail?: string,
     treeId?: string): Promise<IPerson[]> {
-    const loggedInUser = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+   const loggedInUser = await this.getUserOrTree(type, userEmail, treeId);
 
     if (!loggedInUser) {
       throw new Error('Użytkownik nie znaleziony');
@@ -450,9 +498,7 @@ export class PersonService {
     treeId?: string): Promise<IEvent[]> {
     const events: IEvent[] = [];
 
-    const user = type === 'user'
-    ? await User.findOne({ email: userEmail }).populate('persons').exec()
-    : await FamilyTree.findById(treeId).populate('persons').exec();
+       const user = await this.getUserOrTree(type, userEmail, treeId);
 
     if (!user) throw new Error(`${type} not found`);
 
@@ -637,9 +683,7 @@ public async addPersonWithRelationships(input: {
     };
 
     // Fetch user/family tree
-    const loggedInUser = input.type === 'user'
-      ? await User.findOne({ email: input.userEmail }).populate('persons').exec()
-      : await FamilyTree.findById(input.treeId).populate('persons').exec();
+    const loggedInUser = await this.getUserOrTree(input.type, input.userEmail, input.treeId);
   
     if (!loggedInUser) {
       throw new Error('Użytkownik nie znaleziony');
@@ -906,18 +950,20 @@ public async addPersonWithRelationships(input: {
         loggedInUser.persons.push(savedPerson);
         await loggedInUser.save();
         await existingPerson.save();
+
+          const personMap = new Map(loggedInUser.persons.map(p => [p._id.toString(), p]));
   
 return {
   newPerson: {
     ...this.getPersonBasicInfo(savedPerson),
-    ...this.getPersonRelations(savedPerson, loggedInUser.persons),
+    ...this.getPersonRelations(savedPerson, personMap),
   },
   changedPersons: changedPersonsIds.map(id => {
     const person = loggedInUser.persons.find(p => p._id.equals(id));
     return person
       ? {
           ...this.getPersonBasicInfo(person),
-          ...this.getPersonRelations(person, loggedInUser.persons),
+          ...this.getPersonRelations(person, personMap),
         }
       : null;
   }).filter(p => p !== null), // na wypadek gdyby osoba nie została znaleziona
@@ -965,45 +1011,81 @@ return {
     return { mongoQuery, additionalFilter };
   }
 
-  private getPersonBasicInfo(person: IPerson) {
-    return {
-      id: person._id.toString(),
-      firstName: person.firstName,
-      lastName: person.lastName,
-      maidenName: person.maidenName,
-      birthDate: person.birthDate,
-      deathDate: person.deathDate,
-      gender: person.gender,
-      birthPlace: person.birthPlace,
-      burialPlace: person.burialPlace,
-      status: person.status,
-      deathDateFreeText: person.deathDateFreeText,
-      birthDateFreeText: person.birthDateFreeText
-    };
-  }
+private buildPersonWithRelations(person: IPerson, personMap: Map<string, IPerson>) {
+  return {
+    ...this.getPersonBasicInfo(person),
+    ...this.getPersonRelations(person, personMap),
+  };
+}
 
-  private getPersonRelations(person: IPerson, allPersons: IPerson[]) {
-    const getRelatedPersons = (ids: mongoose.Types.ObjectId[], type: string) =>
-      allPersons
-        .filter(p => ids.some(id => id.toString() === p._id.toString()))
-        .map(p => ({
-          id: p._id,
-          firstName: p.firstName,
-          lastName: p.lastName,
-          gender: p.gender,
-          type,
-        }));
+private getPersonBasicInfo(person: IPerson) {
+  return {
+    id: person._id.toString(),
+    firstName: person.firstName,
+    lastName: person.lastName,
+    maidenName: person.maidenName,
+    birthDate: person.birthDate,
+    deathDate: person.deathDate,
+    gender: person.gender,
+    birthPlace: person.birthPlace,
+    burialPlace: person.burialPlace,
+    status: person.status,
+    birthDateFreeText: person.birthDateFreeText,
+    deathDateFreeText: person.deathDateFreeText,
+  };
+}
 
-    return {
-      parents: getRelatedPersons(person.parents, 'blood'),
-      siblings: getRelatedPersons(person.siblings, 'blood'),
-      spouses: getRelatedPersons(
-        person.spouses.map(sp => sp.personId),
-        'married'
-      ),
-      children: getRelatedPersons(person.children, 'blood'),
-    };
-  }
+private getPersonRelations(person: IPerson, personMap: Map<string, IPerson>) {
+  const getRelatedPersons = (ids: mongoose.Types.ObjectId[], type: string) =>
+    ids
+      // First filter out any null/undefined IDs
+      .filter(id => id && mongoose.Types.ObjectId.isValid(id))
+      .map(id => {
+        try {
+          return personMap.get(id.toString());
+        } catch (error) {
+          return undefined;
+        }
+      })
+      // Filter out undefined values and ensure type safety
+      .filter((p): p is IPerson => Boolean(p))
+      .map(p => ({
+        id: p._id.toString(),
+        firstName: p.firstName,
+        lastName: p.lastName,
+        gender: p.gender,
+        type,
+      }));
+
+  return {
+    parents: getRelatedPersons(person.parents || [], 'blood'),
+    siblings: getRelatedPersons(person.siblings || [], 'blood'),
+    spouses: getRelatedPersons(
+      person.spouses?.map(sp => sp.personId) || [],
+      'married'
+    ),
+    children: getRelatedPersons(person.children || [], 'blood'),
+  };
+}
+private async getUserOrTree(type: PersonType, userEmail?: string, treeId?: string) {
+  return type === 'user'
+    ? await User.findOne({ email: userEmail }).populate('persons').exec()
+    : await FamilyTree.findById(treeId).populate('persons').exec();
+}
+
+private resolvePhotoPath(file?: Express.Multer.File, photoUrl?: string, existingPhoto?: string): string | null {
+  if (file) return `uploads/${file.filename}`;
+  if (photoUrl) return photoUrl;
+  return existingPhoto || null;
+}
+private cleanDateFields(data: any) {
+  if (data.birthDateType === 'freeText') data.birthDate = undefined;
+  if (data.birthDateType === 'exact') data.birthDateFreeText = undefined;
+  if (data.deathDateType === 'freeText') data.deathDate = undefined;
+  if (data.deathDateType === 'exact') data.deathDateFreeText = undefined;
+}
+
+
 }
 
 export const personService = new PersonService();
