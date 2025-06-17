@@ -20,32 +20,6 @@ import type { Node, ExtNode } from 'relatives-tree/lib/types';
 import type { CSSProperties } from 'react';
 import NotAuthenticatedScreen from '../NotAuthenticatedScreen/NotAuthenticatedScreen';
 import { SearchControlPanel } from './SearchControlPanel';
-import { Person } from '../ListView/Types';
-
- interface Persone {
-  _id: string;
-  gender: 'male' | 'female' | 'non-binary';
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  maidenName?: string;
-  birthDateType: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
-  birthDate?: string;
-  birthDateFrom?: string;
-  birthDateTo?: string;
-  birthPlace?: string;
-  status: 'alive' | 'deceased';
-  deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
-  deathDate?: string;
-  deathDateFrom?: string;
-  deathDateTo?: string;
-  burialPlace?: string;
-  spouses?: { weddingDate: string }[];
-  birthDateFreeText?: string;
-  deathDateFreeText?: string;
-  photo?: string;
-}
-
 
 interface FamilyData {
   nodes: Node[];
@@ -63,9 +37,8 @@ interface ErrorBoundaryState {
 
 interface ErrorBoundaryProps {
   children: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void; // Add onError prop
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
-
 
 interface DisplayOptions {
   showGenderIcon: boolean;
@@ -93,7 +66,6 @@ const getNodeStyle = ({ left, top }: Readonly<ExtNode>): CSSProperties => {
 };
 
 const FamilyView: React.FC = () => {
-  const [errorBoundaryKey, setErrorBoundaryKey] = useState(0); // Add this line
   const [familyData, setFamilyData] = useState<FamilyData | null>(null);
   const [selectId, setSelectId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
@@ -262,13 +234,6 @@ const FamilyView: React.FC = () => {
     }
   };
 
-  const resetToDefaultRoot = useCallback(() => {
-    if (familyData && initialRootId) {
-      setFamilyData({ ...familyData, rootId: initialRootId });
-      localStorage.setItem('currentRootId', initialRootId);
-    }
-  }, [familyData, initialRootId]);
-
   const goToPreviousRoot = useCallback(() => {
     if (previousRoot && familyData) {
       setFamilyData({ ...familyData, rootId: previousRoot });
@@ -295,116 +260,116 @@ const FamilyView: React.FC = () => {
   }, [fetchFamilyData]);
 
   const updateNodeInFamilyData = (updatedNode: Node) => {
-  if (!familyData) return;
+    if (!familyData) return;
 
-  const updatedNodes = familyData.nodes.map((node) =>
-    node.id === updatedNode.id ? updatedNode : node
-  );
+    const updatedNodes = familyData.nodes.map((node) =>
+      node.id === updatedNode.id ? updatedNode : node
+    );
 
-  setFamilyData({
-    ...familyData,
-    nodes: updatedNodes,
-  });
-};
+    setFamilyData({
+      ...familyData,
+      nodes: updatedNodes,
+    });
+  };
 
 
-const handleDeleteSuccess = useCallback((deletedPersonId: string, updatedPersons: any[]) => {
-  if (!familyData) return;
+  const handleDeleteSuccess = useCallback((deletedPersonId: string, updatedPersons: any[]) => {
+    if (!familyData) return;
 
-  // Create a map of updated persons for quick lookup
-  const updatedPersonsMap = new Map<string, any>();
-  updatedPersons.forEach(person => {
-    updatedPersonsMap.set(person.id, person);
-  });
-
-  // Update the family data
-  const updatedNodes = familyData.nodes
-    .filter(node => node.id !== deletedPersonId) // Remove deleted person
-    .map(node => {
-      // If this node was updated, use the updated version
-      if (updatedPersonsMap.has(node.id)) {
-        return updatedPersonsMap.get(node.id);
-      }
-      return node;
+    // Create a map of updated persons for quick lookup
+    const updatedPersonsMap = new Map<string, any>();
+    updatedPersons.forEach(person => {
+      updatedPersonsMap.set(person.id, person);
     });
 
-  // Handle root ID change if needed
-  let newRootId = familyData.rootId;
-  if (familyData.rootId === deletedPersonId) {
-    newRootId = updatedNodes[0]?.id || '';
-    localStorage.setItem('currentRootId', newRootId);
-  }
+    // Update the family data
+    const updatedNodes = familyData.nodes
+      .filter(node => node.id !== deletedPersonId) // Remove deleted person
+      .map(node => {
+        // If this node was updated, use the updated version
+        if (updatedPersonsMap.has(node.id)) {
+          return updatedPersonsMap.get(node.id);
+        }
+        return node;
+      });
 
-  // Update recent roots if needed
-  const updatedRecentRoots = recentRoots.filter(root => root.id !== deletedPersonId);
+    // Handle root ID change if needed
+    let newRootId = familyData.rootId;
+    if (familyData.rootId === deletedPersonId) {
+      newRootId = updatedNodes[0]?.id || '';
+      localStorage.setItem('currentRootId', newRootId);
+    }
 
-  // Update state
-  setFamilyData({
-    nodes: updatedNodes,
-    rootId: newRootId
-  });
-  setRecentRoots(updatedRecentRoots);
-  
-  // Clear selection if deleted the selected person
-  if (selectId === deletedPersonId) {
-    setSelectId(null);
-  }
-}, [familyData, selectId, recentRoots]);
+    // Update recent roots if needed
+    const updatedRecentRoots = recentRoots.filter(root => root.id !== deletedPersonId);
 
-const updateFamilyDataWithNewAndChangedPersons = (
-  newPerson: Node,
-  changedPersons: Node[]
-) => {
-  if (!familyData) return;
+    // Update state
+    setFamilyData({
+      nodes: updatedNodes,
+      rootId: newRootId
+    });
+    setRecentRoots(updatedRecentRoots);
 
-  const updatedNodesMap = new Map<string, Node>();
+    // Clear selection if deleted the selected person
+    if (selectId === deletedPersonId) {
+      setSelectId(null);
+    }
+  }, [familyData, selectId, recentRoots]);
 
-  // Dodaj istniejące nodes do mapy
-  familyData.nodes.forEach(node => {
-    updatedNodesMap.set(node.id, node);
-  });
+  const updateFamilyDataWithNewAndChangedPersons = (
+    newPerson: Node,
+    changedPersons: Node[]
+  ) => {
+    if (!familyData) return;
 
-  // Dodaj/aktualizuj changedPersons
-  changedPersons.forEach(person => {
-    updatedNodesMap.set(person.id, person);
-  });
+    const updatedNodesMap = new Map<string, Node>();
 
-  // Dodaj/aktualizuj nową osobę
-  updatedNodesMap.set(newPerson.id, newPerson);
+    // Dodaj istniejące nodes do mapy
+    familyData.nodes.forEach(node => {
+      updatedNodesMap.set(node.id, node);
+    });
 
-  // Zamień mapę z powrotem na tablicę
-  const updatedNodes = Array.from(updatedNodesMap.values());
+    // Dodaj/aktualizuj changedPersons
+    changedPersons.forEach(person => {
+      updatedNodesMap.set(person.id, person);
+    });
 
-  setFamilyData({
-    ...familyData,
-    nodes: updatedNodes,
-  });
-};
+    // Dodaj/aktualizuj nową osobę
+    updatedNodesMap.set(newPerson.id, newPerson);
 
+    // Zamień mapę z powrotem na tablicę
+    const updatedNodes = Array.from(updatedNodesMap.values());
 
-
-    const closeModalsEdit =useCallback(async () => {
-      setIsEditModalOpen(false);
-    }, [selectedPerson]);
-
-    useEffect(() => {
-  if (selectedPerson) {
-    updateNodeInFamilyData({ id: selectedPerson._id, ...selectedPerson }); // Zmień
-  }
-}, [selectedPerson]);
+    setFamilyData({
+      ...familyData,
+      nodes: updatedNodes,
+    });
+  };
 
 
-    const closeModalsAdd =useCallback(async () => {
-      setIsRelationModalOpen(false); 
-    }, [selectedPersonAdd]);
 
-    useEffect(() => {
-  if (selectedPersonAdd) {
-updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPersonAdd.changedPersons);
-  }
-}, [selectedPersonAdd]);
+  const closeModalsEdit = useCallback(async () => {
+    setIsEditModalOpen(false);
+  }, [selectedPerson]);
 
-  
+  useEffect(() => {
+    if (selectedPerson) {
+      updateNodeInFamilyData({ id: selectedPerson._id, ...selectedPerson }); // Zmień
+    }
+  }, [selectedPerson]);
+
+
+  const closeModalsAdd = useCallback(async () => {
+    setIsRelationModalOpen(false);
+  }, [selectedPersonAdd]);
+
+  useEffect(() => {
+    if (selectedPersonAdd) {
+      updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPersonAdd.changedPersons);
+    }
+  }, [selectedPersonAdd]);
+
+
   const handleEdit = useCallback(() => {
     setIsEditModalOpen(true);
   }, []);
@@ -543,10 +508,10 @@ updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPerso
       {isEditModalOpen && selectedNode && (
         <EditModal
           id={selectedNode.id}
-            persons={selectedPerson}
+          persons={selectedPerson}
           onClose={closeModalsEdit}
           onUpdate={setSelectedPerson}
-            onDeleteSuccess={handleDeleteSuccess}
+          onDeleteSuccess={handleDeleteSuccess}
         />
       )}
 

@@ -69,7 +69,7 @@ export const FamilyNode = React.memo(
         return dateString;
       }
     };
-    
+
 
     return (
       <div
@@ -82,7 +82,7 @@ export const FamilyNode = React.memo(
             w-full h-full rounded-lg
             shadow-md overflow-hidden cursor-pointer
             transition-all duration-200
-            ${displayOptions.showGenderColors ? 
+            ${displayOptions.showGenderColors ?
               (node.gender === 'male' ?
                 'bg-blue-100 dark:bg-blue-900/95 hover:bg-blue-200 dark:hover:bg-blue-900/50 border-blue-300 dark:border-blue-700' :
                 'bg-pink-100 dark:bg-pink-900/95 hover:bg-pink-200 dark:hover:bg-pink-900/50 border-pink-300 dark:border-pink-700') :
@@ -144,7 +144,7 @@ export const FamilyNode = React.memo(
               )}
 
               {/* Death date display */}
-              {isDeceased && displayOptions.showDeathDate  && (
+              {isDeceased && displayOptions.showDeathDate && (
                 <div className="flex items-center justify-center text-[9px] text-gray-600 dark:text-gray-400">
                   <FontAwesomeIcon
                     icon={faCross}

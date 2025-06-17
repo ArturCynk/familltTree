@@ -39,103 +39,91 @@ interface IEvent {
 type PersonType = 'user' | 'familyTree';
 
 export class PersonService {
- public async deletePerson(
-  personId: string,
-  type: PersonType,
-  userEmail?: string,
-  treeId?: string
-): Promise<{ deletedPersonId: string; updatedPersons: object }> {
-  const user = await this.getUserOrTree(type, userEmail, treeId);
-
-  if (!user) {
-    throw new Error('Użytkownik nie znaleziony');
-  }
-
-  // Ensure persons array exists
-  if (!user.persons || !Array.isArray(user.persons)) {
-    throw new Error('Invalid persons data');
-  }
-
-  // Find the person to delete with proper null checks
-  const deletingPerson = user.persons.find(p => p?._id?.toString() === personId);
-  if (!deletingPerson) {
-    throw new Error('Osoba nie znaleziona');
-  }
-
-  const deletingPersonId = deletingPerson._id;
-  
-  // Track all persons that will be modified
-  const updatedPersonIds = new Set<string>();
-
-  // Process all relationships with proper null checks
-  user.persons.forEach(person => {
-    if (!person?._id) return; // Skip invalid entries
-
-    let wasModified = false;
-
-    // Check and update parents
-    if (person.parents && this.filterRelations(person.parents, deletingPersonId).length !== person.parents.length) {
-      person.parents = this.filterRelations(person.parents, deletingPersonId);
-      wasModified = true;
+  public async deletePerson(
+    personId: string,
+    type: PersonType,
+    userEmail?: string,
+    treeId?: string
+  ): Promise<{ deletedPersonId: string; updatedPersons: object }> {
+    const user = await this.getUserOrTree(type, userEmail, treeId);
+    if (!user) throw new Error('Użytkownik nie znaleziony');
+    
+    if (!Array.isArray(user.persons)) {
+      throw new Error('Invalid persons data');
     }
 
-    // Check and update siblings
-    if (person.siblings && this.filterRelations(person.siblings, deletingPersonId).length !== person.siblings.length) {
-      person.siblings = this.filterRelations(person.siblings, deletingPersonId);
-      wasModified = true;
-    }
+    // Create lookup map first for O(1) access
+    const personMap = new Map<string, IPerson>();
+    user.persons.forEach(p => {
+      if (p?._id) personMap.set(p._id.toString(), p);
+    });
 
-    // Check and update children
-    if (person.children && this.filterRelations(person.children, deletingPersonId).length !== person.children.length) {
-      person.children = this.filterRelations(person.children, deletingPersonId);
-      wasModified = true;
-    }
+    const deletingPerson = personMap.get(personId);
+    if (!deletingPerson) throw new Error('Osoba nie znaleziona');
 
-    // Check and update spouses
-    if (person.spouses) {
-      const originalSpousesLength = person.spouses.length;
-      person.spouses = person.spouses.filter(
-        spouse => spouse?.personId !== deletingPersonId
-      );
-      if (person.spouses.length !== originalSpousesLength) {
-        wasModified = true;
+    const deletingIdStr = deletingPerson._id.toString();
+    const updatedPersonIds = new Set<string>();
+
+    // Single pass through all persons
+    for (const person of user.persons) {
+      if (!person?._id) continue;
+      
+      const personId = person._id.toString();
+      let wasModified = false;
+      
+      // Process standard relations (parents, siblings, children)
+      const relations: Array<'parents' | 'siblings' | 'children'> = ['parents', 'siblings', 'children'];
+      for (const relType of relations) {
+        const relationArray = person[relType] as Types.ObjectId[];
+        if (relationArray?.length) {
+          const origLength = relationArray.length;
+          person[relType] = relationArray.filter(
+            id => id.toString() !== deletingIdStr
+          ) as any;
+          wasModified ||= (person[relType] as Types.ObjectId[]).length !== origLength;
+        }
+      }
+
+      // Special handling for spouses
+      if (person.spouses?.length) {
+        const origLength = person.spouses.length;
+        person.spouses = person.spouses.filter(
+          spouse => spouse.personId.toString() !== deletingIdStr
+        );
+        wasModified ||= person.spouses.length !== origLength;
+      }
+
+      if (wasModified) {
+        updatedPersonIds.add(personId);
+        personMap.set(personId, person);
       }
     }
 
-    // If person was modified, add to tracking set
-    if (wasModified && person._id) {
-      updatedPersonIds.add(person._id.toString());
-    }
-  });
+    // Remove deleted person
+    user.persons = user.persons.filter(p => 
+      p?._id?.toString() !== deletingIdStr
+    );
+    personMap.delete(deletingIdStr);
 
-  // Remove the person from the array
-  user.persons = user.persons.filter(p => p?._id?.toString() !== personId);
-  
-  // Save changes
-  await user.save();
-  
-  const personMap = new Map(
-    user.persons
-      .filter(p => p?._id)
-      .map(p => [p._id.toString(), p])
-  );
+    await user.save();
 
-  // Return information about what was deleted and updated
-  return {
-    deletedPersonId: deletingPersonId.toString(),
-    updatedPersons: Array.from(updatedPersonIds)
-      .map(id => {
-        const person = user.persons.find(p => p?._id?.toString() === id);
-        return person
-          ? {
-              ...this.getPersonBasicInfo(person),
-              ...this.getPersonRelations(person, personMap),
-            }
-          : null;
-      })
-      .filter(p => p !== null),
-  };
-}
+    return {
+      deletedPersonId: deletingIdStr,
+      updatedPersons: Array.from(updatedPersonIds, id => 
+        this.buildPersonResponse(personMap.get(id)!, personMap)
+      ),
+    };
+  }
+
+  private buildPersonResponse(
+    person: IPerson, 
+    personMap: Map<string, IPerson>
+  ) {
+    return {
+      ...this.getPersonBasicInfo(person),
+      ...this.getPersonRelations(person, personMap),
+    };
+  }
 
 
   private filterRelations(relations: Types.ObjectId[], deletingId: Types.ObjectId): Types.ObjectId[] {
