@@ -8,30 +8,6 @@ import {
   faPlus, faUnlink, faIdCard, faHistory, faGraduationCap
 } from '@fortawesome/free-solid-svg-icons';
 
-interface Person {
-  _id: string;
-  gender: 'male' | 'female' | 'non-binary';
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  maidenName?: string;
-  birthDateType: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
-  birthDate?: string;
-  birthDateFrom?: string;
-  birthDateTo?: string;
-  birthPlace?: string;
-  status: 'alive' | 'deceased';
-  deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
-  deathDate?: string;
-  deathDateFrom?: string;
-  deathDateTo?: string;
-  burialPlace?: string;
-  spouses?: { weddingDate: string }[];
-  birthDateFreeText?: string;
-  deathDateFreeText?: string;
-  photo?: string;
-}
-
 interface PersonModalProps {
   id: string;
   onClose: () => void;
@@ -329,7 +305,7 @@ const removeSpouse = (index: number) => {
               {/* Form Section */}
               <div className="md:col-span-2 space-y-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                     <FontAwesomeIcon icon={faVenusMars} className="text-indigo-600" />
                     <span>Płeć</span>
                   </label>
@@ -388,7 +364,7 @@ const removeSpouse = (index: number) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                     <FontAwesomeIcon icon={faHeart} className="text-indigo-600" />
                     <span>Status</span>
                   </label>

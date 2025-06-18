@@ -197,19 +197,7 @@ export class PersonService {
 
     const person = user.persons[personIndex];
 
-    if (updateData.spouses) {
-      const spouse = person.spouses?.find(spouse => spouse.personId.toString() !== personId);
-      if (spouse) {
-        const spouseIndex = user.persons.findIndex(p => p._id.toString() === spouse.personId.toString());
-        if (spouseIndex !== -1) {
-          user.persons[spouseIndex].spouses?.forEach(s => {
-            if (s.personId.toString() === personId) {
-              s.weddingDate = updateData.spouses[0].weddingDate;
-            }
-          });
-        }
-      }
-    }
+    
 
     if (file) {
       updateData.photo = file.path;

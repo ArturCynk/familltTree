@@ -28,16 +28,12 @@ interface FamilyData {
 
 interface ErrorBoundaryProps {
   children: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
-}
-
-interface ErrorBoundaryProps {
-  children: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface DisplayOptions {
@@ -48,6 +44,56 @@ interface DisplayOptions {
   showDeathDate: boolean;
   showDeceasedRibbon: boolean;
   showGenderColors: boolean;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = {
+    hasError: false,
+    error: null
+  };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return {
+      hasError: true,
+      error
+    };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error("Error caught by ErrorBoundary:", error, errorInfo);
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+  }
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
+          <div className="bg-red-100 dark:bg-red-900/20 p-6 rounded-xl max-w-md text-center border border-red-200 dark:border-red-800">
+            <div className="text-red-600 dark:text-red-400 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-red-800 dark:text-red-200">
+              Tree Rendering Error
+            </h3>
+            <p className="text-red-700 dark:text-red-300 mb-4">
+              {this.state.error?.toString()}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 const NODE_WIDTH = 150;
@@ -73,7 +119,6 @@ const FamilyView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [previousRoot, setPreviousRoot] = useState<string | null>(null);
-  const [initialRootId, setInitialRootId] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isRelationModalOpen, setIsRelationModalOpen] = useState<boolean>(false);
   const [isRelationDeleteModalOpen, setIsModalDeleteRelationOpen] = useState<boolean>(false);
@@ -89,7 +134,6 @@ const FamilyView: React.FC = () => {
   });
   const [selectedPerson, setSelectedPerson] = useState<any | null>(null);
   const [selectedPersonAdd, setSelectedPersonAdd] = useState<any | null>(null);
-
 
   const fetchFamilyData = useCallback(async () => {
     const token = localStorage.getItem('authToken');
@@ -116,7 +160,6 @@ const FamilyView: React.FC = () => {
           nodes: response.data.users,
           rootId: rootIdToUse,
         });
-        setInitialRootId(rootIdToUse);
       } else {
         setError('No family data found in response.');
       }
@@ -138,82 +181,47 @@ const FamilyView: React.FC = () => {
     if (storedRoots) {
       setRecentRoots(JSON.parse(storedRoots));
     }
-
-    return () => {
-      // Opcjonalne czyszczenie przy unmount
-      // localStorage.removeItem('currentRootId');
-    };
   }, [fetchFamilyData]);
 
   useEffect(() => {
     localStorage.setItem('recentRoots', JSON.stringify(recentRoots));
   }, [recentRoots]);
-  class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    state: ErrorBoundaryState = {
-      hasError: false,
-      error: null
-    };
 
-    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-      return {
-        hasError: true,
-        error
-      };
-    }
+  const updateNodeInFamilyData = useCallback((updatedNode: Node) => {
+    if (!familyData) return;
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-      console.error("Error caught by ErrorBoundary:", error, errorInfo);
-      if (this.props.onError) {
-        this.props.onError(error, errorInfo); // Trigger callback
-      }
-    }
+    const updatedNodes = familyData.nodes.map((node) =>
+      node.id === updatedNode.id ? updatedNode : node
+    );
 
-    fetchData = () => {
-      const updatedRoots = recentRoots.slice(1);
+    setFamilyData({
+      ...familyData,
+      nodes: updatedNodes,
+    });
+  }, [familyData]);
 
-      setRecentRoots(updatedRoots);
-      setFamilyData(prevData => {
-        const nodes = prevData?.nodes ? [...prevData.nodes] : [];
-        const rootUser = nodes[0];
-        return {
-          nodes,
-          rootId: rootUser?.id || '' // fallback to empty string if undefined
-        };
-      });
-    }
+  const updateFamilyDataWithNewAndChangedPersons = useCallback((
+    newPerson: Node,
+    changedPersons: Node[]
+  ) => {
+    if (!familyData) return;
 
+    const updatedNodesMap = new Map<string, Node>();
+    familyData.nodes.forEach(node => {
+      updatedNodesMap.set(node.id, node);
+    });
 
-    render(): ReactNode {
-      if (this.state.hasError) {
+    changedPersons.forEach(person => {
+      updatedNodesMap.set(person.id, person);
+    });
+    updatedNodesMap.set(newPerson.id, newPerson);
 
-        return (
-          <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
-            <div className="bg-red-100 dark:bg-red-900/20 p-6 rounded-xl max-w-md text-center border border-red-200 dark:border-red-800">
-              <div className="text-red-600 dark:text-red-400 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2 text-red-800 dark:text-red-200">
-                Tree Rendering Error
-              </h3>
-              <p className="text-red-700 dark:text-red-300 mb-4">
-                {this.state.error?.toString()}
-              </p>
-              <button
-                onClick={() => this.fetchData()}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Reload Page
-              </button>
-            </div>
-          </div>
-        );
-      }
-      return this.props.children;
-    }
-  }
-
+    const updatedNodes = Array.from(updatedNodesMap.values());
+    setFamilyData({
+      ...familyData,
+      nodes: updatedNodes,
+    });
+  }, [familyData]);
 
   const handleRootChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newRootId = event.target.value;
@@ -259,116 +267,43 @@ const FamilyView: React.FC = () => {
     await fetchFamilyData();
   }, [fetchFamilyData]);
 
-  const updateNodeInFamilyData = (updatedNode: Node) => {
-    if (!familyData) return;
-
-    const updatedNodes = familyData.nodes.map((node) =>
-      node.id === updatedNode.id ? updatedNode : node
-    );
-
-    setFamilyData({
-      ...familyData,
-      nodes: updatedNodes,
-    });
-  };
-
-
   const handleDeleteSuccess = useCallback((deletedPersonId: string, updatedPersons: any[]) => {
     if (!familyData) return;
 
-    // Create a map of updated persons for quick lookup
     const updatedPersonsMap = new Map<string, any>();
     updatedPersons.forEach(person => {
       updatedPersonsMap.set(person.id, person);
     });
 
-    // Update the family data
     const updatedNodes = familyData.nodes
-      .filter(node => node.id !== deletedPersonId) // Remove deleted person
-      .map(node => {
-        // If this node was updated, use the updated version
-        if (updatedPersonsMap.has(node.id)) {
-          return updatedPersonsMap.get(node.id);
-        }
-        return node;
-      });
+      .filter(node => node.id !== deletedPersonId)
+      .map(node => updatedPersonsMap.get(node.id) || node);
 
-    // Handle root ID change if needed
     let newRootId = familyData.rootId;
     if (familyData.rootId === deletedPersonId) {
       newRootId = updatedNodes[0]?.id || '';
       localStorage.setItem('currentRootId', newRootId);
     }
 
-    // Update recent roots if needed
     const updatedRecentRoots = recentRoots.filter(root => root.id !== deletedPersonId);
-
-    // Update state
     setFamilyData({
       nodes: updatedNodes,
       rootId: newRootId
     });
     setRecentRoots(updatedRecentRoots);
 
-    // Clear selection if deleted the selected person
     if (selectId === deletedPersonId) {
       setSelectId(null);
     }
   }, [familyData, selectId, recentRoots]);
 
-  const updateFamilyDataWithNewAndChangedPersons = (
-    newPerson: Node,
-    changedPersons: Node[]
-  ) => {
-    if (!familyData) return;
-
-    const updatedNodesMap = new Map<string, Node>();
-
-    // Dodaj istniejące nodes do mapy
-    familyData.nodes.forEach(node => {
-      updatedNodesMap.set(node.id, node);
-    });
-
-    // Dodaj/aktualizuj changedPersons
-    changedPersons.forEach(person => {
-      updatedNodesMap.set(person.id, person);
-    });
-
-    // Dodaj/aktualizuj nową osobę
-    updatedNodesMap.set(newPerson.id, newPerson);
-
-    // Zamień mapę z powrotem na tablicę
-    const updatedNodes = Array.from(updatedNodesMap.values());
-
-    setFamilyData({
-      ...familyData,
-      nodes: updatedNodes,
-    });
-  };
-
-
-
-  const closeModalsEdit = useCallback(async () => {
+  const closeModalsEdit = useCallback(() => {
     setIsEditModalOpen(false);
-  }, [selectedPerson]);
+  }, []);
 
-  useEffect(() => {
-    if (selectedPerson) {
-      updateNodeInFamilyData({ id: selectedPerson._id, ...selectedPerson }); // Zmień
-    }
-  }, [selectedPerson]);
-
-
-  const closeModalsAdd = useCallback(async () => {
+  const closeModalsAdd = useCallback(() => {
     setIsRelationModalOpen(false);
-  }, [selectedPersonAdd]);
-
-  useEffect(() => {
-    if (selectedPersonAdd) {
-      updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPersonAdd.changedPersons);
-    }
-  }, [selectedPersonAdd]);
-
+  }, []);
 
   const handleEdit = useCallback(() => {
     setIsEditModalOpen(true);
@@ -381,6 +316,21 @@ const FamilyView: React.FC = () => {
   const handleOpenDeleteModal = useCallback(() => {
     setIsModalDeleteRelationOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (selectedPerson) {
+      updateNodeInFamilyData({ id: selectedPerson._id, ...selectedPerson });
+    }
+  }, [selectedPerson, updateNodeInFamilyData]);
+
+  useEffect(() => {
+    if (selectedPersonAdd) {
+      updateFamilyDataWithNewAndChangedPersons(
+        selectedPersonAdd.person, 
+        selectedPersonAdd.changedPersons
+      );
+    }
+  }, [selectedPersonAdd, updateFamilyDataWithNewAndChangedPersons]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
@@ -524,7 +474,6 @@ const FamilyView: React.FC = () => {
           personName={`${selectedNode.firstName} ${selectedNode.lastName}`}
           persons={selectedPersonAdd}
           onUpdate={setSelectedPersonAdd}
-
         />
       )}
 

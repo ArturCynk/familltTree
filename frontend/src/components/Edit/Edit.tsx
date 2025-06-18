@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPen, faTrash, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faPen, faTrash} from '@fortawesome/free-solid-svg-icons';
 import LoadingSpinner from '../Loader/LoadingSpinner';
-import { getParsedCommandLineOfConfigFile } from 'typescript';
-
 interface Person {
   _id: string;
   gender: 'male' | 'female' | 'non-binary';

@@ -5,8 +5,6 @@ import {
   faTree, 
   faUsers as faUserFriends, 
   faFileAlt, 
-  faCog, 
-  faKey,
   faArrowRight, 
   faSearch, 
   faProjectDiagram ,

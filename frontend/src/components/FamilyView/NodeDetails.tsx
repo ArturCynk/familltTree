@@ -2,8 +2,7 @@ import React, { memo, useCallback, useState } from 'react';
 import classNames from 'classnames';
 import type { Node } from 'relatives-tree/lib/types';
 import {
-  faUser, faPen, faPlus, faTrash, faUnlink, faTimes, 
-  faBirthdayCake, faVenusMars, faCalendarAlt, faInfoCircle
+  faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faVenusMars
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { renderFamilyMembers } from '../ListView/ProfileCard';
