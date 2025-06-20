@@ -295,7 +295,7 @@ export const addRelation = async (req: Request, res: Response) => {
     const loggedInUser = await User.findOne({ email: req.user?.email }).populate('persons').exec();
 
     if (!loggedInUser) {
-      return res.status(404).json({ msg: 'Użytkownik nie znaleziony' });
+      return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
     }
 
     const person = loggedInUser.persons.find((p: any) => p._id.toString() === personId);
@@ -305,44 +305,73 @@ export const addRelation = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Osoba nie znaleziona' });
     }
 
-    // Modify the person and relatedPerson
+    let wasModified = false;
+
     switch (relationType) {
       case 'parent':
-        if (!person.parents.includes(relatedPersonId)) person.parents.push(relatedPersonId);
-        if (!relatedPerson.children.includes(personId)) relatedPerson.children.push(personId);
-        break;
-      case 'sibling':
-        if (!person.siblings.includes(relatedPersonId)) person.siblings.push(relatedPersonId);
-        if (!relatedPerson.siblings.includes(personId)) relatedPerson.siblings.push(personId);
-        break;
-        case 'spouse': {
-          const currentDate = new Date();
-      
-          // Sprawdź, czy relatedPersonId nie jest już w liście współmałżonków
-          if (!person.spouses.some(spouse => spouse.personId.equals(relatedPersonId))) {
-            person.spouses.push({ personId: relatedPersonId, weddingDate: currentDate });
-          }
-      
-          // Sprawdź, czy personId nie jest już w liście współmałżonków relatedPerson
-          if (!relatedPerson.spouses.some(spouse => spouse.personId.equals(person._id))) {
-            relatedPerson.spouses.push({ personId: person._id, weddingDate: currentDate });
-          }
-          break;
+        if (!person.parents.includes(relatedPersonId)) {
+          person.parents.push(relatedPersonId);
+          wasModified = true;
         }
-      case 'child':
-        if (!person.children.includes(relatedPersonId)) person.children.push(relatedPersonId);
-        if (!relatedPerson.parents.includes(personId)) relatedPerson.parents.push(personId);
+        if (!relatedPerson.children.includes(personId)) {
+          relatedPerson.children.push(personId);
+          wasModified = true;
+        }
         break;
+
+      case 'sibling':
+        if (!person.siblings.includes(relatedPersonId)) {
+          person.siblings.push(relatedPersonId);
+          wasModified = true;
+        }
+        if (!relatedPerson.siblings.includes(personId)) {
+          relatedPerson.siblings.push(personId);
+          wasModified = true;
+        }
+        break;
+
+      case 'spouse': {
+        const currentDate = new Date();
+
+        if (!person.spouses.some((s: any) => s.personId.equals(relatedPersonId))) {
+          person.spouses.push({ personId: relatedPersonId, weddingDate: currentDate });
+          wasModified = true;
+        }
+        if (!relatedPerson.spouses.some((s: any) => s.personId.equals(person._id))) {
+          relatedPerson.spouses.push({ personId: person._id, weddingDate: currentDate });
+          wasModified = true;
+        }
+        break;
+      }
+
+      case 'child':
+        if (!person.children.includes(relatedPersonId)) {
+          person.children.push(relatedPersonId);
+          wasModified = true;
+        }
+        if (!relatedPerson.parents.includes(personId)) {
+          relatedPerson.parents.push(personId);
+          wasModified = true;
+        }
+        break;
+
       default:
         return res.status(400).json({ message: 'Nieprawidłowy typ relacji' });
     }
 
-    // Save the updated User document
-    await loggedInUser.save();
+    if (wasModified) {
+      await loggedInUser.save();
+    }
 
-    res.status(200).json({ message: 'Relacja została pomyślnie dodana' });
+    return res.status(200).json({
+      message: 'Relacja została pomyślnie dodana',
+      changedPersons: [person, relatedPerson],
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Błąd serwera' });
   }
+  
 };
+
+

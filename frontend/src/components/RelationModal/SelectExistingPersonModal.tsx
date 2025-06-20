@@ -8,6 +8,7 @@ interface SelectExistingPersonModalProps {
   isOpen: boolean;
   onClose: () => void;
   id: string;
+   onUpdate?: (updatedPerson: any) => void;
 }
 
 const relationshipTypes = [
@@ -17,7 +18,7 @@ const relationshipTypes = [
   { value: 'child', label: 'Dziecko' },
 ];
 
-const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ id, isOpen, onClose }) => {
+const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ id, isOpen, onClose,onUpdate }) => {
   const [selectedPerson, setSelectedPerson] = useState<any | null>(null);
   const [selectedRelationType, setSelectedRelationType] = useState<string>('');
   const [persons, setPersons] = useState<any[]>([]);
@@ -37,6 +38,7 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
               Authorization: `Bearer ${token}`,
             },
           });
+
           setPersons(response.data.data);
           setFilteredPersons(response.data.data);
         } catch (err) {
@@ -81,6 +83,7 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
         },
       );
       toast.success(response.data.message);
+
       onClose();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Nie zapisano relacji');

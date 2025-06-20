@@ -39,7 +39,7 @@ interface IEvent {
 type PersonType = 'user' | 'familyTree';
 
 export class PersonService {
-  public async deletePerson(
+public async deletePerson(
     personId: string,
     type: PersonType,
     userEmail?: string,
@@ -64,11 +64,15 @@ export class PersonService {
     const deletingIdStr = deletingPerson._id.toString();
     const updatedPersonIds = new Set<string>();
 
-    // Single pass through all persons
+    // Single pass through all persons (SKIP DELETING PERSON)
     for (const person of user.persons) {
       if (!person?._id) continue;
       
-      const personId = person._id.toString();
+      const currentPersonId = person._id.toString();
+      
+      // Skip the person being deleted
+      if (currentPersonId === deletingIdStr) continue;
+
       let wasModified = false;
       
       // Process standard relations (parents, siblings, children)
@@ -84,18 +88,18 @@ export class PersonService {
         }
       }
 
-      // Special handling for spouses
-      if (person.spouses?.length) {
-        const origLength = person.spouses.length;
-        person.spouses = person.spouses.filter(
-          spouse => spouse.personId.toString() !== deletingIdStr
-        );
-        wasModified ||= person.spouses.length !== origLength;
-      }
+     if (person.spouses?.length > 0) {
+  const origLength = person.spouses.length;
+  person.spouses = person.spouses.filter(
+    spouse => spouse.personId?.toString() !== deletingIdStr
+  );
+  wasModified ||= person.spouses.length !== origLength;
+}
+
 
       if (wasModified) {
-        updatedPersonIds.add(personId);
-        personMap.set(personId, person);
+        updatedPersonIds.add(currentPersonId);
+        personMap.set(currentPersonId, person);
       }
     }
 

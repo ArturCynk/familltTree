@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPen, faTrash} from '@fortawesome/free-solid-svg-icons';
+import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons';
 import LoadingSpinner from '../Loader/LoadingSpinner';
+
 interface Person {
   _id: string;
   gender: 'male' | 'female' | 'non-binary';
@@ -44,6 +45,11 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Stan dla wykrywania nieścisłości
+  const [inconsistencies, setInconsistencies] = useState<string[]>([]);
+  const [showInconsistencyModal, setShowInconsistencyModal] = useState(false);
+  const [forceSubmit, setForceSubmit] = useState(false);
+
   useEffect(() => {
     if (id) {
       const fetchPerson = async () => {
@@ -69,10 +75,15 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
     }
   }, [id, onClose]);
 
-  const formatDateForInput = (dateString: string) => {
+  const formatDateForInput = (dateString: string | undefined) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+    try {
+      const date = new Date(dateString);
+      return date.toISOString().split("T")[0];
+    } catch (e) {
+      console.error("Błąd formatowania daty:", e);
+      return '';
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -82,9 +93,122 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
     }
   };
 
+  // Poprawiona funkcja wykrywająca nieścisłości
+  const detectInconsistencies = (): string[] => {
+    if (!formData) return [];
+
+    const detected: string[] = [];
+
+    // Sprawdź poprawność imienia
+    if (formData.firstName) {
+      const nameRegex = /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s\-']+$/;
+      if (!nameRegex.test(formData.firstName)) {
+        detected.push(`Imię zawiera niedozwolone znaki.`);
+      }
+
+      if (formData.firstName.trim().length < 2) {
+        detected.push(`Imię wydaje się zbyt krótkie.`);
+      }
+    }
+
+    // Sprawdź poprawność nazwiska
+    if (formData.lastName) {
+      const nameRegex = /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s\-']+$/;
+      if (!nameRegex.test(formData.lastName)) {
+        detected.push(`Nazwisko zawiera niedozwolone znaki.`);
+      }
+
+      if (formData.lastName.trim().length < 2) {
+        detected.push(`Nazwisko wydaje się zbyt krótkie.`);
+      }
+
+      if (formData.lastName === formData.lastName.toUpperCase()) {
+        detected.push(`Nazwisko nie powinno być pisane WIELKIMI LITERAMI.`);
+      }
+    }
+
+    // Sprawdź datę urodzenia vs datę śmierci
+    if (formData.status === 'deceased') {
+      let birthYear: number | null = null;
+      let deathYear: number | null = null;
+
+      // Pobierz rok urodzenia
+      if (formData.birthDateType === 'exact' && formData.birthDate) {
+        try {
+          birthYear = new Date(formData.birthDate).getFullYear();
+        } catch (e) {
+          console.error("Błąd parsowania daty urodzenia", e);
+        }
+      } else if (formData.birthDateType === 'freeText' && formData.birthDateFreeText) {
+        const yearMatch = formData.birthDateFreeText.match(/\b\d{4}\b/);
+        if (yearMatch) birthYear = parseInt(yearMatch[0], 10);
+      }
+
+      // Pobierz rok śmierci
+      if (formData.deathDateType === 'exact' && formData.deathDate) {
+        try {
+          deathYear = new Date(formData.deathDate).getFullYear();
+        } catch (e) {
+          console.error("Błąd parsowania daty śmierci", e);
+        }
+      } else if (formData.deathDateType === 'freeText' && formData.deathDateFreeText) {
+        const yearMatch = formData.deathDateFreeText.match(/\b\d{4}\b/);
+        if (yearMatch) deathYear = parseInt(yearMatch[0], 10);
+      }
+
+      // Porównaj lata (tylko jeśli oba są dostępne)
+      if (birthYear && deathYear && deathYear < birthYear) {
+        detected.push(`Data śmierci (${deathYear}) jest przed datą urodzenia (${birthYear}).`);
+      }
+    }
+
+    // Sprawdź datę ślubu vs datę urodzenia
+    const weddingDate = formData.spouses?.[0]?.weddingDate;
+    if (weddingDate) {
+      let birthYear: number | null = null;
+
+      // Pobierz rok urodzenia
+      if (formData.birthDateType === 'exact' && formData.birthDate) {
+        try {
+          birthYear = new Date(formData.birthDate).getFullYear();
+        } catch (e) {
+          console.error("Błąd parsowania daty urodzenia", e);
+        }
+      } else if (formData.birthDateType === 'freeText' && formData.birthDateFreeText) {
+        const yearMatch = formData.birthDateFreeText.match(/\b\d{4}\b/);
+        if (yearMatch) birthYear = parseInt(yearMatch[0], 10);
+      }
+
+      // Pobierz rok ślubu
+      let weddingYear: number | null = null;
+      try {
+        weddingYear = new Date(weddingDate).getFullYear();
+      } catch (e) {
+        console.error("Błąd parsowania daty ślubu", e);
+      }
+
+      // Porównaj lata (tylko jeśli oba są dostępne)
+      if (birthYear && weddingYear && weddingYear < birthYear) {
+        detected.push(`Data ślubu (${weddingYear}) jest przed datą urodzenia (${birthYear}).`);
+      }
+    }
+
+    return detected;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData) return;
+
+    // Wykryj nieścisłości
+    const detectedInconsistencies = detectInconsistencies();
+
+    // Jeśli wykryto nieścisłości i użytkownik nie zaakceptował
+    if (detectedInconsistencies.length > 0 && !forceSubmit) {
+      setInconsistencies(detectedInconsistencies);
+      setShowInconsistencyModal(true);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -95,11 +219,11 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (onUpdate) {
         onUpdate(response.data.person);
       }
-      
+
       toast.success('Dane zostały pomyślnie zaktualizowane!');
       onClose();
     } catch (error) {
@@ -107,12 +231,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
       console.error(error);
     } finally {
       setIsLoading(false);
+      setForceSubmit(false); // Resetowanie po wysłaniu
     }
   };
 
   const handleDelete = async () => {
     if (!person) return;
-    
+
     setIsDeleting(true);
     setError(null);
 
@@ -125,13 +250,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
       if (onDeleteSuccess) {
         onDeleteSuccess(response.data.deletedPersonId, response.data.updatedPersons);
       }
-      
+
       toast.success(response.data.message || 'Osoba została usunięta pomyślnie');
       onClose();
     } catch (err: any) {
-      const errorMsg = err.response?.data?.message || 
-                      err.message || 
-                      'Wystąpił błąd podczas usuwania osoby';
+      const errorMsg = err.response?.data?.message ||
+        err.message ||
+        'Wystąpił błąd podczas usuwania osoby';
       setError(errorMsg);
       console.error('Delete error:', err);
     } finally {
@@ -157,7 +282,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
         <div className="relative bg-gradient-to-r from-indigo-700 to-purple-800 px-6 py-4">
           <div className="relative flex justify-between items-center">
             <h2 className="text-xl font-bold text-white">Edytuj osobę</h2>
-            <button 
+            <button
               onClick={onClose}
               className="p-2 rounded-full hover:bg-white/10 transition-colors"
               aria-label="Zamknij"
@@ -191,12 +316,18 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Płeć</label>
               <div className="flex flex-wrap gap-3">
                 {[
-                  { value: 'male', label: 'Mężczyzna', icon: '♂', 
-                    color: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-700' },
-                  { value: 'female', label: 'Kobieta', icon: '♀', 
-                    color: 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/50 dark:text-pink-200 dark:border-pink-700' },
-                  { value: 'non-binary', label: 'Niebinarny', icon: '⚧', 
-                    color: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/50 dark:text-purple-200 dark:border-purple-700' }
+                  {
+                    value: 'male', label: 'Mężczyzna', icon: '♂',
+                    color: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-700'
+                  },
+                  {
+                    value: 'female', label: 'Kobieta', icon: '♀',
+                    color: 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/50 dark:text-pink-200 dark:border-pink-700'
+                  },
+                  {
+                    value: 'non-binary', label: 'Niebinarny', icon: '⚧',
+                    color: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/50 dark:text-purple-200 dark:border-purple-700'
+                  }
                 ].map((option) => (
                   <label key={option.value} className="flex-1 min-w-[120px]">
                     <input
@@ -248,7 +379,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                 <span className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>
                 Data urodzenia
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ daty</label>
@@ -258,16 +389,10 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     onChange={handleChange}
                     className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
                   >
-                    {['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo', 'freeText'].map((type) => (
+                    {['exact', 'freeText'].map((type) => (
                       <option key={type} value={type}>
                         {{
                           exact: 'Dokładna data',
-                          //before: 'Przed datą',
-                          //after: 'Po dacie',
-                          //around: 'Około',
-                          //probably: 'Prawdopodobnie',
-                         // between: 'Pomiędzy datami',
-                         // fromTo: 'Od - do',
                           freeText: 'Dowolny opis'
                         }[type]}
                       </option>
@@ -275,34 +400,33 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                   </select>
                 </div>
 
-                {(formData?.birthDateType === 'exact' || !formData?.birthDateType) && (
+                {(formData?.birthDateType !== 'between' && formData?.birthDateType !== 'fromTo') && (
                   <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {formData?.birthDateType === 'freeText' ? 'Opis daty' : 'Data'}
-                  </label>
-                    <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {formData?.birthDateType === 'freeText' ? 'Opis daty' : 'Data'}
+                    </label>
+                    {formData?.birthDateType === 'freeText' ? (
                       <input
-                        type="date"
-                        value={formData?.birthDate ? formatDateForInput(formData.birthDate) : ""}
+                        type="text"
+                        value={formData?.birthDateFreeText || ''}
+                        name="birthDateFreeText"
                         onChange={handleChange}
-                        name="birthDate"
-                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                        placeholder="np. 'zima 1945'"
+                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
                       />
-                    </div>
-                </div>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={formData?.birthDate ? formatDateForInput(formData.birthDate) : ""}
+                          onChange={handleChange}
+                          name="birthDate"
+                          className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                        />
+                      </div>
+                    )}
+                  </div>
                 )}
-
-{formData?.birthDateType === 'freeText' && (
-                    <input
-                      type="text"
-                      value={formData?.birthDateFreeText}
-                      name="birthDateFreeText"
-                      onChange={handleChange}
-                      placeholder="np. 'zima 1945'"
-                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
-                    />
-                  )}
-
 
                 {(formData?.birthDateType === 'between' || formData?.birthDateType === 'fromTo') && (
                   <>
@@ -311,7 +435,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                       <input
                         type="date"
                         name="birthDateFrom"
-                        value={formData?.birthDateFrom ? new Date(formData.birthDateFrom).toISOString().substring(0, 10) : ''}
+                        value={formatDateForInput(formData?.birthDateFrom)}
                         onChange={handleChange}
                         className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
                       />
@@ -321,7 +445,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                       <input
                         type="date"
                         name="birthDateTo"
-                        value={formData?.birthDateTo ? new Date(formData.birthDateTo).toISOString().substring(0, 10) : ''}
+                        value={formatDateForInput(formData?.birthDateTo)}
                         onChange={handleChange}
                         className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
                       />
@@ -348,11 +472,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
               <input
                 type="date"
                 name="weddingDate"
-                value={formData?.spouses?.[0]?.weddingDate || ''}
+                value={formatDateForInput(formData?.spouses?.[0]?.weddingDate)}
                 onChange={(e) => {
-                  if (formData && formData.spouses) {
-                    const updatedSpouses = [...formData.spouses];
-                    updatedSpouses[0].weddingDate = e.target.value;
+                  if (formData) {
+                    const updatedSpouses = formData.spouses && formData.spouses.length > 0
+                      ? [...formData.spouses]
+                      : [{ weddingDate: '' }];
+                    updatedSpouses[0] = { ...updatedSpouses[0], weddingDate: e.target.value };
                     setFormData({ ...formData, spouses: updatedSpouses });
                   }
                 }}
@@ -373,11 +499,10 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     onChange={handleChange}
                     className="hidden peer"
                   />
-                  <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:ring-2 peer-checked:ring-green-100 dark:peer-checked:ring-green-900 ${
-                    formData?.status === 'alive' 
-                      ? 'bg-green-50 border-green-500 dark:bg-green-900/30 dark:border-green-700' 
+                  <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:ring-2 peer-checked:ring-green-100 dark:peer-checked:ring-green-900 ${formData?.status === 'alive'
+                      ? 'bg-green-50 border-green-500 dark:bg-green-900/30 dark:border-green-700'
                       : 'bg-white border-gray-200 dark:bg-gray-700 dark:border-gray-600'
-                  }`}>
+                    }`}>
                     <div className="flex items-center justify-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -397,15 +522,14 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     onChange={handleChange}
                     className="hidden peer"
                   />
-                  <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-100 dark:peer-checked:ring-red-900 ${
-                    formData?.status === 'deceased' 
-                      ? 'bg-red-50 border-red-500 dark:bg-red-900/30 dark:border-red-700' 
+                  <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-100 dark:peer-checked:ring-red-900 ${formData?.status === 'deceased'
+                      ? 'bg-red-50 border-red-500 dark:bg-red-900/30 dark:border-red-700'
                       : 'bg-white border-gray-200 dark:bg-gray-700 dark:border-gray-600'
-                  }`}>
+                    }`}>
                     <div className="flex items-center justify-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white shadow-md">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 384 512" fill="currentColor">
-                          <path d="M320 128c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V32c0-17.7-14.3-32-32-32s-32 14.3-32 32V64H64C46.3 64 32 78.3 32 96s14.3 32 32 32H192V480c0 17.7 14.3 32 32 32s32-14.3 32-32V128h64z"/>
+                          <path d="M320 128c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V32c0-17.7-14.3-32-32-32s-32 14.3-32 32V64H64C46.3 64 32 78.3 32 96s14.3 32 32 32H192V480c0 17.7 14.3 32 32 32s32-14.3 32-32V128h64z" />
                         </svg>
                       </span>
                       <span className="font-medium">Zmarły</span>
@@ -424,7 +548,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                   </svg>
                   Informacje o śmierci
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ daty</label>
@@ -434,16 +558,10 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                       onChange={handleChange}
                       className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
                     >
-                      {['exact', 'before', 'after', 'around', 'probably', 'between', 'fromTo', 'freeText'].map((type) => (
+                      {['exact', 'freeText'].map((type) => (
                         <option key={type} value={type}>
                           {{
                             exact: 'Dokładna data',
-                           // before: 'Przed datą',
-                           // after: 'Po dacie',
-                           // around: 'Około',
-                           // probably: 'Prawdopodobnie',
-                           // between: 'Pomiędzy datami',
-                           // fromTo: 'Od - do',
                             freeText: 'Dowolny opis'
                           }[type]}
                         </option>
@@ -451,28 +569,30 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     </select>
                   </div>
 
-                  {formData?.deathDateType === 'exact' && (
+                  {formData?.deathDateType !== 'between' && formData?.deathDateType !== 'fromTo' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data śmierci</label>
-                      <input
-                        type="date"
-                        name="deathDate"
-                        value={formData?.deathDate ? new Date(formData.deathDate).toISOString().substring(0, 10) : ''}
-                        onChange={handleChange}
-                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
-                      />
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {formData?.deathDateType === 'freeText' ? 'Opis daty śmierci' : 'Data śmierci'}
+                      </label>
+                      {formData?.deathDateType === 'freeText' ? (
+                        <input
+                          type="text"
+                          value={formData?.deathDateFreeText || ''}
+                          name="deathDateFreeText"
+                          onChange={handleChange}
+                          placeholder="np. 'zima 1950', 'około 1980'"
+                          className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                        />
+                      ) : (
+                        <input
+                          type="date"
+                          name="deathDate"
+                          value={formatDateForInput(formData?.deathDate)}
+                          onChange={handleChange}
+                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                        />
+                      )}
                     </div>
-                  )}
-
-{formData?.deathDateType === 'freeText' && (
-                    <input
-                      type="text"
-                      value={formData?.deathDateFreeText}
-                      name="deathDateFreeText"
-                      onChange={handleChange}
-                      placeholder="np. 'zima 1945'"
-                      className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
-                    />
                   )}
 
                   {(formData?.deathDateType === 'between' || formData?.deathDateType === 'fromTo') && (
@@ -482,7 +602,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                         <input
                           type="date"
                           name="deathDateFrom"
-                          value={formData?.deathDateFrom ? new Date(formData.deathDateFrom).toISOString().substring(0, 10) : ''}
+                          value={formatDateForInput(formData?.deathDateFrom)}
                           onChange={handleChange}
                           className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
                         />
@@ -492,7 +612,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                         <input
                           type="date"
                           name="deathDateTo"
-                          value={formData?.deathDateTo ? new Date(formData.deathDateTo).toISOString().substring(0, 10) : ''}
+                          value={formatDateForInput(formData?.deathDateTo)}
                           onChange={handleChange}
                           className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
                         />
@@ -545,25 +665,25 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
         </div>
       </div>
 
-       {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div 
+          <div
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 transform transition-all duration-300"
             onClick={e => e.stopPropagation()}
           >
             <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Potwierdzenie usunięcia</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Czy na pewno chcesz usunąć <span className="font-semibold">{formData?.firstName} {formData?.lastName}</span>? 
+              Czy na pewno chcesz usunąć <span className="font-semibold">{formData?.firstName} {formData?.lastName}</span>?
               Tej akcji nie można cofnąć. Wszystkie powiązania zostaną zaktualizowane.
             </p>
-            
+
             {error && (
               <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">
                 {error}
               </div>
             )}
-            
+
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
@@ -574,11 +694,10 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                  isDeleting
+                className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${isDeleting
                     ? 'bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700'
-                }`}
+                  }`}
               >
                 {isDeleting ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -589,6 +708,70 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inconsistency Modal */}
+      {showInconsistencyModal && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 px-6 py-5">
+              <h2 className="text-xl font-bold text-white">⚠️ Wykryto nieścisłości</h2>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-start mb-4">
+                <div className="flex-shrink-0 mt-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Potencjalne problemy w danych
+                  </h3>
+                  <p className="mt-1 text-gray-600 dark:text-gray-300">
+                    System wykrył następujące nieścisłości w wprowadzonych danych:
+                  </p>
+                </div>
+              </div>
+
+              <ul className="mt-4 space-y-2 max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4">
+                {inconsistencies.map((inc, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="flex-shrink-0 mt-1 text-red-500">•</span>
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">{inc}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInconsistencyModal(false);
+                    setForceSubmit(false);
+                  }}
+                  className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Popraw dane
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForceSubmit(true);
+                    setShowInconsistencyModal(false);
+                  }}
+                  className="px-4 py-2.5 bg-gradient-to-r from-red-600 to-orange-600 rounded-lg text-white font-medium hover:from-red-700 hover:to-orange-700 transition-colors"
+                >
+                  Zatwierdź mimo to
+                </button>
+              </div>
             </div>
           </div>
         </div>

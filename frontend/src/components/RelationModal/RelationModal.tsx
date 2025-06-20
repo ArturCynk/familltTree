@@ -12,36 +12,62 @@ interface RelationModalProps {
   personName: string;
   personGender: 'male' | 'female' | 'not-binary';
   id: string;
-  persons?:any|null;
-   onUpdate?: (updatedPerson:any) => void;
+  persons?: any | null;
+  onUpdate?: (updatedPerson: any) => void;
 }
 
 const RelationModal: React.FC<RelationModalProps> = ({
-  isOpen, onClose, personName, personGender, id,persons, onUpdate
+  isOpen, onClose, personName, personGender, id, persons, onUpdate
 }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isSelectExistingOpen, setIsSelectExistingOpen] = useState<boolean>(false);
   const [selectedRelation, setSelectedRelation] = useState<string>('');
   const [relationType, setRelationType] = useState<string>('');
+  const [initialGender, setInitialGender] = useState<'male' | 'female' | 'non-binary'>('non-binary');
 
-  const handleButtonClick = (label: string, type: string, isExisting: boolean = false) => {
+  const handleButtonClick = (
+    label: string,
+    type: string,
+    isExisting: boolean = false,
+    genderHint?: 'male' | 'female' | 'non-binary'
+  ) => {
     setSelectedRelation(label);
     setRelationType(type);
+    setInitialGender(genderHint ?? getGenderFromRelationType(type));
     if (isExisting) {
       setIsSelectExistingOpen(true);
     } else {
       setIsModalOpen(true);
     }
   };
+  const getOppositeGender = (gender: 'male' | 'female' | 'not-binary'): 'male' | 'female' | 'non-binary' => {
+    switch (gender) {
+      case 'male': return 'female';
+      case 'female': return 'male';
+      default: return 'non-binary';
+    }
+  };
+
+  const getGenderFromRelationType = (type: string): 'male' | 'female' | 'non-binary' => {
+    switch (type) {
+      case 'Father':
+      case 'Son':
+      case 'Sibling': return 'male';
+      case 'Mother':
+      case 'Daughter': return 'female';
+      default: return 'male';
+    }
+  };
+
 
   if (!isOpen) return null;
 
   // Determine the icon based on gender
   const icon = personGender === 'male' ? faMale : personGender === 'female' ? faFemale : faGenderless;
-  const bgColor = personGender === 'male' 
-    ? 'bg-blue-500 dark:bg-blue-600' 
-    : personGender === 'female' 
-      ? 'bg-pink-500 dark:bg-pink-600' 
+  const bgColor = personGender === 'male'
+    ? 'bg-blue-500 dark:bg-blue-600'
+    : personGender === 'female'
+      ? 'bg-pink-500 dark:bg-pink-600'
       : 'bg-purple-500 dark:bg-purple-600';
 
   return (
@@ -80,7 +106,7 @@ const RelationModal: React.FC<RelationModalProps> = ({
             <button
               className="absolute flex flex-col items-center justify-center w-24 h-24 rounded-full bg-white dark:bg-gray-800 border-2 border-indigo-200 dark:border-indigo-700 shadow-lg hover:bg-indigo-50 dark:hover:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200"
               style={{ top: '10%', left: '50%', transform: 'translate(-50%, -50%)' }}
-              onClick={() => handleButtonClick('Dodaj małżonka', 'Partner')}
+              onClick={() => handleButtonClick('Dodaj małżonka', 'Partner', false, getOppositeGender(personGender))}
             >
               <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-300 mb-1">
                 <FontAwesomeIcon icon={faUserFriends} size="lg" />
@@ -126,7 +152,7 @@ const RelationModal: React.FC<RelationModalProps> = ({
             <button
               className="absolute flex flex-col items-center justify-center w-24 h-24 rounded-full bg-white dark:bg-gray-800 border-2 border-indigo-200 dark:border-indigo-700 shadow-lg hover:bg-indigo-50 dark:hover:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200"
               style={{ top: '50%', left: '10%', transform: 'translate(-50%, -50%)' }}
-              onClick={() => handleButtonClick('Dodaj brata', 'Sibling')}
+              onClick={() => handleButtonClick('Dodaj brata', 'Sibling', false, 'male')}
             >
               <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-300 mb-1">
                 <FontAwesomeIcon icon={faMale} size="lg" />
@@ -137,7 +163,7 @@ const RelationModal: React.FC<RelationModalProps> = ({
             <button
               className="absolute flex flex-col items-center justify-center w-24 h-24 rounded-full bg-white dark:bg-gray-800 border-2 border-indigo-200 dark:border-indigo-700 shadow-lg hover:bg-indigo-50 dark:hover:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200"
               style={{ top: '50%', right: '10%', transform: 'translate(50%, -50%)' }}
-              onClick={() => handleButtonClick('Dodaj siostrę', 'Sibling')}
+              onClick={() => handleButtonClick('Dodaj siostrę', 'Sibling', false, 'female')}
             >
               <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 dark:text-pink-300 mb-1">
                 <FontAwesomeIcon icon={faFemale} size="lg" />
@@ -167,12 +193,14 @@ const RelationModal: React.FC<RelationModalProps> = ({
           id={id}
           persons={persons}
           onUpdate={onUpdate}
+          initialGender={initialGender}
         />
 
         <SelectExistingPersonModal
           isOpen={isSelectExistingOpen}
           onClose={() => setIsSelectExistingOpen(false)}
           id={id}
+           onUpdate={onUpdate}
         />
       </div>
     </div>
