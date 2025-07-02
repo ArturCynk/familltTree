@@ -9,43 +9,19 @@ import React, {
 import LeftHeader from '../LeftHeader/LeftHeader';
 import ReactFamilyTree from 'react-family-tree';
 import axios from 'axios';
-import { PinchZoomPan } from './PinchZoomPan';
-import { FamilyNode } from './FamilyNode';
-import { NodeDetails } from './NodeDetails';
+import { PinchZoomPan } from '../FamilyView/PinchZoomPan';
+import { FamilyNode } from '../FamilyView/FamilyNode';
+import { NodeDetails } from '../FamilyView/NodeDetails';
 import LoadingSpinner from './../Loader/LoadingSpinner';
-import EditModal from '../Edit/Edit';
+
 import RelationModal from '../RelationModal/RelationModal';
 import Modal from '../deleteRelation/Modal';
 import type { Node, ExtNode } from 'relatives-tree/lib/types';
 import type { CSSProperties } from 'react';
 import NotAuthenticatedScreen from '../NotAuthenticatedScreen/NotAuthenticatedScreen';
-import { SearchControlPanel } from './SearchControlPanel';
-import { Person } from '../ListView/Types';
-import HistorySidebar from '../HistorySidebar/HistorySidebar';
 
- interface Persone {
-  _id: string;
-  gender: 'male' | 'female' | 'non-binary';
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  maidenName?: string;
-  birthDateType: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
-  birthDate?: string;
-  birthDateFrom?: string;
-  birthDateTo?: string;
-  birthPlace?: string;
-  status: 'alive' | 'deceased';
-  deathDateType?: 'exact' | 'before' | 'after' | 'around' | 'probably' | 'between' | 'fromTo' | 'freeText';
-  deathDate?: string;
-  deathDateFrom?: string;
-  deathDateTo?: string;
-  burialPlace?: string;
-  spouses?: { weddingDate: string }[];
-  birthDateFreeText?: string;
-  deathDateFreeText?: string;
-  photo?: string;
-}
+
+ 
 
 
 interface FamilyData {
@@ -92,13 +68,21 @@ const getNodeStyle = ({ left, top }: Readonly<ExtNode>): CSSProperties => {
     transition: 'transform 0.3s ease-out',
   };
 };
+interface FamilyViewProps {
+  nodes: Node[];
+  rootId: string;
+}
 
-const FamilyView: React.FC = () => {
+
+const Fill: React.FC<FamilyViewProps> = ({ nodes, rootId }) => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [familyData, setFamilyData] = useState<FamilyData | null>(null);
+   const [familyData, setFamilyData] = useState<FamilyData>({
+    nodes,
+    rootId,
+  });
   const [selectId, setSelectId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [previousRoot, setPreviousRoot] = useState<string | null>(null);
@@ -122,87 +106,7 @@ const FamilyView: React.FC = () => {
 
 
 
-  const fetchFamilyData = useCallback(async () => {
-  const token = localStorage.getItem('authToken');
-  if (!token) {
-    setError('Authentication required. Please login.');
-    setLoading(false);
-    return;
-  }
-
-  try {
-    const response = await axios.get('http://localhost:3001/api/person/userss', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (response.data?.users?.length) {
-      // Optymalizacja: użyj Set dla szybszego wyszukiwania
-      const users: Node[] = response.data.users;
-      console.log(users[1]);
-      
-const userSet = new Set(users.map(u => u.id));
-      
-      const savedRootId = localStorage.getItem('currentRootId');
-      const defaultRootId = users[0].id;
-      
-      const rootIdToUse = savedRootId && userSet.has(savedRootId)
-        ? savedRootId
-        : defaultRootId;
-
-      setFamilyData({
-        nodes: users,
-        rootId: rootIdToUse,
-      });
-      
-      setInitialRootId(rootIdToUse);
-    } else {
-      setError('No family data found in response.');
-    }
-  } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch family data';
-      setError(errorMsg);
-      if (error.response?.status === 401) {
-        localStorage.removeItem('authToken');
-      }
-       setLoading(false);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchFamilyData();
-
-    const storedRoots = localStorage.getItem('recentRoots');
-    if (storedRoots) {
-      setRecentRoots(JSON.parse(storedRoots));
-    }
-
-    return () => {
-      // Opcjonalne czyszczenie przy unmount
-      // localStorage.removeItem('currentRootId');
-    };
-  }, [fetchFamilyData]);
-
-  const handleUndo = useCallback(async (id: string) => {
-  console.log("Cofnij zmianę o ID:", id);
-  try {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-
-    await axios.post(
-      `http://localhost:3001/api/history/undo/${id}`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    // Po udanym cofnięciu, odśwież dane drzewa
-    await fetchFamilyData();
-  } catch (error) {
-    console.error("Błąd podczas cofania akcji:", error);
-    alert("Nie udało się cofnąć akcji. Spróbuj ponownie.");
-  }
-}, [fetchFamilyData]);
+ 
 
   useEffect(() => {
     localStorage.setItem('recentRoots', JSON.stringify(recentRoots));
@@ -331,10 +235,7 @@ const userSet = new Set(users.map(u => u.id));
     return familyData.nodes.find(node => node.id === selectId) || null;
   }, [familyData, selectId]);
 
-  const closeModals = useCallback(async () => {
-    setIsModalDeleteRelationOpen(false);
-    await fetchFamilyData();
-  }, [fetchFamilyData]);
+
 
   const updateNodeInFamilyData = (updatedNode: Node) => {
   if (!familyData) return;
@@ -425,20 +326,16 @@ const updateFamilyDataWithNewAndChangedPersons = (
 
 
 
-    const closeModalsEdit =useCallback(async () => {
-      setIsEditModalOpen(false);
-    }, [selectedPerson]);
+
 
     useEffect(() => {
   if (selectedPerson) {
     updateNodeInFamilyData({ id: selectedPerson._id, ...selectedPerson }); // Zmień
   }
-}, [selectedPerson]);
+}, [selectedPerson])
 
 
-    const closeModalsAdd =useCallback(async () => {
-      setIsRelationModalOpen(false); 
-    }, [selectedPersonAdd]);
+
 
     useEffect(() => {
   if (selectedPersonAdd) {
@@ -493,25 +390,7 @@ updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPerso
     );
   }
 
-  if (!familyData) return (
-    <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md text-center max-w-md w-full border border-gray-100 dark:border-gray-700">
-        <div className="text-gray-400 dark:text-gray-500 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        </div>
-        <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">No Family Data</h3>
-        <p className="text-gray-500 dark:text-gray-400 mb-4">We couldn't find any family data to display.</p>
-        <button
-          onClick={fetchFamilyData}
-          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-        >
-          Refresh
-        </button>
-      </div>
-    </div>
-  );
+ 
 
   return (
     <div className="relative bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -519,19 +398,7 @@ updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPerso
 
       <div className="flex flex-col h-[calc(100vh)]">
         <div className="flex-1 relative overflow-hidden">
-          <SearchControlPanel
-            familyData={familyData}
-            filteredNodes={filteredNodes}
-            recentRoots={recentRoots}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            handleRootChange={handleRootChange}
-            goToPreviousRoot={goToPreviousRoot}
-            previousRoot={previousRoot}
-            displayOptions={displayOptions}
-            setDisplayOptions={setDisplayOptions}
-          />
-
+          
           <PinchZoomPan
             min={0.5}
             max={2.5}
@@ -581,56 +448,8 @@ updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPerso
           )}
         </div>
       </div>
-
-<button
-  onClick={() => setIsHistoryOpen(true)}
-  className="fixed top-4 left-20 bg-gray-800 text-white px-4 py-2 rounded-md shadow-md hover:bg-gray-700 z-40"
->
-  🕓 Historia
-</button>
-
-      <HistorySidebar
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        onUndo={handleUndo}
-        side="left" // ← Dodajemy obsługę strony
-
-      />
-
-      {isEditModalOpen && selectedNode && (
-        <EditModal
-          id={selectedNode.id}
-            persons={selectedPerson}
-          onClose={closeModalsEdit}
-          onUpdate={setSelectedPerson}
-            onDeleteSuccess={handleDeleteSuccess}
-        />
-      )}
-
-      {isRelationModalOpen && selectedNode && (
-        <RelationModal
-          isOpen={isRelationModalOpen}
-          onClose={closeModalsAdd}
-          personGender={selectedNode.gender}
-          id={selectedNode.id}
-          personName={`${selectedNode.firstName} ${selectedNode.lastName}`}
-          persons={selectedPersonAdd}
-          onUpdate={setSelectedPersonAdd}
-
-        />
-      )}
-
-      {isRelationDeleteModalOpen && selectedNode && (
-        <Modal
-          onClose={closeModals}
-          isOpen={isRelationDeleteModalOpen}
-          person={selectedNode}
-        />
-      )}
-
-      
     </div>
   );
 };
 
-export default React.memo(FamilyView);
+export default React.memo(Fill);

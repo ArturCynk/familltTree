@@ -5,6 +5,8 @@ import Person, { IPerson } from '../models/Person';
 import User, { UserDocument } from '../models/User'; 
 import jwt from 'jsonwebtoken';
 import { PersonService } from '../services/personServices';
+import { ChangeAction, EntityType } from '../models/ChangeLog';
+import historyService from '../services/historyService';
 
 const personService = new PersonService();
 
@@ -16,11 +18,11 @@ export const addPerson = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const person = await personService.addPerson({
-      email: req.user?.email,
-      file: req.file,
-      body: req.body
-    });
+      const person = await personService.addPerson({
+        email: req.user?.email,
+        file: req.file,
+        body: req.body
+      });
 
     res.status(201).json({ message: 'Osoba została dodana', person });
   } catch (error) {
@@ -282,7 +284,6 @@ const { newPerson, changedPersons } = person;
     }
   };
   
-
 export const addRelation = async (req: Request, res: Response) => {
   const { personId, relatedPersonId, relationType } = req.body;
 
@@ -305,16 +306,30 @@ export const addRelation = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Osoba nie znaleziona' });
     }
 
+    // Capture original states BEFORE modification
+    const originalPerson = person.toObject();
+    const originalRelatedPerson = relatedPerson.toObject();
+    
     let wasModified = false;
+    let personRelationField: keyof IPerson | null = null; // Use keyof IPerson
+    let relatedPersonRelationField: keyof IPerson | null = null; // Use keyof IPerson
+    let weddingDate: Date | null = null;
+
+    // Helper function to safely access IPerson properties
+    const getPersonField = (person: any, field: keyof IPerson | null) => {
+      return field ? person[field] : null;
+    };
 
     switch (relationType) {
       case 'parent':
         if (!person.parents.includes(relatedPersonId)) {
           person.parents.push(relatedPersonId);
+          personRelationField = 'parents';
           wasModified = true;
         }
         if (!relatedPerson.children.includes(personId)) {
           relatedPerson.children.push(personId);
+          relatedPersonRelationField = 'children';
           wasModified = true;
         }
         break;
@@ -322,23 +337,28 @@ export const addRelation = async (req: Request, res: Response) => {
       case 'sibling':
         if (!person.siblings.includes(relatedPersonId)) {
           person.siblings.push(relatedPersonId);
+          personRelationField = 'siblings';
           wasModified = true;
         }
         if (!relatedPerson.siblings.includes(personId)) {
           relatedPerson.siblings.push(personId);
+          relatedPersonRelationField = 'siblings';
           wasModified = true;
         }
         break;
 
       case 'spouse': {
         const currentDate = new Date();
+        weddingDate = currentDate;
 
         if (!person.spouses.some((s: any) => s.personId.equals(relatedPersonId))) {
           person.spouses.push({ personId: relatedPersonId, weddingDate: currentDate });
+          personRelationField = 'spouses';
           wasModified = true;
         }
         if (!relatedPerson.spouses.some((s: any) => s.personId.equals(person._id))) {
           relatedPerson.spouses.push({ personId: person._id, weddingDate: currentDate });
+          relatedPersonRelationField = 'spouses';
           wasModified = true;
         }
         break;
@@ -347,10 +367,12 @@ export const addRelation = async (req: Request, res: Response) => {
       case 'child':
         if (!person.children.includes(relatedPersonId)) {
           person.children.push(relatedPersonId);
+          personRelationField = 'children';
           wasModified = true;
         }
         if (!relatedPerson.parents.includes(personId)) {
           relatedPerson.parents.push(personId);
+          relatedPersonRelationField = 'parents';
           wasModified = true;
         }
         break;
@@ -361,6 +383,42 @@ export const addRelation = async (req: Request, res: Response) => {
 
     if (wasModified) {
       await loggedInUser.save();
+
+      // Validate user ID
+      if (!(loggedInUser._id instanceof mongoose.Types.ObjectId)) {
+        throw new Error('Invalid user ID type');
+      }
+
+      await historyService.logChange(
+        loggedInUser._id,
+        person._id,
+        EntityType.PERSON,
+        ChangeAction.ADD_RELATION,
+        {
+          relationType,
+          person: person.toObject(),
+          relatedPerson: relatedPerson.toObject(),
+          weddingDate
+        },
+        {
+          changes: [
+            {
+              field: personRelationField || 'relation',
+              oldValue: personRelationField ? getPersonField(originalPerson, personRelationField) : null,
+              newValue: personRelationField ? getPersonField(person, personRelationField) : null
+            },
+            {
+              field: relatedPersonRelationField || 'relation',
+              oldValue: relatedPersonRelationField ? getPersonField(originalRelatedPerson, relatedPersonRelationField) : null,
+              newValue: relatedPersonRelationField ? getPersonField(relatedPerson, relatedPersonRelationField) : null
+            }
+          ],
+          relatedEntities: [{
+            entityType: EntityType.PERSON,
+            entityId: relatedPerson._id
+          }]
+        }
+      );
     }
 
     return res.status(200).json({
@@ -371,7 +429,4 @@ export const addRelation = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({ message: 'Błąd serwera' });
   }
-  
 };
-
-

@@ -3,6 +3,8 @@ import User from '../models/User';
 import Person from '../models/Person';
 import { IPerson } from '../models/Person';
 import FamilyTree from '../models/FamilyTree';
+import HistoryService from './historyService';
+import { EntityType, ChangeAction } from '../models/ChangeLog';
 
 interface AddPersonInput {
   email: string | undefined;
@@ -58,11 +60,43 @@ public async deletePerson(
       if (p?._id) personMap.set(p._id.toString(), p);
     });
 
-    const deletingPerson = personMap.get(personId);
-    if (!deletingPerson) throw new Error('Osoba nie znaleziona');
+    // Jeśli Map nie znajdzie, szukaj po tablicy
+let deletingPerson = personMap.get(personId.toString());
+if (!deletingPerson) {
+  deletingPerson = user.persons.find(
+    p => p?._id?.toString() === personId.toString()
+  );
+}
+if (!deletingPerson) throw new Error('Osoba nie znaleziona');
+
+
+    // Validate user ID
+    if (!(user._id instanceof mongoose.Types.ObjectId)) {
+      throw new Error('Invalid user ID type');
+    }
+    const userId = user._id;
+
+    // Log deletion BEFORE modifying relationships
+    await HistoryService.logPersonDeletion(
+      userId,
+      deletingPerson._id as mongoose.Types.ObjectId,
+      deletingPerson
+    );
 
     const deletingIdStr = deletingPerson._id.toString();
     const updatedPersonIds = new Set<string>();
+
+    // Track changes for each person
+    const changesMap = new Map<string, Map<string, { oldValue: any; newValue: any }>>();
+
+    // Helper to record changes
+    const recordChange = (personId: string, field: string, oldValue: any, newValue: any) => {
+      if (!changesMap.has(personId)) {
+        changesMap.set(personId, new Map());
+      }
+      const personChanges = changesMap.get(personId)!;
+      personChanges.set(field, { oldValue, newValue });
+    };
 
     // Single pass through all persons (SKIP DELETING PERSON)
     for (const person of user.persons) {
@@ -81,21 +115,47 @@ public async deletePerson(
         const relationArray = person[relType] as Types.ObjectId[];
         if (relationArray?.length) {
           const origLength = relationArray.length;
+          const originalValues = [...relationArray];
+          
           person[relType] = relationArray.filter(
             id => id.toString() !== deletingIdStr
           ) as any;
-          wasModified ||= (person[relType] as Types.ObjectId[]).length !== origLength;
+          
+          const newLength = (person[relType] as Types.ObjectId[]).length;
+          wasModified ||= newLength !== origLength;
+          
+          if (newLength !== origLength) {
+            recordChange(
+              currentPersonId,
+              relType,
+              originalValues,
+              person[relType]
+            );
+          }
         }
       }
 
-     if (person.spouses?.length > 0) {
-  const origLength = person.spouses.length;
-  person.spouses = person.spouses.filter(
-    spouse => spouse.personId?.toString() !== deletingIdStr
-  );
-  wasModified ||= person.spouses.length !== origLength;
-}
-
+      // Process spouses
+      if (person.spouses?.length > 0) {
+        const origLength = person.spouses.length;
+        const originalSpouses = [...person.spouses];
+        
+        person.spouses = person.spouses.filter(
+          spouse => spouse.personId?.toString() !== deletingIdStr
+        );
+        
+        const newLength = person.spouses.length;
+        wasModified ||= newLength !== origLength;
+        
+        if (newLength !== origLength) {
+          recordChange(
+            currentPersonId,
+            'spouses',
+            originalSpouses,
+            person.spouses
+          );
+        }
+      }
 
       if (wasModified) {
         updatedPersonIds.add(currentPersonId);
@@ -110,6 +170,22 @@ public async deletePerson(
     personMap.delete(deletingIdStr);
 
     await user.save();
+
+    // Log updates for all modified persons
+    for (const personId of updatedPersonIds) {
+      const person = personMap.get(personId);
+      if (person) {
+        const changes = changesMap.get(personId);
+        const changesArray = changes ? 
+          Array.from(changes.entries()).map(([field, {oldValue, newValue}]) => ({
+            field,
+            oldValue,
+            newValue
+          }))
+          : [];
+        
+      }
+    }
 
     return {
       deletedPersonId: deletingIdStr,
@@ -130,9 +206,97 @@ public async deletePerson(
   }
 
 
-  private filterRelations(relations: Types.ObjectId[], deletingId: Types.ObjectId): Types.ObjectId[] {
-    return relations.filter(id => id.toString() !== deletingId.toString());
+   public async addRelation(
+    personId: string,
+    relatedPersonId: string,
+    relationType: string,
+    type: PersonType,
+    userEmail?: string,
+    treeId?: string
+  ) {
+    console.log(type,userEmail);
+    
+    const user = await this.getUserOrTree(type, userEmail, treeId);
+    if (!user) throw new Error('Użytkownik nie znaleziony');
+
+    const validRelationTypes = ['parents', 'siblings', 'spouses', 'children'];
+    if (!validRelationTypes.includes(relationType)) {
+      throw new Error("Nieprawidłowy typ relacji");
+    }
+
+    const person = user.persons.find(p => p._id.toString() === personId);
+    const relatedPerson = user.persons.find(p => p._id.toString() === relatedPersonId);
+
+    if (!person || !relatedPerson) {
+      throw new Error("Osoba nie znaleziona");
+    }
+
+    let wasModified = false;
+    const currentDate = new Date();
+
+    switch (relationType) {
+      case "parents":
+        if (!person.parents.includes(relatedPerson._id)) {
+          person.parents.push(relatedPerson._id);
+          wasModified = true;
+        }
+        if (!relatedPerson.children.includes(person._id)) {
+          relatedPerson.children.push(person._id);
+          wasModified = true;
+        }
+        break;
+
+      case "children":
+        if (!person.children.includes(relatedPerson._id)) {
+          person.children.push(relatedPerson._id);
+          wasModified = true;
+        }
+        if (!relatedPerson.parents.includes(person._id)) {
+          relatedPerson.parents.push(person._id);
+          wasModified = true;
+        }
+        break;
+
+      case "siblings":
+        if (!person.siblings.includes(relatedPerson._id)) {
+          person.siblings.push(relatedPerson._id);
+          wasModified = true;
+        }
+        if (!relatedPerson.siblings.includes(person._id)) {
+          relatedPerson.siblings.push(person._id);
+          wasModified = true;
+        }
+        break;
+
+      case "spouses":
+        if (!person.spouses.some((s) => s.personId.equals(relatedPerson._id))) {
+          person.spouses.push({ personId: relatedPerson._id, weddingDate: currentDate });
+          wasModified = true;
+        }
+        if (!relatedPerson.spouses.some((s) => s.personId.equals(person._id))) {
+          relatedPerson.spouses.push({ personId: person._id, weddingDate: currentDate });
+          wasModified = true;
+        }
+        break;
+
+      default:
+        throw new Error("Nieprawidłowy typ relacji");
+    }
+
+    if (wasModified) {
+      await person.save();
+      await relatedPerson.save();
+    }
+
+    await user.save();
+
+    return {
+      message: "Relacja została dodana",
+      person,
+      relatedPerson
+    };
   }
+
 
   public async addPerson(input: AddPersonInput) {
     const { gender, firstName, middleName, lastName, maidenName, birthDateType, birthDate, 
@@ -161,24 +325,35 @@ public async deletePerson(
       children: [],
     });
 
+    // Save the new person
     await newPerson.save();
 
-    const updatedUser = await User.findOneAndUpdate(
-      { email: input.email },
-      { $push: { persons: newPerson } },
-      { new: true}
-    );
-
-    if (!updatedUser) {
+    // Find user and update
+    const user = await User.findOne({ email: input.email });
+    if (!user) {
       throw new Error('Nie znaleziono użytkownika');
     }
 
-    await updatedUser.save();
+    // Validate user ID
+    if (!(user._id instanceof mongoose.Types.ObjectId)) {
+      throw new Error('Invalid user ID type');
+    }
+
+    // Log person creation BEFORE adding to user
+    await HistoryService.logPersonCreation(
+      user._id,
+      newPerson._id,
+      newPerson
+    );
+
+    // Add person to user's persons array
+    user.persons = [...user.persons, newPerson];
+    await user.save();
 
     return newPerson;
-  }
+}
 
-  public async updatePerson(
+ public async updatePerson(
     personId: string,
     updateData: any,
     type: PersonType,
@@ -186,45 +361,90 @@ public async deletePerson(
     treeId?: string,
     file?: Express.Multer.File,
   ): Promise<object> {
-   const user = await this.getUserOrTree(type, userEmail, treeId);
-
-
-    if (!user) {
-      throw new Error('Użytkownik nie znaleziony');
-    }
+    const user = await this.getUserOrTree(type, userEmail, treeId);
+    if (!user) throw new Error('Użytkownik nie znaleziony');
 
     const personIndex = user.persons.findIndex(p => p._id.toString() === personId);
+    if (personIndex === -1) throw new Error('Osoba nie znaleziona');
 
-    if (personIndex === -1) {
-      throw new Error('Osoba nie znaleziona');
-    }
+    // Capture the original state BEFORE modification
+    const originalPerson = user.persons[personIndex];
+    const originalPersonData = originalPerson.toObject();
 
-    const person = user.persons[personIndex];
-
-    
-
+    // Handle photo update
     if (file) {
       updateData.photo = file.path;
     } else if (!updateData.photo) {
-      updateData.photo = person.photo;
+      updateData.photo = originalPerson.photo;
     }
 
-this.cleanDateFields(updateData);
+    this.cleanDateFields(updateData);
 
-   user.persons[personIndex] = {
-  ...user.persons[personIndex].toObject(),
-  ...updateData,
-};
+    // Create updated person object
+    const updatedPerson = {
+      ...originalPerson.toObject(),
+      ...updateData,
+    };
 
-await user.save();
+    // Apply update
+    user.persons[personIndex] = updatedPerson as IPerson;
+    await user.save();
 
-const updatedPerson = user.persons[personIndex];
-const personMap = new Map(user.persons.map(p => [p._id.toString(), p]));
+    // Get the newly updated document
+    const savedPerson = user.persons[personIndex];
+    const savedPersonData = savedPerson.toObject();
 
-return {
-  ...this.getPersonBasicInfo(updatedPerson),
-  ...this.getPersonRelations(updatedPerson, personMap),
-};
+    // Calculate changed fields
+    const changes: { field: string; oldValue: any; newValue: any }[] = [];
+    const fields = Object.keys(updateData);
+
+    // Include photo if it was modified
+    if (file || (!file && updateData.photo !== undefined)) {
+      fields.push('photo');
+    }
+
+    // Remove duplicates
+    const uniqueFields = [...new Set(fields)];
+
+    uniqueFields.forEach(field => {
+      const oldValue = originalPersonData[field];
+      const newValue = savedPersonData[field];
+      
+      // Compare values safely
+      if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+        changes.push({ field, oldValue, newValue });
+      }
+    });
+
+    console.log(changes);
+    
+
+    // Log the changes to history
+    try {
+      // Validate user ID
+      if (!(user._id instanceof mongoose.Types.ObjectId)) {
+        throw new Error('Invalid user ID type');
+      }
+
+      // Use the specific update logging method
+      await HistoryService.logPersonUpdate(
+        user._id,
+        savedPerson._id as mongoose.Types.ObjectId,
+        savedPerson,
+        changes
+      );
+    } catch (logError) {
+      console.error('Failed to log update:', logError);
+      // Consider adding proper error handling/reporting here
+    }
+
+    // Prepare response
+    const personMap = new Map(user.persons.map(p => [p._id.toString(), p]));
+
+    return {
+      ...this.getPersonBasicInfo(savedPerson),
+      ...this.getPersonRelations(savedPerson, personMap),
+    };
   }
 
 public async getAllPersonsWithRelations(
@@ -241,8 +461,20 @@ public async getAllPersonsWithRelations(
     allPersons.map(p => [p._id.toString(), p])
   );
 
-  return allPersons.map(person => this.buildPersonWithRelations(person, personMap));
+  
+
+
+// const result = await this.findMaxGenerations(userEmail);
+// console.log(`Najdłuższa linia z powtarzającym się nazwiskiem (${result.longestNameLine.count}x "${result.longestNameLine.lastName}"):`);
+
+// result.longestNameLine.line.forEach(person => {
+//     console.log(`Pokolenie ${person.generation}: ${person.firstName} ${person.lastName}`);
+// });
+
+return allPersons.map(person => this.buildPersonWithRelations(person, personMap));
 }
+
+
   public async getPerson(personId: string,type: PersonType,
     userEmail?: string,
     treeId?: string): Promise<IPerson | null> {
@@ -258,11 +490,14 @@ public async getAllPersonsWithRelations(
     
     if (!person) {
       throw new Error('Osoba nie znaleziona');
-    }
+    }       
 
     return person;
-  }
+  }             
 
+
+  
+    
 public async getAllPersons(
   query: any,
   type: PersonType,
@@ -367,78 +602,133 @@ public async getAllPersons(
     };
   }
 
-  public async deleteRelation(personId: string, relationId: string,type: PersonType,
-    userEmail?: string,
-    treeId?: string): Promise<void> {
-   const user = await this.getUserOrTree(type, userEmail, treeId);
+public async deleteRelation(
+  personId: string,
+  relationId: string,
+  type: PersonType,
+  userEmail?: string,
+  treeId?: string
+): Promise<void> {
+  const user = await this.getUserOrTree(type, userEmail, treeId);
+  if (!user) throw new Error('Użytkownik nie znaleziony');
 
+  // Validate user ID type
+  if (!(user._id instanceof mongoose.Types.ObjectId)) {
+    throw new Error('Invalid user ID type');
+  }
 
-    if (!user) {
-      throw new Error('Użytkownik nie znaleziony');
+  // Find both persons
+  const person = user.persons.find(p => p._id.toString() === personId);
+  if (!person) throw new Error('Osoba nie znaleziona');
+
+  const relatedPerson = user.persons.find(p => p._id.toString() === relationId);
+  
+  // Capture snapshots BEFORE modification
+  const personBefore = person.toObject();
+  const relatedPersonBefore = relatedPerson?.toObject();
+
+  // Track which relation types were modified
+  let removedFromType: keyof IPerson | null = null;
+  let removedFromRelatedType: keyof IPerson | null = null;
+
+  // Relation types to process
+  const relationTypes: (keyof IPerson)[] = ['parents', 'siblings', 'spouses', 'children'];
+
+  // Remove relation from the main person
+  for (const type of relationTypes) {
+    const relations = person[type] as any[];
+    if (!relations?.length) continue;
+
+    const index = this.findRelationIndex(relations, type, relationId);
+    if (index > -1) {
+      relations.splice(index, 1);
+      removedFromType = type;
+      break;
     }
+  }
 
-    // Find the person from whom we are removing the relation
-    const person = user.persons.find(p => p._id.toString() === personId);
-    if (!person) {
-      throw new Error('Osoba nie znaleziona');
-    }
-
-    // Typy relacji do usunięcia
-    const relationTypes: (keyof IPerson)[] = ['parents', 'siblings', 'spouses', 'children'];
-
-    // Usunięcie relacji z obiektu person
+  // Remove relation from the related person
+  if (relatedPerson) {
     for (const type of relationTypes) {
-      const relations = person[type] as any[];
+      const relations = relatedPerson[type] as any[];
+      if (!relations?.length) continue;
 
-      let index = -1;
-      if (type === 'spouses') {
-        // Dla spouses porównujemy właściwość _id, jeśli element jest obiektem
-        index = relations.findIndex(rel => {
-          if (typeof rel === 'object' && rel !== null && '_id' in rel) {
-            return rel.personId.toString() === relationId;
-          }
-          return rel.toString() === relationId;
-        });
-      } else {
-        // Dla pozostałych typów porównujemy elementy jako stringi
-        index = relations.findIndex(rel => rel.toString() === relationId);
-      }
-
+      const index = this.findRelationIndex(relations, type, personId);
       if (index > -1) {
         relations.splice(index, 1);
-        await person.save();
+        removedFromRelatedType = type;
         break;
       }
     }
-
-    // Usunięcie osoby z relacji powiązanego obiektu (relatedPerson)
-    const relatedPerson = user.persons.find(p => p._id.toString() === relationId);
-    if (relatedPerson) {
-      for (const type of relationTypes) {
-        const relations = relatedPerson[type] as any[];
-
-        let index = -1;
-        if (type === 'spouses') {
-          index = relations.findIndex(rel => {
-            if (typeof rel === 'object' && rel !== null && '_id' in rel) {
-              return rel.personId.toString() === personId;
-            }
-            return rel.toString() === personId;
-          });
-        } else {
-          index = relations.findIndex(rel => rel.toString() === personId);
-        }
-
-        if (index > -1) {
-          relations.splice(index, 1);
-          await relatedPerson.save();
-          break;
-        }
-      }
-    }
-
-    await user.save();
   }
+
+  // Save changes to the user document
+  await user.save();
+
+  // Log the relation removal as a single entry
+  try {
+    if (removedFromType || removedFromRelatedType) {
+      const changes = [];
+      
+      if (removedFromType) {
+        changes.push({
+          field: removedFromType,
+          oldValue: personBefore[removedFromType],
+          newValue: person[removedFromType]
+        });
+      }
+      
+      if (removedFromRelatedType && relatedPerson) {
+        changes.push({
+          field: removedFromRelatedType,
+          oldValue: relatedPersonBefore?.[removedFromRelatedType],
+          newValue: relatedPerson[removedFromRelatedType]
+        });
+      }
+
+      // Prepare options object
+      const options = {
+        changes,
+        relatedEntities: relatedPerson ? [{
+          entityType: EntityType.PERSON,
+          entityId: relatedPerson._id
+        }] : undefined
+      };
+
+      // Create a combined log entry
+      await HistoryService.logChange(
+        user._id,
+        person._id as mongoose.Types.ObjectId,
+        EntityType.PERSON,
+        ChangeAction.REMOVE_RELATION,
+        {
+          person: person.toObject(),
+          relatedPerson: relatedPerson?.toObject()
+        },
+        options
+      );
+    }
+  } catch (logError) {
+    console.error('Failed to log relation deletion:', logError);
+  }
+}
+
+// Helper function to find relation index
+private findRelationIndex(
+  relations: any[],
+  relationType: keyof IPerson,
+  targetId: string
+): number {
+  if (relationType === 'spouses') {
+    return relations.findIndex(rel => {
+      if (typeof rel === 'object' && rel !== null && 'personId' in rel) {
+        return rel.personId.toString() === targetId;
+      }
+      return rel.toString() === targetId;
+    });
+  }
+  return relations.findIndex(rel => rel.toString() === targetId);
+}
 
   public async getPersonsWithoutRelation(personId: string,type: PersonType,
     userEmail?: string,
@@ -703,6 +993,9 @@ public async addPersonWithRelationships(input: {
       children: []
     });
   
+                  if (!(loggedInUser._id instanceof mongoose.Types.ObjectId)) {
+    throw new Error('Invalid user ID type');
+  }
     if (relationType && id) {
       const existingPerson = loggedInUser.persons.find(
         (person: IPerson) => person._id.toString() === id
@@ -711,7 +1004,7 @@ public async addPersonWithRelationships(input: {
       if (existingPerson) {
         // Track existing person (will be modified)
         addToChanged(existingPerson._id);
-
+        
         switch (relationType) {
           case 'Father':
           case 'Mother':
@@ -732,6 +1025,21 @@ public async addPersonWithRelationships(input: {
                 }
               }
             }
+
+             // Check if existing person has exactly one existing parent
+  if (existingPerson.parents.length === 1) {
+    const existingParentId = existingPerson.parents[0];
+    const existingParent = loggedInUser.persons.find(
+      (p: IPerson) => p._id.toString() === existingParentId.toString()
+    );
+
+    if (existingParent) {
+      // Add mutual spousal relationship
+      existingParent.spouses.push({personId: newPerson._id, weddingDate: weddingDate || new Date()});
+      newPerson.spouses.push({personId: existingParent._id, weddingDate: weddingDate || new Date()});
+      addToChanged(existingParent._id);
+    }
+  }
             
             // Add parent-child relationship
             newPerson.children.push(existingPerson._id);
@@ -743,7 +1051,7 @@ public async addPersonWithRelationships(input: {
             if (!existingPerson.siblings.includes(newPerson._id)) {
               existingPerson.siblings.push(newPerson._id);
             }
-  
+                
             // Update all siblings
             for (const siblingId of existingPerson.siblings) {
               if (siblingId.toString() === newPerson._id.toString()) continue;
@@ -807,11 +1115,20 @@ public async addPersonWithRelationships(input: {
               });
               unknownParent.children.push(newPerson._id);
               newPerson.parents.push(unknownParent._id);
+
+
+
+
+              await HistoryService.logPersonCreation(
+            loggedInUser._id,
+            unknownParent._id,
+            unknownParent
+          );
           
               loggedInUser.persons.push(unknownParent);
               await unknownParent.save();
               addToChanged(unknownParent._id);
-            }
+            } 
           
             // Link child to spouse(s)
             const linkChildToSpouse = async (spouseId: string | Types.ObjectId) => {
@@ -850,6 +1167,10 @@ public async addPersonWithRelationships(input: {
                 await spouse.save();
               }
             };
+
+                          if (existingPerson.spouses.length === 1) {
+    await linkChildToSpouse(existingPerson.spouses[0].personId);
+  }
           
             // Link to all spouses if "yes" selected
             if (selectedOption === "yes") {
@@ -925,6 +1246,12 @@ public async addPersonWithRelationships(input: {
         // Save all changes
         const savedPerson = await newPerson.save();
         addToChanged(savedPerson._id);
+
+        await HistoryService.logPersonCreation(
+      loggedInUser._id,
+      savedPerson._id,
+      savedPerson
+    );
         
         // Add to user's persons list
         loggedInUser.persons.push(savedPerson);
@@ -1065,7 +1392,146 @@ private cleanDateFields(data: any) {
   if (data.deathDateType === 'exact') data.deathDateFreeText = undefined;
 }
 
+private async findMaxGenerations(userEmail?: string, treeId?: string): Promise<{
+  maxGenerations: number;
+  longestNameLine: {
+    count: number;
+    lastName: string;
+    line: Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      generation: number;
+    }>;
+  };
+}> {
+  const user = await this.getUserOrTree('user', userEmail, treeId);
 
+  if (!user || !user.persons || user.persons.length === 0) {
+    throw new Error('User not found or no persons in the tree');
+  }
+
+  const persons = user.persons;
+  
+  // Inicjalizacja struktur danych
+  const inDegree = new Map<string, number>();
+  const childrenMap = new Map<string, string[]>();
+  const personDataMap = new Map<string, { firstName: string; lastName: string }>();
+  const queue: string[] = [];
+  
+  // Typ dla śledzenia nazwisk
+  type Streak = {
+    count: number;
+    lastName: string;
+    path: string[];
+  };
+
+  type LineItem = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    generation: number;
+  };
+
+  // Nowe struktury do śledzenia nazwisk
+  const lastNameStreakMap = new Map<string, Streak>();
+  let bestStreak: {
+    count: number;
+    lastName: string;
+    line: LineItem[];
+  } = { count: 0, lastName: '', line: [] };
+
+  // Inicjalizacja
+  persons.forEach(person => {
+      const id = person._id.toString();
+      inDegree.set(id, person.parents?.length || 0);
+      childrenMap.set(id, []);
+      personDataMap.set(id, {
+          firstName: person.firstName,
+          lastName: person.lastName
+      });
+      
+      // Dla korzeni inicjalizujemy ciąg nazwisk
+      if (inDegree.get(id) === 0) {
+          lastNameStreakMap.set(id, { 
+              count: 1, 
+              lastName: person.lastName, 
+              path: [id] 
+          });
+          queue.push(id);
+      }
+  });
+
+  // Budowanie childrenMap
+  persons.forEach(person => {
+      const parentId = person._id.toString();
+      person.children?.forEach(childId => {
+          const childIdStr = childId.toString();
+          childrenMap.get(parentId)?.push(childIdStr);
+      });
+  });
+
+  // Przetwarzanie BFS
+  while (queue.length > 0) {
+      const parentId = queue.shift()!;
+      const parentStreak = lastNameStreakMap.get(parentId)!;
+      const parentLastName = personDataMap.get(parentId)!.lastName;
+
+      const children = childrenMap.get(parentId) || [];
+      for (const childId of children) {
+          let deg = inDegree.get(childId) || 0;
+          deg--;
+          inDegree.set(childId, deg);
+
+          const childLastName = personDataMap.get(childId)!.lastName;
+          let newStreak: Streak;
+
+          if (childLastName === parentLastName) {
+              // Kontynuacja ciągu
+              newStreak = {
+                  count: parentStreak.count + 1,
+                  lastName: childLastName,
+                  path: [...parentStreak.path, childId]
+              };
+          } else {
+              // Nowy ciąg
+              newStreak = {
+                  count: 1,
+                  lastName: childLastName,
+                  path: [childId]
+              };
+          }
+
+          // Aktualizacja jeśli znaleźliśmy lepszy ciąg
+          const currentStreak = lastNameStreakMap.get(childId);
+          if (!currentStreak || newStreak.count > currentStreak.count) {
+              lastNameStreakMap.set(childId, newStreak);
+              
+              if (newStreak.count > bestStreak.count) {
+                  bestStreak = {
+                      count: newStreak.count,
+                      lastName: newStreak.lastName,
+                      line: newStreak.path.map((id, index) => ({
+                          id,
+                          firstName: personDataMap.get(id)!.firstName,
+                          lastName: personDataMap.get(id)!.lastName,
+                          generation: index + parentStreak.path.length - newStreak.path.length + 1
+                      }))
+                  };
+              }
+          }
+
+          if (deg === 0) {
+              queue.push(childId);
+          }
+      }
+    }
+
+   return {
+      maxGenerations: bestStreak.line.length,
+      longestNameLine: bestStreak
+    };
+  }
 }
 
 export const personService = new PersonService();

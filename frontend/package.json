@@ -20,6 +20,8 @@
     "axios": "^1.7.7",
     "classnames": "^2.5.1",
     "d3": "^7.9.0",
+    "file-saver": "^2.0.5",
+    "lucide-react": "^0.523.0",
     "my-app": "file:",
     "pinch-zoom-pan": "^4.0.2",
     "react": "^18.3.1",
@@ -63,6 +65,7 @@
     ]
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
     "@types/react-helmet": "^6.1.11",
     "@types/react-modal": "^3.16.3",
     "autoprefixer": "^10.4.20",
