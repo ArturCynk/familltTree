@@ -16,7 +16,15 @@ export interface UserDocument extends Document {
   resetPasswordToken?: string;
   createdAt: Date;
   updatedAt: Date;
-  persons: IPerson[]; // Lepsze typowanie dla subdokumentów
+  persons: IPerson[];
+  twoFactorEnabled: boolean;
+  twoFactorMethod?: 'app' | 'email' | 'sms';
+  twoFactorSecret?: string;
+  twoFactorPhone?: string;
+  backupCodes?: {
+    code: string;
+    used: boolean;
+  }[];
 }
 
 const UserSchema: Schema<UserDocument> = new Schema(
@@ -52,6 +60,25 @@ const UserSchema: Schema<UserDocument> = new Schema(
     activationToken: String,
     resetPasswordToken: String,
     persons: [PersonSchema],
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorMethod: {
+      type: String,
+      enum: ['app', 'email', 'sms'],
+    },
+    twoFactorSecret: String,
+    twoFactorPhone: String,
+    backupCodes: [
+      {
+        code: String,
+        used: {
+          type: Boolean,  // Poprawiona definicja
+          default: false  // Poprawiona definicja
+        }
+      },
+    ],
   },
   {
     versionKey: false,

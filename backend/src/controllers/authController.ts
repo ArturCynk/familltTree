@@ -168,6 +168,23 @@ export const loginUser = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Nieprawidłowe hasło' });
         }
 
+         if (user.twoFactorEnabled) {
+      // Tymczasowy token tylko do weryfikacji 2FA
+      const tempToken = jwt.sign(
+        { userId: user._id },
+        process.env.JWT_SECRET as string,
+        { expiresIn: '5m' }
+      );
+
+      return res.json({
+        msg: 'Wymagana weryfikacja dwuetapowa',
+        twoFactorRequired: true,
+        tempToken,
+        userId: user._id,
+        method: user.twoFactorMethod
+      });
+    }
+
         // Tworzenie tokenu JWT bez limitu czasowego
         const token = jwt.sign(
             { userId: user._id, email: user.email },
@@ -186,14 +203,23 @@ export const loginUser = async (req: Request, res: Response) => {
 };
 
 export const getCurrentUser = async (req: Request, res: Response) => {
-    try {
-      const user = await User.findOne({ email: req.user?.email }).select('-persons -password')
-      if (!user) return res.status(404).json({ msg: 'User not found' });
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ msg: 'Server error' });
-    }
-  };
+  try {
+    const user = await User.findOne({ email: req.user?.email })
+      .select('-persons -password -activationToken -resetPasswordToken');
+    
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    
+    res.json({
+      email: user.email,
+      accountType: user.accountType,
+      twoFactorEnabled: user.twoFactorEnabled,
+      twoFactorMethod: user.twoFactorMethod,
+      twoFactorPhone: user.twoFactorPhone
+    });
+  } catch (error) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
 
   export const updateUser = async (req: Request, res: Response) => {
     try {
@@ -227,4 +253,20 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         return res.status(500).json({ msg: 'Błąd serwera' });
     }
 };
-  
+  // controllers/authController.ts
+export const update2FAPhone = async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.body;
+    const user = await User.findOne({ email: req.user?.email }).select('-persons');
+    
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    
+    user.twoFactorPhone = phone;
+    await user.save();
+    
+    res.json({ msg: 'Phone number updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};

@@ -769,11 +769,6 @@ if (!relationType) {
         updatedB.siblings = addRelation(updatedB.siblings, updatedA);
         break;
 
-      case "friend": // przyjaciele (przykład innej relacji)
-        updatedA.friends = addRelation(updatedA.friends, updatedB);
-        updatedB.friends = addRelation(updatedB.friends, updatedA);
-        break;
-
       default:
         return res.status(400).json({ message: `Nieobsługiwany typ relacji: ${relationType}` });
     }

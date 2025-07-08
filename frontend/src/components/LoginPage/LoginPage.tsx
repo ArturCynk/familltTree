@@ -2,17 +2,20 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import TwoFactorForm from './TwoFactorForm';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('jan.cynk1970@gmail.com');
   const [password, setPassword] = useState('Janek1970.');
   const [emailValid, setEmailValid] = useState(true);
   const [passwordValid, setPasswordValid] = useState(true);
+   const [twoFactorData, setTwoFactorData] = useState<any>(null);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
+  
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +47,15 @@ const Login: React.FC = () => {
     try {
       const response = await axios.post('http://localhost:3001/api/auth/login', { email, password });
 
+      if (response.data.twoFactorRequired) {
+        setTwoFactorData({
+          userId: response.data.userId,
+          method: response.data.method,
+          tempToken: response.data.tempToken
+        });
+        return;
+      }
+
       if (response.status === 200) {
         const { token } = response.data;
         localStorage.setItem('authToken', token);
@@ -59,8 +71,21 @@ const Login: React.FC = () => {
     }
   };
 
+ const handle2FASuccess = () => {
+    window.location.href = '/list-view';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+
+      {twoFactorData ? (
+        <TwoFactorForm
+          userId={twoFactorData.userId} 
+          method={twoFactorData.method}
+          tempToken={twoFactorData.tempToken}
+          onVerified={handle2FASuccess}
+        />
+      ): (
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
         {/* Nagłówek */}
         <div className="relative bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
@@ -142,6 +167,7 @@ const Login: React.FC = () => {
           </form>
         </div>
       </div>
+      )}
     </div>
   );
 };

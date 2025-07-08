@@ -23,6 +23,37 @@ export const sendActivationEmail = async (email: string, activationLink: string)
     }
 };
 
+export const send2FACodeEmail = async (
+  email: string,
+  type: 'enabled' | 'disabled' | 'login',
+  code?: string
+) => {
+  let subject, text;
+
+  switch (type) {
+    case 'enabled':
+      subject = '2FA Włączone';
+      text = `Uwierzytelnianie dwuskładnikowe zostało włączone na Twoim koncie.`;
+      break;
+    case 'disabled':
+      subject = '2FA Wyłączone';
+      text = `Uwierzytelnianie dwuskładnikowe zostało wyłączone na Twoim koncie.`;
+      break;
+    case 'login':
+      subject = 'Twój kod weryfikacyjny';
+      text = `Twój kod weryfikacyjny: ${code}\nKod jest ważny przez 5 minut.`;
+      break;
+  }
+
+const msg = {
+        to: email,
+        from: 'generalzn1@gmail.com', 
+        subject: subject,
+        html: text
+      };
+  await sgMail.send(msg);
+};
+
 
 export const sendPasswordResetEmail = async (email: string, resetLink: string) => {
     const msg = {
