@@ -9,7 +9,8 @@ import connectDB from './src/config/database';
 import personRoutes from './src/routes/personRoutes';
 import authRoutes from './src/routes/authRoutes';
 import familyTreeRoutes from './src/routes/familyTree';
-import historyRoutes from './src/routes/historyRoutes'; // DODAJ TEN IMPORT
+import historyRoutes from './src/routes/historyRoutes'; 
+import dataTransferRoutes from './src/routes/dataTransferRoutes';
 import { initializeWebSocket } from './src/websocket/websocket';
 
 dotenv.config();
@@ -41,7 +42,8 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/person', personRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/family-trees', familyTreeRoutes);
-app.use('/api/history', historyRoutes); // DODAJ TEN ROUTER
+app.use('/api/history', historyRoutes); 
+app.use('/api/data-transfer', dataTransferRoutes);
 
 server.listen(port, () => {
   console.log(`Serwer działa na porcie ${port}`);
