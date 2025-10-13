@@ -5,6 +5,7 @@ import { IPerson } from '../models/Person';
 import FamilyTree from '../models/FamilyTree';
 import HistoryService from './historyService';
 import { EntityType, ChangeAction } from '../models/ChangeLog';
+import PDFDocument from 'pdfkit';
 
 interface AddPersonInput {
   email: string | undefined;
@@ -214,7 +215,6 @@ if (!deletingPerson) throw new Error('Osoba nie znaleziona');
     userEmail?: string,
     treeId?: string
   ) {
-    console.log(type,userEmail);
     
     const user = await this.getUserOrTree(type, userEmail, treeId);
     if (!user) throw new Error('Użytkownik nie znaleziony');
@@ -416,7 +416,6 @@ if (!deletingPerson) throw new Error('Osoba nie znaleziona');
       }
     });
 
-    console.log(changes);
     
 
     // Log the changes to history
@@ -514,7 +513,25 @@ public async getAllPersons(
   const page = Math.max(1, parseInt(query.page as string) || 1);
   const limit = Math.max(1, parseInt(query.limit as string) || 25);
 
-  const { mongoQuery, additionalFilter } = this.buildSearchConditions(searchQuery, letter);
+  // Pobierz wszystkie filtry z query
+  const filters = {
+    firstName: query.firstName as string | undefined,
+    lastName: query.lastName as string | undefined,
+    gender: query.gender as string | undefined,
+    status: query.status as string | undefined,
+    birthPlace: query.birthPlace as string | undefined,
+    deathPlace: query.deathPlace as string | undefined,
+    birthDateFrom: query.birthDateFrom as string | undefined,
+    birthDateTo: query.birthDateTo as string | undefined,
+    deathDateFrom: query.deathDateFrom as string | undefined,
+    deathDateTo: query.deathDateTo as string | undefined,
+  };
+
+  const { mongoQuery, additionalFilter } = this.buildSearchConditions(
+    searchQuery, 
+    letter, 
+    filters
+  );
 
   const user = await this.getUserOrTree(type, userEmail, treeId);
 
@@ -534,14 +551,13 @@ public async getAllPersons(
     ...this.getPersonRelations(person, personMap),
   }));
 
-    return {
-      users,
-      totalUsers,
-      currentPage: page,
-      totalPages: Math.ceil(totalUsers / limit),
-    };
-  }
-
+  return {
+    users,
+    totalUsers,
+    currentPage: page,
+    totalPages: Math.ceil(totalUsers / limit),
+  };
+}
   public async getRelationsForPerson(personId: string,type: PersonType,
     userEmail?: string,
     treeId?: string) {
@@ -1284,39 +1300,149 @@ return {
   }
 
 
-  private buildSearchConditions(searchQuery?: string, letter?: string) {
-    let mongoQuery: any = {};
-    let additionalFilter = (person: IPerson) => true;
-
-    if (searchQuery) {
-      const [firstName, lastName] = searchQuery.split(' ');
-
-      mongoQuery = {
-        $or: [
-          { firstName: { $regex: firstName, $options: 'i' } },
-          ...(lastName ? [{ lastName: { $regex: lastName, $options: 'i' } }] : []),
-        ],
-      };
-
-      additionalFilter = (person: IPerson): boolean => {
-        const matchesFirstName = person.firstName.toLowerCase().includes(firstName.toLowerCase());
-        const matchesLastName = lastName
-          ? person.lastName.toLowerCase().includes(lastName.toLowerCase())
-          : true;
-
-        return matchesFirstName && matchesLastName;
-      };
-    } else if (letter) {
-      mongoQuery = {
-        $or: [
-          { firstName: { $regex: `^${letter}`, $options: 'i' } },
-          { lastName: { $regex: `^${letter}`, $options: 'i' } },
-        ],
-      };
-    }
-
-    return { mongoQuery, additionalFilter };
+  private buildSearchConditions(
+  searchQuery?: string, 
+  letter?: string,
+  filters?: {
+    firstName?: string;
+    lastName?: string;
+    gender?: string;
+    status?: string;
+    birthPlace?: string;
+    deathPlace?: string;
+    birthDateFrom?: string;
+    birthDateTo?: string;
+    deathDateFrom?: string;
+    deathDateTo?: string;
   }
+) {
+  let mongoQuery: any = {};
+  let additionalFilter = (person: IPerson) => true;
+
+  const conditions = [];
+
+  // Obsługa searchQuery (istniejąca logika)
+  if (searchQuery) {
+    const [firstName, lastName] = searchQuery.split(' ');
+
+    mongoQuery = {
+      $or: [
+        { firstName: { $regex: firstName, $options: 'i' } },
+        ...(lastName ? [{ lastName: { $regex: lastName, $options: 'i' } }] : []),
+      ],
+    };
+
+    additionalFilter = (person: IPerson): boolean => {
+      const matchesFirstName = person.firstName.toLowerCase().includes(firstName.toLowerCase());
+      const matchesLastName = lastName
+        ? person.lastName.toLowerCase().includes(lastName.toLowerCase())
+        : true;
+
+      return matchesFirstName && matchesLastName;
+    };
+  } else if (letter) {
+    mongoQuery = {
+      $or: [
+        { firstName: { $regex: `^${letter}`, $options: 'i' } },
+        { lastName: { $regex: `^${letter}`, $options: 'i' } },
+      ],
+    };
+  }
+
+  // Dodanie nowych filtrów do additionalFilter
+  if (filters) {
+    const originalAdditionalFilter = additionalFilter;
+    
+    additionalFilter = (person: IPerson): boolean => {
+      // Sprawdź podstawowy filtr (searchQuery lub letter)
+      if (!originalAdditionalFilter(person)) {
+        return false;
+      }
+
+      // Filtrowanie po imieniu
+      if (filters.firstName && filters.firstName.trim() !== '') {
+        if (!person.firstName.toLowerCase().includes(filters.firstName.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po nazwisku
+      if (filters.lastName && filters.lastName.trim() !== '') {
+        if (!person.lastName.toLowerCase().includes(filters.lastName.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po płci
+      if (filters.gender && filters.gender.trim() !== '') {
+        if (person.gender !== filters.gender) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po statusie życia
+      if (filters.status && filters.status.trim() !== '') {
+        const isDeceased = !!person.deathDate;
+        if (filters.status === 'alive' && isDeceased) {
+          return false;
+        }
+        if (filters.status === 'deceased' && !isDeceased) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po miejscu urodzenia
+      if (filters.birthPlace && filters.birthPlace.trim() !== '') {
+        if (!person.birthPlace?.toLowerCase().includes(filters.birthPlace.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po miejscu śmierci
+      if (filters.deathPlace && filters.deathPlace.trim() !== '') {
+        if (!person.deathPlace?.toLowerCase().includes(filters.deathPlace.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po dacie urodzenia (od)
+      if (filters.birthDateFrom && filters.birthDateFrom.trim() !== '') {
+        const birthDateFrom = new Date(filters.birthDateFrom);
+        if (person.birthDate && new Date(person.birthDate) < birthDateFrom) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po dacie urodzenia (do)
+      if (filters.birthDateTo && filters.birthDateTo.trim() !== '') {
+        const birthDateTo = new Date(filters.birthDateTo);
+        if (person.birthDate && new Date(person.birthDate) > birthDateTo) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po dacie śmierci (od)
+      if (filters.deathDateFrom && filters.deathDateFrom.trim() !== '') {
+        const deathDateFrom = new Date(filters.deathDateFrom);
+        if (person.deathDate && new Date(person.deathDate) < deathDateFrom) {
+          return false;
+        }
+      }
+
+      // Filtrowanie po dacie śmierci (do)
+      if (filters.deathDateTo && filters.deathDateTo.trim() !== '') {
+        const deathDateTo = new Date(filters.deathDateTo);
+        if (person.deathDate && new Date(person.deathDate) > deathDateTo) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+  }
+
+  return { mongoQuery, additionalFilter };
+}
 
 private buildPersonWithRelations(person: IPerson, personMap: Map<string, IPerson>) {
   return {
@@ -1532,6 +1658,230 @@ private async findMaxGenerations(userEmail?: string, treeId?: string): Promise<{
       longestNameLine: bestStreak
     };
   }
+public async generatePersonReport(
+  personId: string,
+  type: PersonType,
+  userEmail?: string,
+  treeId?: string
+): Promise<PDFKit.PDFDocument> {
+  const user = await this.getUserOrTree(type, userEmail, treeId);
+
+  if (!user) throw new Error('Uzytkownik nie znaleziony');
+
+  const person = user.persons.find(p => p._id.toString() === personId);
+  if (!person) throw new Error('Osoba nie znaleziona');
+
+  const relations = await this.getRelationsForPerson(personId, type, userEmail, treeId);
+  const personMap = new Map(user.persons.map(p => [p._id.toString(), p]));
+
+  // Utworz dokument PDF
+  const doc = new PDFDocument({ margin: 50 });
+  this.setupPDFDocument(doc, person, relations, personMap);
+  return doc;
+}
+
+private setupPDFDocument(
+  doc: PDFKit.PDFDocument,
+  person: IPerson,
+  relations: any,
+  personMap: Map<string, IPerson>
+): void {
+  // Naglowek
+  doc
+    .fontSize(20)
+    .font('Helvetica-Bold')
+    .text(`${this.removePolishChars(person.firstName)} ${this.removePolishChars(person.lastName)}`, 50, 50)
+    .fontSize(12)
+    .font('Helvetica')
+    .text(`Raport wygenerowany: ${new Date().toLocaleDateString('pl-PL')}`, 50, 80);
+
+  let yPosition = 120;
+
+  // Sekcja 1: Dane podstawowe
+  yPosition = this.addSectionHeader(doc, 'Dane podstawowe', yPosition);
+  yPosition = this.addBasicInfoSection(doc, person, yPosition);
+
+  // Sekcja 2: Daty i miejsca
+  yPosition = this.addSectionHeader(doc, 'Daty i miejsca', yPosition + 10);
+  yPosition = this.addDatesAndPlacesSection(doc, person, yPosition);
+
+  // Sekcja 3: Relacje rodzinne
+  yPosition = this.addSectionHeader(doc, 'Relacje rodzinne', yPosition + 10);
+  yPosition = this.addFamilyRelationsSection(doc, relations, personMap, yPosition);
+
+  // Stopka
+  this.addFooter(doc);
+}
+
+private addSectionHeader(doc: PDFKit.PDFDocument, title: string, y: number): number {
+  doc
+    .fontSize(14)
+    .font('Helvetica-Bold')
+    .text(this.removePolishChars(title), 50, y)
+    .moveTo(50, y + 15)
+    .lineTo(550, y + 15)
+    .stroke()
+    .fontSize(10)
+    .font('Helvetica');
+  return y + 25;
+}
+
+private addBasicInfoSection(doc: PDFKit.PDFDocument, person: IPerson, y: number): number {
+  const rows = [
+    ['Imie:', this.removePolishChars(person.firstName)],
+        ['Drugie imie:', this.removePolishChars(person.middleName|| 'Brak')],
+    ['Nazwisko:', this.removePolishChars(person.lastName)],
+    ['Nazwisko rodowe:', this.removePolishChars(person.maidenName || 'Brak')],
+    ['Plec:', this.removePolishChars(this.translateGender(person.gender))],
+    ['Status:', this.removePolishChars(person.status === 'alive' ? 'Zyjacy' : 'Zmarly')],
+  ];
+
+  return this.createTwoColumnTable(doc, rows, y);
+}
+
+private addDatesAndPlacesSection(doc: PDFKit.PDFDocument, person: IPerson, y: number): number {
+  const birthDateText = this.formatDateWithType(
+    person.birthDate,
+    person.birthDateType,
+    person.birthDateFreeText
+  );
+
+  const deathDateText = this.formatDateWithType(
+    person.deathDate,
+    person.deathDateType,
+    person.deathDateFreeText
+  );
+
+  const rows = [
+    ['Data urodzenia:', this.removePolishChars(birthDateText)],
+    ['Miejsce urodzenia:', this.removePolishChars(person.birthPlace || 'Brak')],
+    ['Data smierci:', this.removePolishChars(deathDateText)],
+    ['Miejsce smierci:', this.removePolishChars(person.deathPlace || 'Brak')],
+    ['Miejsce pochowku:', this.removePolishChars(person.burialPlace || 'Brak')],
+  ];
+
+  return this.createTwoColumnTable(doc, rows, y);
+}
+
+private addFamilyRelationsSection(
+  doc: PDFKit.PDFDocument,
+  relations: any,
+  personMap: Map<string, IPerson>,
+  y: number
+): number {
+  const relationTypes = [
+    { title: 'Rodzice', data: relations.Rodzice },
+    { title: 'Rodzenstwo', data: relations.Rodzeństwo },
+    { title: 'Malzonkowie', data: relations.Małżonkowie },
+    { title: 'Dzieci', data: relations.Dzieci },
+  ];
+
+  relationTypes.forEach(relation => {
+    if (relation.data.length > 0) {
+      doc.text(`${this.removePolishChars(relation.title)}:`, 50, y);
+      y += 15;
+
+      relation.data.forEach((rel: any) => {
+        const person = personMap.get(rel.id.toString());
+        if (person) {
+          const dates = this.getLifeDates(person);
+          doc.text(`• ${this.removePolishChars(rel.firstName)} ${this.removePolishChars(rel.lastName)} ${dates}`, 70, y);
+          y += 12;
+        }
+      });
+      y += 5;
+    }
+  });
+
+  return y;
+}
+
+private createTwoColumnTable(doc: PDFKit.PDFDocument, rows: string[][], startY: number): number {
+  let y = startY;
+  const col1X = 50;
+  const col2X = 200;
+
+  rows.forEach(row => {
+    doc
+      .font('Helvetica-Bold')
+      .text(this.removePolishChars(row[0]), col1X, y)
+      .font('Helvetica')
+      .text(this.removePolishChars(row[1]), col2X, y);
+    y += 15;
+  });
+
+  return y;
+}
+
+private addFooter(doc: PDFKit.PDFDocument): void {
+  const totalPages = doc.bufferedPageRange().count;
+
+  doc.on('pageAdded', () => {
+    const currentPage = doc.bufferedPageRange().count;
+    const bottom = doc.page.height - 50;
+    doc
+      .fontSize(8)
+      .font('Helvetica')
+      .text(`Strona ${currentPage} z ${totalPages}`, 50, bottom, { align: 'center' });
+  });
+}
+
+private translateGender(gender: string): string {
+  const translations: { [key: string]: string } = {
+    male: 'Mezczyzna',
+    female: 'Kobieta',
+    'non-binary': 'Osoba niebinarna',
+  };
+  return translations[gender] || gender;
+}
+
+private formatDateWithType(
+  date: Date | undefined,
+  dateType: string | undefined,
+  freeText: string | undefined
+): string {
+  if (freeText) return this.removePolishChars(freeText);
+  if (!date) return 'Brak';
+
+  const formattedDate = date.toLocaleDateString('pl-PL');
+  const typeTranslations: { [key: string]: string } = {
+    exact: formattedDate,
+    before: `przed ${formattedDate}`,
+    after: `po ${formattedDate}`,
+    around: `okolo ${formattedDate}`,
+    probably: `prawdopodobnie ${formattedDate}`,
+    between: `${formattedDate} (miedzy datami)`,
+    fromTo: `${formattedDate} (zakres dat)`,
+  };
+
+  return this.removePolishChars(typeTranslations[dateType || 'exact'] || formattedDate);
+}
+
+private getLifeDates(person: IPerson): string {
+  const formatDate = (date?: Date): string => {
+    return date ? date.toLocaleDateString('pl-PL') : '?';
+  };
+
+  const birth = formatDate(person.birthDate);
+  const death = formatDate(person.deathDate);
+
+  const text = person.deathDate
+    ? `(${birth} – ${death})`
+    : `(ur. ${birth})`;
+
+  return this.removePolishChars(text);
+}
+
+private removePolishChars(text: string): string {
+  if (!text) return '';
+  const map: { [key: string]: string } = {
+    ą: 'a', ć: 'c', ę: 'e', ł: 'l', ń: 'n',
+    ó: 'o', ś: 's', ź: 'z', ż: 'z',
+    Ą: 'A', Ć: 'C', Ę: 'E', Ł: 'L', Ń: 'N',
+    Ó: 'O', Ś: 'S', Ź: 'Z', Ż: 'Z'
+  };
+  return text.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, match => map[match]);
+}
 }
 
 export const personService = new PersonService();

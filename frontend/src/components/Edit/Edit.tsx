@@ -38,6 +38,8 @@ interface PersonModalProps {
 }
 
 const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdate, onDeleteSuccess }) => {
+  console.log(persons);
+  
   const [person, setPerson] = useState<Person | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [formData, setFormData] = useState<Person | null>(null);
@@ -270,24 +272,29 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-2 sm:p-4"
       onClick={onClose}
     >
       {/* Main Modal */}
       <div
-        className="rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden transform transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+        className="rounded-2xl shadow-xl w-full max-w-2xl mx-auto overflow-hidden transform transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 max-h-[95vh] flex flex-col"
         onClick={handleModalClick}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-indigo-700 to-purple-800 px-6 py-4">
+        <div className="relative bg-gradient-to-r from-indigo-700 to-purple-800 px-4 sm:px-6 py-4 flex-shrink-0">
           <div className="relative flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white">Edytuj osobę</h2>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold text-white truncate">Edytuj osobę</h2>
+              <p className="text-indigo-100 text-xs sm:text-sm mt-1 truncate">
+                {formData?.firstName} {formData?.lastName}
+              </p>
+            </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              className="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors flex-shrink-0 ml-2"
               aria-label="Zamknij"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white/90 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-white/90 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -295,9 +302,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[80vh]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {formData?.photo && (
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-4 sm:mb-6">
               <img
                 src={
                   formData.photo.includes('uploads/')
@@ -305,16 +312,16 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     : formData.photo
                 }
                 alt={`${formData.firstName} ${formData.lastName}`}
-                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
+                className="w-20 h-20 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white shadow-md"
               />
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Gender Section */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Płeć</label>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
                 {[
                   {
                     value: 'male', label: 'Mężczyzna', icon: '♂',
@@ -329,7 +336,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     color: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/50 dark:text-purple-200 dark:border-purple-700'
                   }
                 ].map((option) => (
-                  <label key={option.value} className="flex-1 min-w-[120px]">
+                  <label key={option.value} className="flex-1 min-w-0">
                     <input
                       type="radio"
                       name="gender"
@@ -338,10 +345,10 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                       onChange={handleChange}
                       className="hidden peer"
                     />
-                    <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-200 dark:peer-checked:ring-indigo-800 ${option.color}`}>
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="text-lg font-medium">{option.icon}</span>
-                        <span className="font-medium">{option.label}</span>
+                    <div className={`w-full p-2 sm:p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-200 dark:peer-checked:ring-indigo-800 ${option.color}`}>
+                      <div className="flex items-center justify-center gap-1 sm:gap-2">
+                        <span className="text-base sm:text-lg font-medium">{option.icon}</span>
+                        <span className="font-medium text-xs sm:text-sm">{option.label}</span>
                       </div>
                     </div>
                   </label>
@@ -350,7 +357,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
             </div>
 
             {/* Names Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {[
                 { id: 'firstName', label: 'Pierwsze imię', name: 'firstName', value: formData?.firstName || '' },
                 { id: 'middleName', label: 'Drugie imię', name: 'middleName', value: formData?.middleName || '' },
@@ -367,27 +374,27 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     type="text"
                     value={field.value}
                     onChange={handleChange}
-                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                    className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                   />
                 </div>
               ))}
             </div>
 
             {/* Birth Section */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center">
-                <span className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white flex items-center">
+                <span className="w-2 h-2 sm:w-3 sm:h-3 bg-indigo-500 rounded-full mr-2 flex-shrink-0"></span>
                 Data urodzenia
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ daty</label>
                   <select
                     name="birthDateType"
                     value={formData?.birthDateType || 'exact'}
                     onChange={handleChange}
-                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                    className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                   >
                     {['exact', 'freeText'].map((type) => (
                       <option key={type} value={type}>
@@ -412,7 +419,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                         name="birthDateFreeText"
                         onChange={handleChange}
                         placeholder="np. 'zima 1945'"
-                        className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                        className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 text-sm sm:text-base"
                       />
                     ) : (
                       <div className="relative">
@@ -421,7 +428,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                           value={formData?.birthDate ? formatDateForInput(formData.birthDate) : ""}
                           onChange={handleChange}
                           name="birthDate"
-                          className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                          className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 appearance-none bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 text-sm sm:text-base"
                         />
                       </div>
                     )}
@@ -437,7 +444,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                         name="birthDateFrom"
                         value={formatDateForInput(formData?.birthDateFrom)}
                         onChange={handleChange}
-                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                        className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -447,7 +454,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                         name="birthDateTo"
                         value={formatDateForInput(formData?.birthDateTo)}
                         onChange={handleChange}
-                        className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                        className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                       />
                     </div>
                   </>
@@ -461,7 +468,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                   name="birthPlace"
                   value={formData?.birthPlace || ''}
                   onChange={handleChange}
-                  className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                  className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                 />
               </div>
             </div>
@@ -482,15 +489,15 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     setFormData({ ...formData, spouses: updatedSpouses });
                   }
                 }}
-                className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
               />
             </div>
 
             {/* Status Section */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-              <div className="flex flex-wrap gap-3">
-                <label className="flex-1 min-w-[120px]">
+              <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
+                <label className="flex-1 min-w-0">
                   <input
                     type="radio"
                     name="status"
@@ -499,21 +506,21 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     onChange={handleChange}
                     className="hidden peer"
                   />
-                  <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:ring-2 peer-checked:ring-green-100 dark:peer-checked:ring-green-900 ${formData?.status === 'alive'
+                  <div className={`w-full p-2 sm:p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:ring-2 peer-checked:ring-green-100 dark:peer-checked:ring-green-900 ${formData?.status === 'alive'
                       ? 'bg-green-50 border-green-500 dark:bg-green-900/30 dark:border-green-700'
                       : 'bg-white border-gray-200 dark:bg-gray-700 dark:border-gray-600'
                     }`}>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-500 flex items-center justify-center text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                         </svg>
                       </span>
-                      <span className="font-medium">Żyjący</span>
+                      <span className="font-medium text-xs sm:text-sm">Żyjący</span>
                     </div>
                   </div>
                 </label>
-                <label className="flex-1 min-w-[120px]">
+                <label className="flex-1 min-w-0">
                   <input
                     type="radio"
                     name="status"
@@ -522,17 +529,17 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     onChange={handleChange}
                     className="hidden peer"
                   />
-                  <div className={`w-full p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-100 dark:peer-checked:ring-red-900 ${formData?.status === 'deceased'
+                  <div className={`w-full p-2 sm:p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-100 dark:peer-checked:ring-red-900 ${formData?.status === 'deceased'
                       ? 'bg-red-50 border-red-500 dark:bg-red-900/30 dark:border-red-700'
                       : 'bg-white border-gray-200 dark:bg-gray-700 dark:border-gray-600'
                     }`}>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white shadow-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 384 512" fill="currentColor">
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" viewBox="0 0 384 512" fill="currentColor">
                           <path d="M320 128c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V32c0-17.7-14.3-32-32-32s-32 14.3-32 32V64H64C46.3 64 32 78.3 32 96s14.3 32 32 32H192V480c0 17.7 14.3 32 32 32s32-14.3 32-32V128h64z" />
                         </svg>
                       </span>
-                      <span className="font-medium">Zmarły</span>
+                      <span className="font-medium text-xs sm:text-sm">Zmarły</span>
                     </div>
                   </div>
                 </label>
@@ -541,22 +548,22 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
 
             {/* Death Section (conditional) */}
             {formData?.status === 'deceased' && (
-              <div className="space-y-4 p-5 bg-gray-50 rounded-xl border border-gray-200 dark:bg-gray-700/50 dark:border-gray-600">
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="space-y-3 sm:space-y-4 p-3 sm:p-5 bg-gray-50 rounded-xl border border-gray-200 dark:bg-gray-700/50 dark:border-gray-600">
+                <h3 className="text-base sm:text-lg font-medium text-gray-800 dark:text-white flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Informacje o śmierci
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ daty</label>
                     <select
                       name="deathDateType"
                       value={formData?.deathDateType || 'exact'}
                       onChange={handleChange}
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                      className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                     >
                       {['exact', 'freeText'].map((type) => (
                         <option key={type} value={type}>
@@ -581,7 +588,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                           name="deathDateFreeText"
                           onChange={handleChange}
                           placeholder="np. 'zima 1950', 'około 1980'"
-                          className="block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700"
+                          className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 text-sm sm:text-base"
                         />
                       ) : (
                         <input
@@ -589,7 +596,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                           name="deathDate"
                           value={formatDateForInput(formData?.deathDate)}
                           onChange={handleChange}
-                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                          className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                         />
                       )}
                     </div>
@@ -604,7 +611,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                           name="deathDateFrom"
                           value={formatDateForInput(formData?.deathDateFrom)}
                           onChange={handleChange}
-                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                          className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                         />
                       </div>
                       <div>
@@ -614,7 +621,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                           name="deathDateTo"
                           value={formatDateForInput(formData?.deathDateTo)}
                           onChange={handleChange}
-                          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                          className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                         />
                       </div>
                     </>
@@ -628,33 +635,33 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     name="burialPlace"
                     value={formData?.burialPlace || ''}
                     onChange={handleChange}
-                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                    className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white/90 hover:bg-white dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-sm sm:text-base"
                   />
                 </div>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-rose-600 text-white font-medium hover:from-red-700 hover:to-rose-700 transition-all duration-200 flex items-center gap-2"
+                className="px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg bg-gradient-to-r from-red-600 to-rose-600 text-white font-medium hover:from-red-700 hover:to-rose-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base"
               >
-                <FontAwesomeIcon icon={faTrash} />
+                <FontAwesomeIcon icon={faTrash} className="text-xs sm:text-sm" />
                 <span>Usuń</span>
               </button>
-              <div className="flex gap-4">
+              <div className="flex gap-3 sm:gap-4">
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2"
+                  className="px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base flex-1 sm:flex-none"
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                   ) : (
                     <>
-                      <FontAwesomeIcon icon={faPen} />
+                      <FontAwesomeIcon icon={faPen} className="text-xs sm:text-sm" />
                       <span>Zapisz zmiany</span>
                     </>
                   )}
@@ -667,43 +674,46 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm animate-fade-in p-2 sm:p-4">
           <div
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 transform transition-all duration-300"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-auto p-4 sm:p-6 transform transition-all duration-300 max-h-[95vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Potwierdzenie usunięcia</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Czy na pewno chcesz usunąć <span className="font-semibold">{formData?.firstName} {formData?.lastName}</span>?
-              Tej akcji nie można cofnąć. Wszystkie powiązania zostaną zaktualizowane.
-            </p>
+            <div className="flex-1">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-3 sm:mb-4">Potwierdzenie usunięcia</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base mb-4 sm:mb-6">
+                Czy na pewno chcesz usunąć <span className="font-semibold">{formData?.firstName} {formData?.lastName}</span>?
+                Tej akcji nie można cofnąć. Wszystkie powiązania zostaną zaktualizowane.
+              </p>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">
-                {error}
-              </div>
-            )}
+              {error && (
+                <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-sm">
+                  {error}
+                </div>
+              )}
+            </div>
 
-            <div className="flex justify-end gap-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                className="px-4 py-2.5 sm:px-6 sm:py-2.5 rounded-lg border border-gray-300 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 text-sm sm:text-base flex-1 sm:flex-none"
               >
                 Anuluj
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${isDeleting
+                className={`px-4 py-2.5 sm:px-6 sm:py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base flex-1 sm:flex-none ${
+                  isDeleting
                     ? 'bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700'
-                  }`}
+                }`}
               >
                 {isDeleting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                 ) : (
                   <>
-                    <FontAwesomeIcon icon={faTrash} />
+                    <FontAwesomeIcon icon={faTrash} className="text-xs sm:text-sm" />
                     <span>Usuń</span>
                   </>
                 )}
@@ -715,49 +725,49 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
 
       {/* Inconsistency Modal */}
       {showInconsistencyModal && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
           <div
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl mx-auto overflow-hidden max-h-[95vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
-            <div className="bg-gradient-to-r from-red-600 to-orange-600 px-6 py-5">
-              <h2 className="text-xl font-bold text-white">⚠️ Wykryto nieścisłości</h2>
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 px-4 sm:px-6 py-4 sm:py-5 flex-shrink-0">
+              <h2 className="text-lg sm:text-xl font-bold text-white">⚠️ Wykryto nieścisłości</h2>
             </div>
 
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="flex items-start mb-4">
                 <div className="flex-shrink-0 mt-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
                     Potencjalne problemy w danych
                   </h3>
-                  <p className="mt-1 text-gray-600 dark:text-gray-300">
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                     System wykrył następujące nieścisłości w wprowadzonych danych:
                   </p>
                 </div>
               </div>
 
-              <ul className="mt-4 space-y-2 max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4">
+              <ul className="mt-4 space-y-2 max-h-48 sm:max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 sm:p-4">
                 {inconsistencies.map((inc, index) => (
                   <li key={index} className="flex items-start">
                     <span className="flex-shrink-0 mt-1 text-red-500">•</span>
-                    <span className="ml-2 text-gray-700 dark:text-gray-300">{inc}</span>
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{inc}</span>
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+              <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setShowInconsistencyModal(false);
                     setForceSubmit(false);
                   }}
-                  className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm sm:text-base"
                 >
                   Popraw dane
                 </button>
@@ -767,7 +777,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ id, onClose, persons, onUpdat
                     setForceSubmit(true);
                     setShowInconsistencyModal(false);
                   }}
-                  className="px-4 py-2.5 bg-gradient-to-r from-red-600 to-orange-600 rounded-lg text-white font-medium hover:from-red-700 hover:to-orange-700 transition-colors"
+                  className="px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-red-600 to-orange-600 rounded-lg text-white font-medium hover:from-red-700 hover:to-orange-700 transition-colors text-sm sm:text-base"
                 >
                   Zatwierdź mimo to
                 </button>

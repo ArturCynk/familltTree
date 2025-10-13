@@ -6,6 +6,7 @@ import User, { UserDocument } from '../models/User';
 import { formatTimestamp, makeDescription } from '../utils/helpers';
 import ExcelJS from 'exceljs'; // Replace csv-writer with ExcelJS
 import { personService } from '../services/personServices';
+import FamilyTree from '../models/FamilyTree';
 
 type PersonType = 'user' | 'familyTree';
 
@@ -18,52 +19,56 @@ class HistoryController {
     }
 
    async getHistory(req: Request, res: Response) {
-    try {
-        if (!req.user?.email) {
-            return res.status(401).json({ message: 'Authentication required' });
-        }
-
-        const userId = await this.getUserOrTree(req.user.email);
-        if (!userId) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        
-        const { entityType, action } = req.query as {
-            entityType?: EntityType;
-            action?: ChangeAction;
-        };
-
-        // Validate enum values if provided
-        if (entityType && !Object.values(EntityType).includes(entityType)) {
-            return res.status(400).json({ message: 'Invalid entityType value' });
-        }
-        
-        if (action && !Object.values(ChangeAction).includes(action)) {
-            return res.status(400).json({ message: 'Invalid action value' });
-        }
-        
-         const raw = await HistoryService.getChangeHistory(userId._id as mongoose.Types.ObjectId, { entityType, action });
-  
-  const history = raw.map(log => {
-    const { date, time } = formatTimestamp(log.timestamp);
-
-    return {
-      id: log._id,
-      date,
-      time,
-      description: makeDescription(log),
-      action: log.action,
-      
-    };
-  });
-
-  return res.json(history);
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error('Error fetching history:', error);
-        return res.status(500).json({ message: errorMessage });
+  try {
+    if (!req.user?.email) {
+      return res.status(401).json({ message: 'Authentication required' });
     }
+
+    const { type, familyTreeId, entityType, action } = req.query as {
+      type?: 'user' | 'familyTree';
+      familyTreeId?: string;
+      entityType?: EntityType;
+      action?: ChangeAction;
+    };
+
+    // Domyślnie user, jeśli nie podano
+    const resolvedType: PersonType = type === 'familyTree' ? 'familyTree' : 'user';
+
+    const context = await this.getUserOrTree(resolvedType, req.user.email, familyTreeId);
+    
+    if (!context) {
+      return res.status(404).json({ message: 'User or FamilyTree not found' });
+    }
+
+    if (entityType && !Object.values(EntityType).includes(entityType)) {
+      return res.status(400).json({ message: 'Invalid entityType value' });
+    }
+
+    if (action && !Object.values(ChangeAction).includes(action)) {
+      return res.status(400).json({ message: 'Invalid action value' });
+    }
+
+    const raw = await HistoryService.getChangeHistory(context._id as mongoose.Types.ObjectId, { entityType, action });
+
+    const history = raw.map(log => {
+      const { date, time } = formatTimestamp(log.timestamp);
+      return {
+        id: log._id,
+        date,
+        time,
+        description: makeDescription(log),
+        action: log.action,
+      };
+    });
+
+    return res.json(history);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error fetching history:', error);
+    return res.status(500).json({ message: errorMessage });
+  }
 }
+
 
 async exportHistoryToExcel(req: Request, res: Response) { // Renamed method
         try {
@@ -71,15 +76,22 @@ async exportHistoryToExcel(req: Request, res: Response) { // Renamed method
                 return res.status(401).json({ message: 'Authentication required' });
             }
 
-            const userId = await this.getUserOrTree(req.user.email);
-            if (!userId) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+           const { type, familyTreeId, entityType, action } = req.query as {
+      type?: 'user' | 'familyTree';
+      familyTreeId?: string;
+      entityType?: EntityType;
+      action?: ChangeAction;
+    };
 
-            const { entityType, action } = req.query as {
-                entityType?: EntityType;
-                action?: ChangeAction;
-            };
+    // Domyślnie user, jeśli nie podano
+    const resolvedType: PersonType = type === 'familyTree' ? 'familyTree' : 'user';
+
+    const context = await this.getUserOrTree(resolvedType, req.user.email, familyTreeId);
+    if (!context) {
+      return res.status(404).json({ message: 'User or FamilyTree not found' });
+    }
+
+
 
             if (entityType && !Object.values(EntityType).includes(entityType)) {
                 return res.status(400).json({ message: 'Invalid entityType value' });
@@ -88,7 +100,7 @@ async exportHistoryToExcel(req: Request, res: Response) { // Renamed method
                 return res.status(400).json({ message: 'Invalid action value' });
             }
 
-            const raw = await HistoryService.getChangeHistory(userId._id as mongoose.Types.ObjectId, { entityType, action });
+            const raw = await HistoryService.getChangeHistory(context._id as mongoose.Types.ObjectId, { entityType, action });
 
             // Create Excel workbook
             const workbook = new ExcelJS.Workbook();
@@ -210,9 +222,20 @@ async exportHistoryToExcel(req: Request, res: Response) { // Renamed method
   }
 }
 
-    private async getUserOrTree(userEmail: string): Promise<UserDocument | null> {
-        return await User.findOne({ email: userEmail }).populate('persons').exec();
-    }
+private async getUserOrTree(
+  type: 'user' | 'familyTree',
+  userEmail?: string,
+  familyTreeId?: string
+): Promise<UserDocument | any | null> {
+  if (type === 'user') {
+    if (!userEmail) return null;
+    return await User.findOne({ email: userEmail }).populate('persons').exec();
+  }
+
+      if (!familyTreeId) return null;
+    return await FamilyTree.findById(familyTreeId).populate('persons').exec();
+}
+
 
 async simulateUndoUpdate(req: Request, res: Response) {
   try {

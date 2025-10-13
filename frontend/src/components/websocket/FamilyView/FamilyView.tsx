@@ -9,7 +9,6 @@ import React, {
 } from 'react';
 import LeftHeader from '../../LeftHeader/LeftHeader';
 import ReactFamilyTree from 'react-family-tree';
-import axios from 'axios';
 import { PinchZoomPan } from './PinchZoomPan';
 import { FamilyNode } from './FamilyNode';
 import { NodeDetails } from './NodeDetails';
@@ -22,14 +21,14 @@ import type { CSSProperties } from 'react';
 import NotAuthenticatedScreen from '../../NotAuthenticatedScreen/NotAuthenticatedScreen';
 import { SearchControlPanel } from './SearchControlPanel';
 import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import ChatMessageItem, { ChatMessage } from './ChatMessageItem';
+import HistorySidebar from '../../HistorySidebar/HistorySidebar';
+import axios from 'axios';
 
 interface FamilyData {
   nodes: Node[];
   rootId: string;
-}
-
-interface ErrorBoundaryProps {
-  children: ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -39,9 +38,8 @@ interface ErrorBoundaryState {
 
 interface ErrorBoundaryProps {
   children: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void; // Add onError prop
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
-
 
 interface DisplayOptions {
   showGenderIcon: boolean;
@@ -53,8 +51,34 @@ interface DisplayOptions {
   showGenderColors: boolean;
 }
 
+interface Reaction {
+  emoji: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  createdAt: string;
+}
+
+interface EditHistory {
+  previousMessage: string;
+  editedAt: string;
+}
+
+interface TypingUser {
+  userId: string;
+  userName: string;
+}
+
 const NODE_WIDTH = 150;
 const NODE_HEIGHT = 130;
+
+const COMMON_EMOJIS = [
+  '👍', '👎', '❤️', '😂', '😮', '😢', '😡', '🎉', '👏', '🔥',
+  '🤔', '👀', '🙏', '💯', '🥳', '😍', '🤯', '😴', '🙌', '💪'
+];
 
 const getNodeStyle = ({ left, top }: Readonly<ExtNode>): CSSProperties => {
   const x = left || 0;
@@ -69,7 +93,7 @@ const getNodeStyle = ({ left, top }: Readonly<ExtNode>): CSSProperties => {
 };
 
 const FamilyViewWebsocket: React.FC = () => {
-  const [errorBoundaryKey, setErrorBoundaryKey] = useState(0); // Add this line
+  const [userRole, setUserRole] = useState<'owner'|'admin' | 'editor' | 'guest'>('guest');
   const [familyData, setFamilyData] = useState<FamilyData | null>(null);
   const [selectId, setSelectId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
@@ -92,19 +116,245 @@ const FamilyViewWebsocket: React.FC = () => {
     showGenderColors: false,
   });
 
+  // Chat states
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState<string>('');
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [sendingMessages, setSendingMessages] = useState<Set<string>>(new Set());
+
+  // Chat advanced states
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editMessageText, setEditMessageText] = useState<string>('');
+  const [reactingMessageId, setReactingMessageId] = useState<string | null>(null);
+  const [replyingToMessage, setReplyingToMessage] = useState<ChatMessage | null>(null);
+  const [showEditHistory, setShowEditHistory] = useState<string | null>(null);
+  const [showReactionsPopup, setShowReactionsPopup] = useState<string | null>(null);
+
+  // History state
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+
   const { id } = useParams<{ id: string }>();
-  const [familyTreeData, setFamilyTreeData] = useState(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   const startTimeRef = useRef<number>(0);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    setTimeout(() => {
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
+    }, 100);
+  }, []);
+
+  useEffect(() => {
+    if (isChatOpen) {
+      scrollToBottom('auto');
+    }
+  }, [isChatOpen, scrollToBottom]);
+
+  useEffect(() => {
+    if (isChatOpen) {
+      scrollToBottom();
+    }
+  }, [chatMessages, isChatOpen, scrollToBottom]);
+
+  const handleAddReaction = useCallback((messageId: string, emoji: string) => {
+    if (!wsRef.current) return;
+
+    wsRef.current.send(JSON.stringify({
+      type: 'add_reaction',
+      messageId: messageId,
+      emoji: emoji,
+      familyTreeId: id
+    }));
+
+    setReactingMessageId(null);
+  }, [id]);
+
+  const startEditingMessage = useCallback((message: ChatMessage) => {
+    if (message.user._id !== currentUser?.id) return;
+
+    setEditingMessageId(message._id);
+    setEditMessageText(message.message);
+  }, [currentUser]);
+
+  const cancelEditing = useCallback(() => {
+    setEditingMessageId(null);
+    setEditMessageText('');
+  }, []);
+
+  const saveEditedMessage = useCallback(() => {
+    if (!wsRef.current || !editingMessageId || !editMessageText.trim()) return;
+
+    wsRef.current.send(JSON.stringify({
+      type: 'edit_message',
+      messageId: editingMessageId,
+      newMessage: editMessageText.trim(),
+      familyTreeId: id
+    }));
+
+    setEditingMessageId(null);
+    setEditMessageText('');
+  }, [editingMessageId, editMessageText, id]);
+
+  const handleDeleteMessage = useCallback((messageId: string) => {
+    if (!wsRef.current) return;
+
+    if (window.confirm('Czy na pewno chcesz usunąć tę wiadomość?')) {
+      wsRef.current.send(JSON.stringify({
+        type: 'delete_message',
+        messageId: messageId,
+        familyTreeId: id
+      }));
+    }
+  }, [id]);
+
+  const startReplyingToMessage = useCallback((message: ChatMessage) => {
+    setReplyingToMessage(message);
+    setNewMessage('');
+  }, []);
+
+  const cancelReply = useCallback(() => {
+    setReplyingToMessage(null);
+  }, []);
+
+ 
+
+  const handleTyping = useCallback(() => {
+    if (!isTyping) {
+      setIsTyping(true);
+      wsRef.current?.send(JSON.stringify({
+        type: 'typing_start',
+        familyTreeId: id,
+        userName: currentUser?.name || 'User'
+      }));
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      wsRef.current?.send(JSON.stringify({
+        type: 'typing_stop',
+        familyTreeId: id,
+        userName: currentUser?.name || 'User'
+      }));
+    }, 3000);
+  }, [isTyping, id, currentUser]);
+
+  const sendMessage = useCallback(() => {
+    if (!newMessage.trim() || !wsRef.current || !currentUser) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: ChatMessage = {
+      _id: tempId,
+      familyTree: id!,
+      user: {
+        _id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+      },
+      message: newMessage.trim(),
+      type: 'text',
+      replyTo: replyingToMessage?._id,
+      readBy: [currentUser.id],
+      reactions: [],
+      edited: false,
+      editHistory: [],
+      deleted: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    setChatMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage('');
+    setReplyingToMessage(null);
+
+    const messageData: any = {
+      type: 'chat_message',
+      message: newMessage.trim(),
+      familyTreeId: id,
+      tempId: tempId
+    };
+
+    if (replyingToMessage) {
+      messageData.replyTo = replyingToMessage._id;
+    }
+
+    wsRef.current.send(JSON.stringify(messageData));
+
+  }, [newMessage, id, currentUser, replyingToMessage]);
+
+  const markMessageAsRead = useCallback((messageId: string) => {
+    wsRef.current?.send(JSON.stringify({
+      type: 'mark_message_read',
+      messageId: messageId
+    }));
+  }, []);
+
+  const loadChatHistory = useCallback(() => {
+    wsRef.current?.send(JSON.stringify({
+      type: 'get_chat_history',
+      familyTreeId: id,
+    }));
+  }, [id]);
+
+  const findReplyMessage = useCallback((messageId: string): ChatMessage | null => {
+    return chatMessages.find(msg => msg._id === messageId) || null;
+  }, [chatMessages]);
+
+  const formatMessageTime = useCallback((timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }, []);
+
+  
+
+  // History functions
+  const handleUndoHistory = useCallback((historyId: string) => {
+    if (!wsRef.current) return;
+    const token = localStorage.getItem('authToken');
+    axios.post(
+      `http://localhost:3001/api/history/undo/${id}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    wsRef.current.send(JSON.stringify({ type: 'getAllPersonsWithRelations' }));
+
+    toast.info('Cofanie zmiany...');
+  }, [id]);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const familyTreeId = id;
+
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setCurrentUser({
+          id: payload.userId,
+          name: payload.name || 'User',
+          email: payload.email
+        });
+      } catch (err) {
+        console.error('Error parsing token:', err);
+      }
+    }
+
     const ws = new WebSocket('ws://localhost:3001');
     wsRef.current = ws;
 
-    // Start measuring time
     startTimeRef.current = performance.now();
 
     ws.onopen = () => {
@@ -119,33 +369,138 @@ const FamilyViewWebsocket: React.FC = () => {
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        console.log(message.type);
-        
-        if (message.type === 'init') {
-          ws.send(JSON.stringify({ type: 'getAllPersonsWithRelations' }));
-          return;
-        } else if (message.type === 'error') {
-          console.error('Błąd:', message.message);
-          setLoading(false);
-        } else if (message.type === 'personUpdated' || message.type === 'personDeleted'  ||  message.type === 'relationDeleted' || message.type === 'personWithRelationsAdded') {
-        const savedRootId = localStorage.getItem('currentRootId');
-        const defaultRootId = message.data[1].id;
 
-        const rootIdToUse = savedRootId && message.data.some((node: Node) => node.id === savedRootId)
-          ? savedRootId
-          : defaultRootId;
+        switch (message.type) {
+          case 'init':
+            setUserRole(message.data.role);
+            console.log(userRole)
+            ws.send(JSON.stringify({ type: 'getAllPersonsWithRelations' }));
+            loadChatHistory();
+            break;
 
-        setFamilyData({
-          nodes: message.data,
-          rootId: rootIdToUse,
-        });
-        setInitialRootId(rootIdToUse);
-        } else if(message.type === 'allPersonsWithRelations') {
-          setFamilyData({
-            nodes: message.data,
-            rootId: message.data[1].id
-          })
-          setLoading(false);
+          case 'error':
+            console.error('Błąd:', message.message);
+            setLoading(false);
+            break;
+
+          case 'personUpdated':
+          case 'personDeleted':
+          case 'relationDeleted':
+          case 'personWithRelationsAdded':
+            console.log(message.type);
+            if (message.type === 'personWithRelationsAdded') {
+              toast.success('Dodano nową osobę do drzewa!');
+            }
+            if (message.type === 'relationDeleted') {
+              toast.success('Usunięto relację!');
+            }
+            if (message.type === 'personDeleted') {
+              toast.success('Usunięto osobę z drzewa!');
+            }
+            if (message.type === 'personUpdated') {
+              toast.success('Zaktualizowano dane osoby!');
+            }
+
+            const savedRootId = localStorage.getItem('currentRootId');
+            const defaultRootId = message.data[1].id;
+
+            const rootIdToUse = savedRootId && message.data.some((node: Node) => node.id === savedRootId)
+              ? savedRootId
+              : defaultRootId;
+
+            setFamilyData({
+              nodes: message.data,
+              rootId: rootIdToUse,
+            });
+            setInitialRootId(rootIdToUse);
+            break;
+
+          case 'allPersonsWithRelations':
+            setFamilyData({
+              nodes: message.data,
+              rootId: message.data[1].id
+            });
+            setLoading(false);
+            break;
+
+          case 'chat_message':
+            setChatMessages(prev => {
+              const newMessages = prev.filter(msg =>
+                !(message.data.tempId && msg._id === message.data.tempId)
+              );
+              return [...newMessages, message.data];
+            });
+
+            if (message.data.tempId) {
+              setSendingMessages(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(message.data.tempId);
+                return newSet;
+              });
+            }
+
+            if (!isChatOpen) {
+              setUnreadCount(prev => prev + 1);
+            } else {
+              markMessageAsRead(message.data._id);
+            }
+            break;
+
+          case 'message_edited':
+            setChatMessages(prev => prev.map(msg =>
+              msg._id === message.data._id ? message.data : msg
+            ));
+            break;
+
+          case 'reaction_updated':
+            setChatMessages(prev => prev.map(msg =>
+              msg._id === message.data.message._id ? message.data.message : msg
+            ));
+            break;
+
+          case 'message_deleted':
+            setChatMessages(prev => prev.map(msg =>
+              msg._id === message.data._id ? message.data : msg
+            ));
+            break;
+
+          case 'edit_history':
+            console.log('Edit history:', message.data);
+            break;
+
+          case 'chat_history':
+            setChatMessages(message.data);
+            console.log('Chat history loaded:', message.data);
+            break;
+
+          case 'typing_start':
+            setTypingUsers(prev => {
+              const exists = prev.find(user => user.userId === message.data.userId);
+              if (!exists) {
+                return [...prev, message.data];
+              }
+              return prev;
+            });
+            break;
+
+          case 'typing_stop':
+            setTypingUsers(prev => prev.filter(user => user.userId !== message.data.userId));
+            break;
+
+          case 'system_message':
+            console.log('System message received:', message.data);
+            console.log(message.data);
+
+            setChatMessages(prev => [...prev, message.data]);
+            break;
+
+          case 'undo_success':
+            toast.success('Pomyślnie cofnięto zmianę!');
+            break;
+
+          case 'undo_error':
+            toast.error('Nie udało się cofnąć zmiany: ' + message.message);
+            break;
         }
       } catch (err) {
         console.error('Błąd parsowania:', err);
@@ -163,14 +518,27 @@ const FamilyViewWebsocket: React.FC = () => {
     };
 
     return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
       ws.close();
     };
-  }, []);
+  }, [id, loadChatHistory, markMessageAsRead]);
+
+  useEffect(() => {
+    if (isChatOpen) {
+      setUnreadCount(0);
+      chatMessages.forEach(msg => {
+        if (!msg.readBy.includes(currentUser?.id || '')) {
+          markMessageAsRead(msg._id);
+        }
+      });
+    }
+  }, [isChatOpen, chatMessages, currentUser, markMessageAsRead]);
 
   useEffect(() => {
     localStorage.setItem('recentRoots', JSON.stringify(recentRoots));
   }, [recentRoots]);
-
 
   class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
     state: ErrorBoundaryState = {
@@ -188,28 +556,25 @@ const FamilyViewWebsocket: React.FC = () => {
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
       console.error("Error caught by ErrorBoundary:", error, errorInfo);
       if (this.props.onError) {
-        this.props.onError(error, errorInfo); // Trigger callback
+        this.props.onError(error, errorInfo);
       }
     }
 
     fetchData = () => {
       const updatedRoots = recentRoots.slice(1);
-
       setRecentRoots(updatedRoots);
       setFamilyData(prevData => {
         const nodes = prevData?.nodes ? [...prevData.nodes] : [];
         const rootUser = nodes[0];
         return {
           nodes,
-          rootId: rootUser?.id || '' // fallback to empty string if undefined
+          rootId: rootUser?.id || ''
         };
       });
     }
 
-
     render(): ReactNode {
       if (this.state.hasError) {
-
         return (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
             <div className="bg-red-100 dark:bg-red-900/20 p-6 rounded-xl max-w-md text-center border border-red-200 dark:border-red-800">
@@ -237,7 +602,6 @@ const FamilyViewWebsocket: React.FC = () => {
       return this.props.children;
     }
   }
-
 
   const handleRootChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newRootId = event.target.value;
@@ -289,7 +653,6 @@ const FamilyViewWebsocket: React.FC = () => {
     setIsRelationModalOpen(false);
     setIsEditModalOpen(false);
     setIsModalDeleteRelationOpen(false);
-    // await fetchFamilyData();
   };
 
   const handleEdit = useCallback(() => {
@@ -303,6 +666,13 @@ const FamilyViewWebsocket: React.FC = () => {
   const handleOpenDeleteModal = useCallback(() => {
     setIsModalDeleteRelationOpen(true);
   }, []);
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
@@ -349,7 +719,6 @@ const FamilyViewWebsocket: React.FC = () => {
         <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">No Family Data</h3>
         <p className="text-gray-500 dark:text-gray-400 mb-4">We couldn't find any family data to display.</p>
         <button
-          // onClick={fetchFamilyData}
           className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           Refresh
@@ -361,6 +730,55 @@ const FamilyViewWebsocket: React.FC = () => {
   return (
     <div className="relative bg-gray-50 dark:bg-gray-900 min-h-screen">
       <LeftHeader />
+
+      {/* Chat Button */}
+      <button
+        onClick={() => setIsChatOpen(true)}
+        className="fixed left-20 bottom-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+      >
+        <div className="relative">
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+      </button>
+
+      {/* History Button */}
+      {userRole !=='guest' && (<button
+        onClick={() => setIsHistoryOpen(true)}
+        className="fixed left-20 top-6 z-40 bg-green-600 hover:bg-gfreen-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+      >
+        <div className="relative">
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+      </button>)}
 
       <div className="flex flex-col h-[calc(100vh)]">
         <div className="flex-1 relative overflow-hidden">
@@ -420,11 +838,162 @@ const FamilyViewWebsocket: React.FC = () => {
                 onEdit={handleEdit}
                 onRelationModal={handleRelationModal}
                 handleOpenDeleteModal={handleOpenDeleteModal}
+                role={userRole}
               />
             </div>
           )}
         </div>
       </div>
+
+      {/* Chat Sidebar */}
+      {isChatOpen && (
+        <div className="fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-2xl border-l border-gray-200 dark:border-gray-700 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-indigo-600 text-white">
+            <div className="flex items-center space-x-3">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <h3 className="text-lg font-semibold">Family Chat</h3>
+            </div>
+            <button
+              onClick={() => setIsChatOpen(false)}
+              className="p-1 hover:bg-indigo-700 rounded transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {replyingToMessage && (
+            <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-indigo-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-sm text-indigo-700 dark:text-indigo-300">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                  </svg>
+                  <span>Odpowiadasz na wiadomość {replyingToMessage.user.name}</span>
+                </div>
+                <button
+                  onClick={cancelReply}
+                  className="text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 truncate">
+                {replyingToMessage.message}
+              </p>
+            </div>
+          )}
+
+          <div
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-3"
+          >
+            {chatMessages.length === 0 ? (
+              <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
+                <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <p>No messages yet. Start the conversation!</p>
+              </div>
+            ) : (
+              chatMessages.map((message) => (
+                <ChatMessageItem
+                  key={message._id}
+                  message={message}
+                  currentUser={currentUser}
+                  sendingMessages={sendingMessages}
+                  findReplyMessage={findReplyMessage}
+                  startEditingMessage={startEditingMessage}
+                  handleDeleteMessage={handleDeleteMessage}
+                  startReplyingToMessage={startReplyingToMessage}
+                  setReactingMessageId={setReactingMessageId}
+                  handleAddReaction={handleAddReaction}
+                  formatMessageTime={formatMessageTime}
+                  editingMessageId={editingMessageId}
+                  editMessageText={editMessageText}
+                  setEditMessageText={setEditMessageText}
+                  cancelEditing={cancelEditing}
+                  saveEditedMessage={saveEditedMessage}
+                  reactingMessageId={reactingMessageId}
+                  COMMON_EMOJIS={COMMON_EMOJIS}
+                />
+              ))
+            )}
+
+            {typingUsers.length > 0 && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-4 py-3 rounded-2xl rounded-bl-md max-w-[80%]">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span className="text-sm font-medium">
+                      {typingUsers.map(user => user.userName).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={chatMessagesEndRef} />
+          </div>
+
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="flex space-x-3 items-end">
+              <div className="flex-1 relative">
+                <textarea
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    handleTyping();
+                  }}
+                  onKeyPress={handleKeyPress}
+                  placeholder={replyingToMessage ? `Odpowiedz na wiadomość ${replyingToMessage.user.name}...` : "Type a message..."}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+                  rows={1}
+                  style={{ minHeight: '44px', maxHeight: '120px' }}
+                />
+                <div className="absolute bottom-2 right-3 text-xs text-gray-400 dark:text-gray-500">
+                  {newMessage.length}/500
+                </div>
+              </div>
+              <button
+                onClick={sendMessage}
+                disabled={!newMessage.trim()}
+                className="px-4 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center min-w-[44px] shadow-md hover:shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Sidebar */}
+      <HistorySidebar
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onUndo={handleUndoHistory}
+        side="right"
+        type="familyTree"
+        id={id}
+      />
+
+      {isChatOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsChatOpen(false)}
+        />
+      )}
 
       {isEditModalOpen && selectedNode && (
         <EditModal

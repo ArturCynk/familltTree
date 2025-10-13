@@ -12,13 +12,15 @@ interface PaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  isMobile?: boolean;
 }
 
 const Pagination: React.FC<PaginationProps> = ({ 
   currentPage, 
   totalPages, 
   onPageChange,
-  className = ''
+  className = '',
+  isMobile = false
 }) => {
   const handleFirstPage = () => {
     if (currentPage > 1) {
@@ -44,67 +46,68 @@ const Pagination: React.FC<PaginationProps> = ({
     }
   };
 
-  // Generate page numbers to display
+  // Generate page numbers to display - fewer on mobile
   const getPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
+    const maxVisiblePages = isMobile ? 3 : 5;
     
     if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      const leftOffset = Math.floor(maxVisiblePages / 2);
-      let start = currentPage - leftOffset;
-      let end = currentPage + leftOffset;
-
-      if (start < 1) {
-        start = 1;
-        end = maxVisiblePages;
-      } else if (end > totalPages) {
-        end = totalPages;
-        start = totalPages - maxVisiblePages + 1;
-      }
-
-      if (start > 1) pages.push(1, '...');
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-      if (end < totalPages) pages.push('...', totalPages);
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
+
+    const pages = [];
+    const leftOffset = Math.floor(maxVisiblePages / 2);
+    let start = currentPage - leftOffset;
+    let end = currentPage + leftOffset;
+
+    if (start < 1) {
+      start = 1;
+      end = maxVisiblePages;
+    } else if (end > totalPages) {
+      end = totalPages;
+      start = totalPages - maxVisiblePages + 1;
+    }
+
+    if (start > 1) pages.push(1, '...');
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    if (end < totalPages) pages.push('...', totalPages);
 
     return pages;
   };
 
-  return (
-    <div className={`flex items-center justify-between sm:justify-center gap-2 ${className}`}>
-      {/* First Page Button */}
-      <button
-        onClick={handleFirstPage}
-        disabled={currentPage === 1}
-        className={`p-2 rounded-lg transition-colors ${
-          currentPage === 1
-            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
-            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
-        }`}
-        aria-label="Pierwsza strona"
-      >
-        <FontAwesomeIcon icon={faAngleDoubleLeft} />
-      </button>
+  if (totalPages <= 1) return null;
 
-      {/* Previous Page Button */}
-      <button
-        onClick={handlePreviousPage}
-        disabled={currentPage === 1}
-        className={`p-2 rounded-lg transition-colors ${
-          currentPage === 1
-            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
-            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
-        }`}
-        aria-label="Poprzednia strona"
-      >
-        <FontAwesomeIcon icon={faChevronLeft} />
-      </button>
+  return (
+    <div className={`flex items-center justify-between ${className}`}>
+      {/* Navigation Buttons */}
+      <div className="flex items-center gap-1 sm:gap-2">
+        <button
+          onClick={handleFirstPage}
+          disabled={currentPage === 1}
+          className={`p-2 rounded-lg transition-colors ${
+            currentPage === 1
+              ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
+          }`}
+          aria-label="Pierwsza strona"
+        >
+          <FontAwesomeIcon icon={faAngleDoubleLeft} size={isMobile ? "xs" : "sm"} />
+        </button>
+
+        <button
+          onClick={handlePreviousPage}
+          disabled={currentPage === 1}
+          className={`p-2 rounded-lg transition-colors ${
+            currentPage === 1
+              ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
+          }`}
+          aria-label="Poprzednia strona"
+        >
+          <FontAwesomeIcon icon={faChevronLeft} size={isMobile ? "xs" : "sm"} />
+        </button>
+      </div>
 
       {/* Page Numbers */}
       <div className="flex items-center gap-1 mx-2">
@@ -113,48 +116,51 @@ const Pagination: React.FC<PaginationProps> = ({
             <button
               key={index}
               onClick={() => onPageChange(page)}
-              className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+              className={`flex items-center justify-center rounded-lg transition-colors text-sm ${
                 currentPage === page
                   ? 'bg-indigo-600 dark:bg-indigo-700 text-white font-medium'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              } ${
+                isMobile ? 'w-8 h-8' : 'w-10 h-10'
               }`}
               aria-label={`Strona ${page}`}
             >
               {page}
             </button>
           ) : (
-            <span key={index} className="px-2 text-gray-500 dark:text-gray-400">...</span>
+            <span key={index} className="px-1 sm:px-2 text-gray-500 dark:text-gray-400 text-sm">...</span>
           )
         ))}
       </div>
 
-      {/* Next Page Button */}
-      <button
-        onClick={handleNextPage}
-        disabled={currentPage === totalPages}
-        className={`p-2 rounded-lg transition-colors ${
-          currentPage === totalPages
-            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
-            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
-        }`}
-        aria-label="Następna strona"
-      >
-        <FontAwesomeIcon icon={faChevronRight} />
-      </button>
+      {/* Navigation Buttons */}
+      <div className="flex items-center gap-1 sm:gap-2">
+        <button
+          onClick={handleNextPage}
+          disabled={currentPage === totalPages}
+          className={`p-2 rounded-lg transition-colors ${
+            currentPage === totalPages
+              ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
+          }`}
+          aria-label="Następna strona"
+        >
+          <FontAwesomeIcon icon={faChevronRight} size={isMobile ? "xs" : "sm"} />
+        </button>
 
-      {/* Last Page Button */}
-      <button
-        onClick={handleLastPage}
-        disabled={currentPage === totalPages}
-        className={`p-2 rounded-lg transition-colors ${
-          currentPage === totalPages
-            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
-            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
-        }`}
-        aria-label="Ostatnia strona"
-      >
-        <FontAwesomeIcon icon={faAngleDoubleRight} />
-      </button>
+        <button
+          onClick={handleLastPage}
+          disabled={currentPage === totalPages}
+          className={`p-2 rounded-lg transition-colors ${
+            currentPage === totalPages
+              ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-700 dark:hover:text-indigo-300'
+          }`}
+          aria-label="Ostatnia strona"
+        >
+          <FontAwesomeIcon icon={faAngleDoubleRight} size={isMobile ? "xs" : "sm"} />
+        </button>
+      </div>
     </div>
   );
 };

@@ -430,3 +430,28 @@ export const addRelation = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Błąd serwera' });
   }
 };
+
+export const generatePersonReport = async (req: Request, res: Response) => {
+  try {
+    const { personId } = req.params;
+    const { treeId } = req.body;
+
+    const doc = await personService.generatePersonReport(
+      personId,
+      'user',
+      req.user?.email,
+      treeId
+    );
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="raport-${personId}.pdf"`
+    );
+
+    doc.pipe(res);
+    doc.end();
+  } catch (error) {
+    res.status(500).json({ error: 'Błąd generowania raportu PDF' });
+  }
+};

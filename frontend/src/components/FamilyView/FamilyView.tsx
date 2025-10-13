@@ -135,24 +135,33 @@ const FamilyView: React.FC = () => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    if (response.data?.users?.length) {
-      // Optymalizacja: użyj Set dla szybszego wyszukiwania
-      const users: Node[] = response.data.users;
-      console.log(users[1]);
-      
-const userSet = new Set(users.map(u => u.id));
-      
-      const savedRootId = localStorage.getItem('currentRootId');
-      const defaultRootId = users[0].id;
-      
-      const rootIdToUse = savedRootId && userSet.has(savedRootId)
-        ? savedRootId
-        : defaultRootId;
+    
+  if (response.data?.users?.length) {
+    const users:Node[] = response.data.users;
+    const userSet = new Set(users.map(u => u.id));
+    
+    // FIRST, try to get rootId from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlRootId = urlParams.get('rootId');
+    
+    // SECOND, try localStorage
+    const savedRootId = localStorage.getItem('currentRootId');
+    
+    // FINALLY, use default
+    const defaultRootId = users[0].id;
+    
+    // Determine which rootId to use (in order of priority)
+    const rootIdToUse = urlRootId && userSet.has(urlRootId)
+      ? urlRootId
+      : savedRootId && userSet.has(savedRootId)
+      ? savedRootId
+      : defaultRootId;
 
-      setFamilyData({
-        nodes: users,
-        rootId: rootIdToUse,
-      });
+    setFamilyData({
+      nodes: users,
+      rootId: rootIdToUse,
+    });
+    
       
       setInitialRootId(rootIdToUse);
     } else {
@@ -594,13 +603,14 @@ updateFamilyDataWithNewAndChangedPersons(selectedPersonAdd.person, selectedPerso
         onClose={() => setIsHistoryOpen(false)}
         onUndo={handleUndo}
         side="left" // ← Dodajemy obsługę strony
-
+        type="user"
+        
       />
 
       {isEditModalOpen && selectedNode && (
         <EditModal
           id={selectedNode.id}
-            persons={selectedPerson}
+            persons={selectedNode}
           onClose={closeModalsEdit}
           onUpdate={setSelectedPerson}
             onDeleteSuccess={handleDeleteSuccess}

@@ -13,7 +13,7 @@ import FamilyView from './components/FamilyView/FamilyView';
 import UserSettings from './components/Settings/SettingsModal';
 import CollaborativeTreeView from './components/CollaborativeTreeView/CollaborativeTreeView';
 import FamilyViewWebsocket from './components/websocket/FamilyView/FamilyView'
-
+import  './index';
 const App: React.FC = () => {
   return (
     <div>

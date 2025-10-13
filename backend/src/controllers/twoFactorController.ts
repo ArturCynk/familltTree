@@ -10,7 +10,7 @@ import crypto from 'crypto';
 dotenv.config();
 
 
-// Generowanie kodów awaryjnych
+// Generowanie kodów awaryjnycha
 const generateBackupCodes = (count = 10) => {
   return Array.from({ length: count }, () => ({
     code: crypto.randomBytes(5).toString('hex').toUpperCase(),

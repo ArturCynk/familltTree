@@ -8,7 +8,7 @@ interface SelectExistingPersonModalProps {
   isOpen: boolean;
   onClose: () => void;
   id: string;
-   onUpdate?: (updatedPerson: any) => void;
+  onUpdate?: (updatedPerson: any) => void;
 }
 
 const relationshipTypes = [
@@ -18,7 +18,12 @@ const relationshipTypes = [
   { value: 'child', label: 'Dziecko' },
 ];
 
-const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ id, isOpen, onClose,onUpdate }) => {
+const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({
+  id,
+  isOpen,
+  onClose,
+  onUpdate,
+}) => {
   const [selectedPerson, setSelectedPerson] = useState<any | null>(null);
   const [selectedRelationType, setSelectedRelationType] = useState<string>('');
   const [persons, setPersons] = useState<any[]>([]);
@@ -31,18 +36,22 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
     if (isOpen) {
       const fetchPersons = async () => {
         setLoading(true);
+        setError(null);
         try {
           const token = localStorage.getItem('authToken');
-          const response = await axios.get(`http://localhost:3001/api/person/persons-without-relation/${id}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await axios.get(
+            `http://localhost:3001/api/person/persons-without-relation/${id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
 
           setPersons(response.data.data);
           setFilteredPersons(response.data.data);
         } catch (err) {
-          setError('Nie udało się załadować osób');
+          setError('Nie udało się załadować listy osób.');
         } finally {
           setLoading(false);
         }
@@ -55,7 +64,9 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
   useEffect(() => {
     setFilteredPersons(
       persons.filter((person) =>
-        `${person.firstName} ${person.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+        `${person.firstName} ${person.lastName}`
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       )
     );
   }, [searchTerm, persons]);
@@ -80,36 +91,59 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        },
+        }
       );
-      toast.success(response.data.message);
 
+      toast.success(response.data.message);
+      if (onUpdate) onUpdate(response.data);
       onClose();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Nie zapisano relacji');
+      toast.error(error.response?.data?.message || 'Nie zapisano relacji.');
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-2 sm:p-4"
+      onClick={onClose}
+    >
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg sm:max-w-xl md:max-w-2xl mx-2 sm:mx-4 max-h-[90vh] overflow-hidden animate-fadeIn"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="relative bg-gradient-to-r from-indigo-700 to-purple-800 px-6 py-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white">Wybierz istniejącą osobę</h2>
-            <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <h2 className="text-lg sm:text-xl font-bold text-white">
+              Wybierz istniejącą osobę
+            </h2>
+            <button
+              onClick={onClose}
+              aria-label="Zamknij okno"
+              className="p-1 rounded-full hover:bg-white/10 transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-72px)]">
+        {/* Content */}
+        <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-72px)] space-y-6">
           {loading && (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 dark:border-indigo-400"></div>
@@ -123,7 +157,7 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
           )}
 
           {!loading && !error && (
-            <div className="space-y-6">
+            <>
               {!selectedPerson ? (
                 <>
                   <div className="relative">
@@ -132,65 +166,79 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
                       placeholder="Wyszukaj osobę..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      className="w-full px-4 py-3 text-base border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
                   </div>
 
                   <div className="border rounded-lg overflow-hidden">
-                    <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredPersons.map((person) => (
-                        <li
-                          key={person._id}
-                          className="flex items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                          onClick={() => setSelectedPerson(person)}
-                        >
-                          <span className="mr-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              person.gender === 'male'
-                                ? 'bg-blue-100 text-blue-600'
-                                : person.gender === 'female'
-                                ? 'bg-pink-100 text-pink-600'
-                                : 'bg-purple-100 text-purple-600'
-                            }`}>
-                              <FontAwesomeIcon icon={
-                                person.gender === 'male' ? faMale : person.gender === 'female' ? faFemale : faGenderless
-                              } />
+                    <ul className="divide-y divide-gray-200 dark:divide-gray-700 max-h-[50vh] overflow-y-auto">
+                      {filteredPersons.length > 0 ? (
+                        filteredPersons.map((person) => (
+                          <li
+                            key={person._id}
+                            className="flex items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-200"
+                            onClick={() => setSelectedPerson(person)}
+                          >
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
+                                person.gender === 'male'
+                                  ? 'bg-blue-100 text-blue-600'
+                                  : person.gender === 'female'
+                                  ? 'bg-pink-100 text-pink-600'
+                                  : 'bg-purple-100 text-purple-600'
+                              }`}
+                            >
+                              <FontAwesomeIcon
+                                icon={
+                                  person.gender === 'male'
+                                    ? faMale
+                                    : person.gender === 'female'
+                                    ? faFemale
+                                    : faGenderless
+                                }
+                              />
                             </div>
-                          </span>
-                          <div>
-                            <h3 className="text-base font-medium text-gray-800 dark:text-gray-200">
-                              {person.firstName} {person.lastName}
-                            </h3>
-                            {person.birthDate && (
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {new Date(person.birthDate).toLocaleDateString()}
-                              </p>
-                            )}
-                          </div>
+                            <div>
+                              <h3 className="text-base font-medium text-gray-800 dark:text-gray-200">
+                                {person.firstName} {person.lastName}
+                              </h3>
+                              {person.birthDate && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {new Date(person.birthDate).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="text-center text-gray-500 dark:text-gray-400 py-6">
+                          Brak osób do wyświetlenia.
                         </li>
-                      ))}
+                      )}
                     </ul>
                   </div>
                 </>
               ) : (
                 <div className="flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
                   <div className="flex items-center">
-                    <div className="mr-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
                         selectedPerson.gender === 'male'
                           ? 'bg-blue-100 text-blue-600'
                           : selectedPerson.gender === 'female'
                           ? 'bg-pink-100 text-pink-600'
                           : 'bg-purple-100 text-purple-600'
-                      }`}>
-                        <FontAwesomeIcon icon={
+                      }`}
+                    >
+                      <FontAwesomeIcon
+                        icon={
                           selectedPerson.gender === 'male'
                             ? faMale
                             : selectedPerson.gender === 'female'
                             ? faFemale
                             : faGenderless
-                        } />
-                      </div>
+                        }
+                      />
                     </div>
                     <div>
                       <h3 className="text-base font-medium text-indigo-700 dark:text-indigo-300">
@@ -203,7 +251,10 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
                       )}
                     </div>
                   </div>
-                  <button onClick={() => setSelectedPerson(null)} className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
+                  <button
+                    onClick={() => setSelectedPerson(null)}
+                    className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
                     Zmień
                   </button>
                 </div>
@@ -211,33 +262,38 @@ const SelectExistingPersonModal: React.FC<SelectExistingPersonModalProps> = ({ i
 
               {selectedPerson && (
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Typ relacji</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Typ relacji
+                  </label>
                   <select
                     value={selectedRelationType}
                     onChange={(e) => setSelectedRelationType(e.target.value)}
-                    className="block w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    className="block w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="">Wybierz typ relacji</option>
                     {relationshipTypes.map((type) => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
                     ))}
                   </select>
                 </div>
               )}
-            </div>
+            </>
           )}
 
-          <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
+          {/* Footer */}
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
             <button
               onClick={onClose}
-              className="px-6 py-2 rounded-lg border text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-lg border text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Anuluj
             </button>
             <button
               onClick={handleSave}
               disabled={!selectedPerson || !selectedRelationType}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-medium transition-colors ${
                 selectedPerson && selectedRelationType
                   ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'

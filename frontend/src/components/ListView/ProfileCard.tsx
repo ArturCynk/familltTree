@@ -69,7 +69,7 @@ export const renderFamilyMembers = (members: FamilyMember[], label: string) => {
             {member.photo ? (
               <img 
                 src={member.photo.includes('uploads/') 
-                  ? `http://localhost:3001/${member.photo}` 
+                  ? `http://192.166.100.166:3001/${member.photo}` 
                   : member.photo}
                 alt={`${member.firstName} ${member.lastName}`}
                 className="w-8 h-8 rounded-full object-cover"
@@ -142,7 +142,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       if (selectedPerson && selectedPerson.id) {
         try {
           const token = localStorage.getItem('authToken');
-          const response = await axios.get(`http://localhost:3001/api/person/users/fact/${selectedPerson.id}`, {
+          const response = await axios.get(`http://192.166.100.166:3001/api/person/users/fact/${selectedPerson.id}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -201,7 +201,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       setIsDeleting(true);
       try {
         const token = localStorage.getItem('authToken');
-        await axios.delete(`http://localhost:3001/api/person/delete/${selectedPerson.id}`, {
+        await axios.delete(`http://192.166.100.166:3001/api/person/delete/${selectedPerson.id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

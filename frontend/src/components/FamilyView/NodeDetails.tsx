@@ -2,7 +2,7 @@ import React, { memo, useCallback, useState } from 'react';
 import classNames from 'classnames';
 import type { Node } from 'relatives-tree/lib/types';
 import {
-  faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faVenusMars
+  faUser, faPen, faPlus, faTrash, faUnlink, faTimes, faVenusMars, faFilePdf
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { renderFamilyMembers } from '../ListView/ProfileCard';
@@ -26,6 +26,7 @@ export const NodeDetails = memo(
   function NodeDetails({ node, className, onDeleteSuccess, ...props }: NodeDetailsProps) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     
     const closeHandler = useCallback(() => props.onSelect(null), [props]);
 
@@ -61,6 +62,48 @@ export const NodeDetails = memo(
       } finally {
         setIsDeleting(false);
         setShowDeleteConfirm(false);
+      }
+    };
+
+    const handleDownloadPdf = async () => {
+      if (!node) return;
+      setIsDownloading(true);
+      
+      try {
+        const token = localStorage.getItem('authToken');
+        const namedNode = node as any;
+        const response = await axios.get(
+          `http://localhost:3001/api/person/download-pdf/${node.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            responseType: 'blob',
+          }
+        );
+
+        // Tworzenie linku do pobrania pliku
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute(
+          'download',
+          `raport-${namedNode.firstName || 'osoba'}-${namedNode.lastName || node.id}.pdf`
+        );
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        toast.success('Raport PDF został pobrany pomyślnie!');
+      } catch (err: any) {
+        const errorMsg = err.response?.data?.message || 
+                        err.message || 
+                        'Wystąpił błąd podczas pobierania raportu PDF';
+        toast.error(errorMsg);
+        console.error('Download PDF error:', err);
+      } finally {
+        setIsDownloading(false);
       }
     };
 
@@ -139,8 +182,8 @@ export const NodeDetails = memo(
 
           {/* Action buttons with improved layout */}
           <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
-            {/* Primary actions */}
-            <div className="grid grid-cols-3 gap-1 p-2">
+            {/* Primary actions - updated grid to 4 columns */}
+            <div className="grid grid-cols-4 gap-1 p-2">
               <ActionButton
                 icon={faPen}
                 label="Edytuj"
@@ -158,6 +201,13 @@ export const NodeDetails = memo(
                 label="Relację"
                 color="text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300"
                 onClick={props.handleOpenDeleteModal}
+              />
+              <ActionButton
+                icon={faFilePdf}
+                label="PDF"
+                color="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
+                onClick={handleDownloadPdf}
+                disabled={isDownloading}
               />
             </div>
             
@@ -197,14 +247,20 @@ interface ActionButtonProps {
   label: string;
   color: string;
   onClick: () => void;
+  disabled?: boolean;
 }
 
-const ActionButton = memo(({ icon, label, color, onClick }: ActionButtonProps) => (
+const ActionButton = memo(({ icon, label, color, onClick, disabled = false }: ActionButtonProps) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center p-2 rounded-lg transition-all ${color} hover:bg-gray-100 dark:hover:bg-gray-700/50`}
+    disabled={disabled}
+    className={`flex flex-col items-center p-2 rounded-lg transition-all ${color} ${
+      disabled 
+        ? 'opacity-50 cursor-not-allowed' 
+        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+    }`}
   >
     <FontAwesomeIcon icon={icon} className="text-xl mb-1" />
-    <span className="text-xs font-medium">{label}</span>
+    <span className="text-xs font-medium">{disabled ? 'Pobieranie...' : label}</span>
   </button>
 ));

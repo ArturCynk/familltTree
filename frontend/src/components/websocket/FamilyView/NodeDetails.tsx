@@ -16,6 +16,7 @@ interface NodeDetailsProps {
   onEdit: () => void;
   onRelationModal: () => void;
   handleOpenDeleteModal: () => void;
+  role: 'owner' | 'admin' | 'editor' | 'guest';
 }
 
 export const NodeDetails = memo(
@@ -59,7 +60,8 @@ export const NodeDetails = memo(
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {props.role!=='guest' && (
+          
         <div className="border-t border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800">
           <div className="flex justify-around">
             <button
@@ -93,6 +95,7 @@ export const NodeDetails = memo(
             </button>
           </div>
         </div>
+        )}
       </div>
     );
   }

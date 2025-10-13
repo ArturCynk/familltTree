@@ -25,7 +25,8 @@ function extractFilters(req: Request): any {
     hasSiblings: req.query.hasSiblings as string | undefined,
     birthPlace: req.query.birthPlace as string | undefined,
     deathPlace: req.query.deathPlace as string | undefined,
-    burialPlace: req.query.burialPlace as string | undefined
+    burialPlace: req.query.burialPlace as string | undefined,
+    relationFormat: req.query.relationFormat as string | undefined
   };
 }
 
@@ -57,7 +58,7 @@ export const exportJson = async (req: Request, res: Response) => {
     
     const jsonData = JSON.stringify(persons);
 
-        const userId = req.user?._id; // Zakładając, że authenticateToken dodaje _id do req.user
+        const userId = req.user?._id; 
     const filename = `persons_${userId}`;
     
     // Nagłówki do pobrania pliku JSON

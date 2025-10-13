@@ -1,6 +1,6 @@
 import express from 'express';
 import { addPersonValidation, updatePersonValidation } from '../validation/personValidator'; // Import reguł walidacji
-import { addPerson, deletePerson, updatePerson, getAllPersons,addPersonWithRelationships, getFact, getRelations, deleteRelationship, getPersonsWithoutRelation, addRelation, getAllPersonss, getPerson} from '../controllers/personController'; // Import funkcji kontrolera
+import { addPerson, deletePerson, updatePerson, getAllPersons,addPersonWithRelationships, getFact, getRelations, deleteRelationship, getPersonsWithoutRelation, addRelation, getAllPersonss, getPerson, generatePersonReport} from '../controllers/personController'; // Import funkcji kontrolera
 import { authenticateToken } from '../Middleware/authenticateToken';
 import multer from 'multer';
 import path from 'path';
@@ -47,6 +47,8 @@ router.delete('/relation/:personId/:relationId', authenticateToken, deleteRelati
 router.get('/persons-without-relation/:id', authenticateToken, getPersonsWithoutRelation);
 
 router.post('/add-relation', authenticateToken, addRelation);
+
+router.get('/download-pdf/:personId', authenticateToken, generatePersonReport)
 
 
 export default router;

@@ -32,117 +32,213 @@ const allAvailableFields = [
 
 export class DataTransferService {
   // JSON
-  static async exportJson(userEmail: string, selectedFields?: string[],filters: any = {}): Promise<any[]> {
-    const user = await User.findOne({ email: userEmail }).populate('persons').lean();
+private static formatRelations(
+    ids: any[],
+    personMap: Map<string, string>,
+    relationFormat: string = 'name'
+  ): string {
+    if (relationFormat === 'id') {
+      return ids.map(id => id?.toString()).filter(Boolean).join(', ');
+    }
+    // Default to name format
+    return ids
+      .map(id => personMap.get(id?.toString()))
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  // JSON export
+  static async exportJson(
+    userEmail: string, 
+    selectedFields?: string[],
+    filters: any = {}
+  ): Promise<any[]> {
+    const user = await User.findOne({ email: userEmail }).populate('persons');
     if (!user) throw new Error('User not found');
     let persons = user.persons;
     if (!persons || persons.length === 0) throw new Error('No persons found for this user');
 
-     persons = this.applyFilters(persons, filters);
-
-    if (selectedFields) {
-      this.validateFields(selectedFields);
-    }
-
+    persons = this.applyFilters(persons, filters);
+    if (selectedFields) this.validateFields(selectedFields);
+    
     const fields = selectedFields?.length ? selectedFields : allAvailableFields;
+    const personMap = this.buildPersonMap(persons);
+    const relationFormat = filters.relationFormat || 'name'; // Default to name
 
-    const result = persons.map((person: any) => {
+    return persons.map((person: any) => {
       const mapped: any = {};
       for (const field of fields) {
-        if (field === 'personId') mapped[field] = person._id?.toString() || '';
-        else if (['parents', 'siblings', 'children'].includes(field)) mapped[field] = person[field]?.join(',') || '';
+        if (field === 'personId') {
+          mapped[field] = person._id.toString();
+        }
+        else if (field === 'parents') {
+          mapped[field] = this.formatRelations(
+            person.parents || [], 
+            personMap, 
+            relationFormat
+          );
+        }
+        else if (field === 'siblings') {
+          mapped[field] = this.formatRelations(
+            person.siblings || [], 
+            personMap, 
+            relationFormat
+          );
+        }
+        else if (field === 'children') {
+          mapped[field] = this.formatRelations(
+            person.children || [], 
+            personMap, 
+            relationFormat
+          );
+        }
         else if (field === 'spouses') {
-          mapped[field] = person.spouses?.map((s:any) => ({
-            personId: s.personId, 
-            weddingDate: s.weddingDate
-          }));
-        } else {
+          const spouseIds = (person.spouses || []).map((s: any) => s.personId);
+          mapped[field] = this.formatRelations(
+            spouseIds, 
+            personMap, 
+            relationFormat
+          );
+        }
+        else {
           mapped[field] = person[field];
         }
       }
       return mapped;
     });
-
-    return result;
   }
 
-  // EXCEL
-  static async exportExel(userEmail: string, selectedFields?: string[],filters: any = {}): Promise<Buffer> {
-    const user = await User.findOne({ email: userEmail }).populate('persons');
-    if (!user) throw new Error('User not found');
-    let persons = user.persons;
-    if (!persons || persons.length === 0) throw new Error('No persons found');
-
-     persons = this.applyFilters(persons, filters);
-
-
-    if (selectedFields) {
-  this.validateFields(selectedFields);
-}
-
-    const fields = selectedFields?.length ? selectedFields : allAvailableFields;
-
-    const data = persons.map((person: any) => {
-      const mapped: any = {};
-      for (const field of fields) {
-        if (field === 'personId') mapped[field] = person._id?.toString() || '';
-        else if (['parents', 'siblings', 'children'].includes(field)) mapped[field] = person[field]?.join(',') || '';
-        else if (field === 'spouses') {
-          mapped[field] = person.spouses?.map((s:any) => ({
-            personId: s.personId, 
-            weddingDate: s.weddingDate
-          }));
-        } else {
-          mapped[field] = person[field];
-        }
-      }
-      return mapped;
-    });
-
-const worksheet = XLSX.utils.json_to_sheet(data, {
-  cellDates: true, // Automatyczna konwersja dat
-  dateNF: 'yyyy-mm-dd' // Format daty
-});
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Persons');
-
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    return buffer;
-  }
-
-  // CSV
-  static async exportCsv(userEmail: string, selectedFields?: string[],filters: any = {}): Promise<string> {
+  // Excel export
+  static async exportExel(
+    userEmail: string, 
+    selectedFields?: string[],
+    filters: any = {}
+  ): Promise<Buffer> {
     const user = await User.findOne({ email: userEmail }).populate('persons');
     if (!user) throw new Error('User not found');
     let persons = user.persons;
     if (!persons || persons.length === 0) throw new Error('No persons found');
 
     persons = this.applyFilters(persons, filters);
-
-    if (selectedFields) {
-  this.validateFields(selectedFields);
-}
-
+    if (selectedFields) this.validateFields(selectedFields);
+    
     const fields = selectedFields?.length ? selectedFields : allAvailableFields;
+    const personMap = this.buildPersonMap(persons);
+    const relationFormat = filters.relationFormat || 'name'; // Default to name
 
     const data = persons.map((person: any) => {
       const mapped: any = {};
       for (const field of fields) {
-        if (field === 'personId') mapped[field] = person._id?.toString() || '';
-        else if (['parents', 'siblings', 'children'].includes(field)) mapped[field] = person[field]?.join(',') || '';
+        if (field === 'personId') {
+          mapped[field] = person._id?.toString() || '';
+        }
+        else if (field === 'parents') {
+          mapped[field] = this.formatRelations(
+            person.parents || [], 
+            personMap, 
+            relationFormat
+          );
+        }
+        else if (field === 'siblings') {
+          mapped[field] = this.formatRelations(
+            person.siblings || [], 
+            personMap, 
+            relationFormat
+          );
+        }
+        else if (field === 'children') {
+          mapped[field] = this.formatRelations(
+            person.children || [], 
+            personMap, 
+            relationFormat
+          );
+        }
         else if (field === 'spouses') {
-          mapped[field] = person.spouses?.map((s:any) => ({
-            personId: s.personId, 
-            weddingDate: s.weddingDate
-          }));
-        } else {
+          const spouseIds = (person.spouses || []).map((s: any) => s.personId);
+          mapped[field] = this.formatRelations(
+            spouseIds, 
+            personMap, 
+            relationFormat
+          );
+        }
+        else {
           mapped[field] = person[field];
         }
       }
       return mapped;
     });
 
-    const parser = new AsyncParser({ fields: selectedFields || allAvailableFields });
+    const worksheet = XLSX.utils.json_to_sheet(data, {
+      cellDates: true,
+      dateNF: 'yyyy-mm-dd'
+    });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Persons');
+
+    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  // CSV export
+  static async exportCsv(
+    userEmail: string, 
+    selectedFields?: string[],
+    filters: any = {}
+  ): Promise<string> {
+    const user = await User.findOne({ email: userEmail }).populate('persons');
+    if (!user) throw new Error('User not found');
+    let persons = user.persons;
+    if (!persons || persons.length === 0) throw new Error('No persons found');
+
+    persons = this.applyFilters(persons, filters);
+    if (selectedFields) this.validateFields(selectedFields);
+    
+    const fields = selectedFields?.length ? selectedFields : allAvailableFields;
+    const personMap = this.buildPersonMap(persons);
+    const relationFormat = filters.relationFormat || 'name'; // Default to name
+
+    const data = persons.map((person: any) => {
+      const mapped: any = {};
+      for (const field of fields) {
+        if (field === 'personId') {
+          mapped[field] = person._id?.toString() || '';
+        }
+        else if (field === 'parents') {
+          mapped[field] = this.formatRelations(
+            person.parents || [], 
+            personMap, 
+            relationFormat
+          );
+        }
+        else if (field === 'siblings') {
+          mapped[field] = this.formatRelations(
+            person.siblings || [], 
+            personMap, 
+            relationFormat
+          );
+        }
+        else if (field === 'children') {
+          mapped[field] = this.formatRelations(
+            person.children || [], 
+            personMap, 
+            relationFormat
+          );
+        }
+        else if (field === 'spouses') {
+          const spouseIds = (person.spouses || []).map((s: any) => s.personId);
+          mapped[field] = this.formatRelations(
+            spouseIds, 
+            personMap, 
+            relationFormat
+          );
+        }
+        else {
+          mapped[field] = person[field];
+        }
+      }
+      return mapped;
+    });
+
+    const parser = new AsyncParser({ fields });
     return parser.parse(data).promise();
   }
 
@@ -154,6 +250,17 @@ const worksheet = XLSX.utils.json_to_sheet(data, {
   if (invalidFields.length > 0) {
     throw new Error(`Invalid fields selected: ${invalidFields.join(', ')}`);
   }
+}
+
+private static buildPersonMap(persons: any[]): Map<string, string> {
+  const map = new Map<string, string>();
+  persons.forEach(person => {
+    const fullName = `${person.firstName || ''} ${person.lastName || ''}`.trim();
+    if (fullName) {
+      map.set(person._id.toString(), fullName);
+    }
+  });
+  return map;
 }
 
 

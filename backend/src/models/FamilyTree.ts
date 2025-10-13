@@ -33,5 +33,32 @@ const FamilyTreeSchema: Schema = new Schema({
   ]
 }, { timestamps: true });
 
+FamilyTreeSchema.methods = {
+  async getChatParticipants(this: IFamilyTree) {
+    const tree = await this.populate('owner members.user');
+    const participants = [
+      {
+        user: tree.owner,
+        role: 'owner' as const
+      },
+      ...tree.members.map(m => ({
+        user: m.user,
+        role: m.role
+      }))
+    ];
+    
+    return participants;
+  },
+
+  async canUserChat(this: IFamilyTree, userId: string): Promise<boolean> {
+    if (this.owner.equals(userId)) return true;
+    
+    return this.members.some(member => 
+      member.user.equals(userId) && 
+      ['admin', 'editor', 'guest'].includes(member.role)
+    );
+  }
+};
+
 // Eksport modelu:
 export default mongoose.model<IFamilyTree>('FamilyTree', FamilyTreeSchema);

@@ -3,9 +3,11 @@ import http from 'http';
 import jwt from 'jsonwebtoken';
 import FamilyTree from '../models/FamilyTree';
 import { PersonService } from '../services/personServices';
+import { ChatHandler } from './chatHandler';
 
 const familyTreeClients = new Map<string, WebSocket[]>();
 const personService = new PersonService();
+const chatHandler = new ChatHandler(familyTreeClients);
 
 export const initializeWebSocket = (server: http.Server) => {
   const wss = new WebSocketServer({ server });
@@ -26,60 +28,164 @@ export const initializeWebSocket = (server: http.Server) => {
     ws.on('message', async (msg: Buffer) => {
       try {
         const data = JSON.parse(msg.toString());
-        console.log(2);
         
         // Authentication phase
-        if (!familyTreeId) {
-          console.log('====================================');
-          console.log(data);
-          console.log('====================================');
-          if (data.type !== 'auth' || !data.token || !data.familyTreeId) throw new Error('Auth required');
-          const decoded = jwt.verify(data.token, process.env.JWT_SECRET as string) as { userId: string };
-          const tree = await FamilyTree.findById(data.familyTreeId);
-          if (!tree) throw new Error('Tree not found');
-          const isMember = tree.owner.equals(decoded.userId) || tree.members.some(m => m.user.equals(decoded.userId));
-          if (!isMember) throw new Error('Access denied');
+if (!familyTreeId) {
+  if (data.type !== 'auth' || !data.token || !data.familyTreeId)
+    throw new Error('Auth required');
 
-          familyTreeId = data.familyTreeId;
-          userId = decoded.userId;
+  const decoded = jwt.verify(
+    data.token,
+    process.env.JWT_SECRET as string
+  ) as { userId: string };
 
-          // Register ws
-          if (!familyTreeClients.has(familyTreeId)) familyTreeClients.set(familyTreeId, []);
-          familyTreeClients.get(familyTreeId)!.push(ws);
+  const tree = await FamilyTree.findById(data.familyTreeId);
+  if (!tree) throw new Error('Tree not found');
 
-          // Send initial full data only once
-          const persons = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
-          return ws.send(JSON.stringify({ type: 'init'}));
-        }
-        console.log(3);
-        
+  const isOwner = tree.owner.equals(decoded.userId);
+  const member = tree.members.find(m => m.user.equals(decoded.userId));
 
-        let payload: any;
+  if (!isOwner && !member) throw new Error('Access denied');
+
+  familyTreeId = data.familyTreeId;
+  userId = decoded.userId;
+
+  // Ustal rolę użytkownika
+  let role: 'owner' | 'admin' | 'editor' | 'guest';
+  if (isOwner) {
+    role = 'owner';
+  } else {
+    role = member!.role;
+  }
+
+  // Zarejestruj połączenie WebSocket
+  if (!familyTreeClients.has(familyTreeId))
+    familyTreeClients.set(familyTreeId, []);
+  familyTreeClients.get(familyTreeId)!.push(ws);
+
+  // Pobierz osoby z drzewa
+  const persons = await personService.getAllPersonsWithRelations(
+    'familyTree',
+    undefined,
+    familyTreeId
+  );
+
+  // Wyślij dane inicjalne wraz z rolą użytkownika
+  return ws.send(
+    JSON.stringify({
+      type: 'init',
+      data: {
+        role,          // 👈 tu masz rolę użytkownika
+        familyTreeId,
+        persons,
+      },
+    })
+  );
+}
+
+
+        // Zmieniamy logikę - dla niektórych operacji nie potrzebujemy standardowej odpowiedzi
+        let shouldRespond = true;
+        let payload: any = null;
         let broadcast = false;
-        let messageType: string;
+        let messageType: string = 'unknown';
 
         switch (data.type) {
+           case 'chat_message':
+            const chatResult = await chatHandler.handleChatMessage(
+              ws, data, familyTreeId, userId
+            );
+            payload = chatResult;
+            messageType = 'chat_message_sent';
+            break;
+
+          case 'edit_message':
+            payload = await chatHandler.editMessage(
+              data.messageId, 
+              data.newMessage, 
+              userId
+            );
+            messageType = 'message_edited';
+            broadcast = true;
+            break;
+
+          case 'add_reaction':
+            payload = await chatHandler.handleReaction(
+              data.messageId,
+              data.emoji,
+              userId,
+              familyTreeId
+            );
+            messageType = 'reaction_updated';
+            broadcast = true;
+            break;
+
+          case 'delete_message':
+            payload = await chatHandler.deleteMessage(
+              data.messageId,
+              userId,
+              familyTreeId
+            );
+            messageType = 'message_deleted';
+            broadcast = true;
+            break;
+
+          case 'get_edit_history':
+            payload = await chatHandler.getEditHistory(data.messageId, userId);
+            messageType = 'edit_history';
+            break;
+
+          case 'get_chat_history':
+            payload = await chatHandler.getChatHistory(
+              familyTreeId, 
+              userId, 
+              data.limit, 
+              data.before
+            );
+            messageType = 'chat_history';
+            break;
+
+          case 'mark_message_read':
+            await chatHandler.markAsRead(data.messageId, userId);
+            payload = { messageId: data.messageId, read: true };
+            messageType = 'message_read';
+            break;
+
+          case 'typing_start':
+          case 'typing_stop':
+            const typingClients = familyTreeClients.get(familyTreeId) || [];
+            typingClients.forEach(client => {
+              if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: data.type,
+                  data: {
+                    userId: userId,
+                    userName: data.userName
+                  }
+                }));
+              }
+            });
+            shouldRespond = false;
+            break;
+          
           case 'getAllPersonsWithRelations':
             payload = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
             messageType = 'allPersonsWithRelations';
             break;
-          
 
-            case 'getAllPersons':
-              payload = await personService.getAllPersons(data.query,'familyTree', undefined, familyTreeId);
-              messageType = 'allPersons';
-              break;
+          case 'getAllPersons':
+            payload = await personService.getAllPersons(data.query, 'familyTree', undefined, familyTreeId);
+            messageType = 'allPersons';
+            break;
 
           case 'getPerson':
             payload = await personService.getPerson(data.payload.id, 'familyTree', undefined, familyTreeId);
             messageType = 'person';
             break;
 
-
           case 'updatePerson':
             await personService.updatePerson(data.personId, data.body, 'familyTree', undefined, familyTreeId);
             payload = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
-           
             messageType = 'personUpdated';
             broadcast = true;
             break;
@@ -92,7 +198,13 @@ export const initializeWebSocket = (server: http.Server) => {
             break;
 
           case 'addPersonWithRelationships':
-            await personService.addPersonWithRelationships({ type: 'familyTree', userEmail: undefined, file: undefined, body: data.body,treeId:familyTreeId });
+            await personService.addPersonWithRelationships({ 
+              type: 'familyTree', 
+              userEmail: undefined, 
+              file: undefined, 
+              body: data.body, 
+              treeId: familyTreeId 
+            });
             messageType = 'personWithRelationsAdded';
             payload = await personService.getAllPersonsWithRelations('familyTree', undefined, familyTreeId);
             broadcast = true;
@@ -149,7 +261,11 @@ export const initializeWebSocket = (server: http.Server) => {
             }
 
             await tree.save();
-            payload = { personId: data.personId, relatedPersonId: data.relatedPersonId, relationType: data.relationType };
+            payload = { 
+              personId: data.personId, 
+              relatedPersonId: data.relatedPersonId, 
+              relationType: data.relationType 
+            };
             messageType = 'relationAdded';
             broadcast = true;
             break;
@@ -173,22 +289,24 @@ export const initializeWebSocket = (server: http.Server) => {
             throw new Error('Unknown operation');
         }
 
-        // Respond to requester
-        ws.send(JSON.stringify({ type: messageType, data: payload }));
+        // Respond to requester only if needed
+        if (shouldRespond) {
+          ws.send(JSON.stringify({ type: messageType, data: payload }));
+        }
 
         // Broadcast to all other clients if needed
         if (broadcast) {
-          const clients = familyTreeClients.get(familyTreeId) || [];
-          clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
+          const broadcastClients = familyTreeClients.get(familyTreeId) || [];
+          broadcastClients.forEach(client => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({ type: messageType, data: payload }));
             }
           });
         }
 
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        ws.send(JSON.stringify({ type: 'error', message: msg }));
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        ws.send(JSON.stringify({ type: 'error', message: errorMsg }));
         cleanup();
         ws.close();
       }

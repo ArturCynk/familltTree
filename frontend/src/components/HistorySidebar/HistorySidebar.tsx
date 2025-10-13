@@ -17,6 +17,8 @@ interface HistorySidebarProps {
   onClose: () => void;
   onUndo: (id: string) => void;
   side?: "right" | "left";
+  type?: "user" | "familyTree";
+  id?: string;
 }
 
 const HISTORY_STORAGE_KEY = "genealogy-history-cache";
@@ -36,6 +38,8 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
   onClose,
   onUndo,
   side = "right",
+  type,
+  id
 }) => {
   const [changes, setChanges] = useState<HistoryItem[]>([]);
   const [filteredChanges, setFilteredChanges] = useState<HistoryItem[]>([]);
@@ -74,7 +78,12 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
 
     try {
       const token = localStorage.getItem("authToken");
-      const res = await axios.get("http://localhost:3001/api/history", {
+          const url =
+        type === "user"
+          ? `/api/history?type=user`
+          : `/api/history?type=familyTree&familyTreeId=${id}`;
+          
+      const res = await axios.get(`http://localhost:3001${url}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -183,8 +192,14 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
         params.append("action", activeFilter);
       }
 
+       const url =
+        type === "user"
+          ? `/api/history/export?type=user`
+          : `/api/history/export?type=familyTree&familyTreeId=${id}`;
+          
+
       const response = await axios.get(
-        "http://localhost:3001/api/history/export",
+        `http://localhost:3001${url}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
